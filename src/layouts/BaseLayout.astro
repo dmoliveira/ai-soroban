@@ -25,16 +25,18 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   <body>
     <a class="skip-link" href="#main-content">Skip to content</a>
     <header class="site-header">
-      <div class="shell topbar">
-        <a class="author-link" href="https://dmoliveira.github.io/my-cv-public/cv/human/" target="_blank" rel="noreferrer">Made by <strong>Diego Marinho</strong></a>
-        <a class="brand" href={base}>
-          <span class="brand-mark">道</span>
-          <span>
-            <strong>Soroban Dojo</strong>
-            <small>Small steps, steady hands · そろばん道場</small>
-          </span>
-        </a>
-        <nav class="nav">
+      <div class="shell header-shell">
+        <div class="header-meta-row">
+          <a class="author-link" href="https://dmoliveira.github.io/my-cv-public/cv/human/" target="_blank" rel="noreferrer">Made by <strong>Diego Marinho</strong></a>
+          <a class="brand" href={base}>
+            <span class="brand-mark">道</span>
+            <span>
+              <strong>Soroban Dojo</strong>
+              <small>Small steps, steady hands · そろばん道場</small>
+            </span>
+          </a>
+        </div>
+        <nav class="nav nav-row">
           <a href={`${base}start-here`}><JapaneseLabel english="Start" japanese="はじめ" /></a>
           <a href={`${base}paths/children`}><JapaneseLabel english="Children" japanese="こども" /></a>
           <a href={`${base}paths/adults`}><JapaneseLabel english="Adults" japanese="おとな" /></a>

@@ -24,7 +24,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       </div>
       <span class="badge">Attempt first · 先に挑戦</span>
     </div>
-    <div class="option-grid">
+    <div class="option-grid option-grid-compact">
       <article class="choice-card">
         <p class="eyebrow">Curated</p>
         <h3>Fixed lesson-aligned list</h3>
@@ -44,6 +44,13 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     <div class="practice-grid">
       <div class="stack-sm">
         <label class="stack-sm">
+          <span>Practice format · 形式</span>
+          <select id="session-format" class="select">
+            <option value="single">One by one</option>
+            <option value="sheet">Question sheet</option>
+          </select>
+        </label>
+        <label class="stack-sm">
           <span>Session type · 稽古</span>
           <select id="session-type" class="select">
             <option value="curated">Curated list</option>
@@ -56,6 +63,9 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
             <option value="L0">L0 Foundations</option>
             <option value="L1">L1 Beginner</option>
             <option value="L2">L2 Complements</option>
+            <option value="L3">L3 Mixed fluency</option>
+            <option value="L4">L4 Multiplication &amp; division</option>
+            <option value="L5">L5 Mastery review</option>
           </select>
         </label>
         <label class="stack-sm">
@@ -64,6 +74,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
             <option value="5">5 questions</option>
             <option value="10" selected>10 questions</option>
             <option value="15">15 questions</option>
+            <option value="20">20 questions</option>
           </select>
         </label>
       </div>
@@ -74,6 +85,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
             <option value="verify">Verify only</option>
             <option value="final">Verify and show final number</option>
             <option value="steps">Verify and show steps</option>
+            <option value="self-mark">Self-mark after reveal</option>
           </select>
         </label>
         <label class="stack-sm">
@@ -81,6 +93,14 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
           <select id="timer-mode" class="select">
             <option value="off">Timer off</option>
             <option value="on">Timer on</option>
+          </select>
+        </label>
+        <label class="stack-sm">
+          <span>Question style · 問題</span>
+          <select id="question-style" class="select">
+            <option value="mixed">Mixed</option>
+            <option value="visual">Visual first</option>
+            <option value="mental">Mental prompt</option>
           </select>
         </label>
         <div class="button-row">
@@ -96,7 +116,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     </div>
   </section>
 
-  <div class="practice-grid">
+  <div class="practice-grid practice-main-grid">
     <section class="panel question-shell">
       <div class="section-head">
         <div>
@@ -111,23 +131,38 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         </div>
       </div>
 
-      <div id="visual-mount" class="subtle-panel" hidden></div>
-      <div class="subtle-panel">
+      <div id="visual-mount" class="subtle-panel visual-stage" hidden></div>
+      <div id="single-session-view" class="subtle-panel question-stage">
         <p class="eyebrow">Question</p>
         <h3 id="question-title">Choose a session to begin.</h3>
         <p id="question-prompt" class="muted">Curated lists follow the lessons; generated lists create replayable arithmetic practice.</p>
+        <label class="stack-sm answer-stack">
+          <span>Your answer · 答え</span>
+          <input id="answer-input" class="input" type="text" inputmode="numeric" placeholder="Write your answer before checking" />
+        </label>
+
+        <div class="button-row button-row-compact">
+          <button class="button" id="verify-answer">Check my answer</button>
+          <button class="button button-secondary" id="reveal-final">Show final number</button>
+          <button class="button button-secondary" id="reveal-steps">Show steps</button>
+          <button class="button button-secondary" id="next-question">Save and continue</button>
+        </div>
       </div>
 
-      <label class="stack-sm">
-        <span>Your answer · 答え</span>
-        <input id="answer-input" class="input" type="text" inputmode="numeric" placeholder="Write your answer before checking" />
-      </label>
-
-      <div class="button-row">
-        <button class="button" id="verify-answer">Check my answer</button>
-        <button class="button button-secondary" id="reveal-final">Show final number</button>
-        <button class="button button-secondary" id="reveal-steps">Show steps</button>
-        <button class="button button-secondary" id="next-question">Save and continue</button>
+      <div id="sheet-session-view" class="subtle-panel sheet-stage" hidden>
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Soroban sheet · 用紙</p>
+            <h3>Practice several questions at once</h3>
+          </div>
+          <button class="button button-secondary" id="print-sheet">Print sheet</button>
+        </div>
+        <div id="sheet-list" class="sheet-list"></div>
+        <div class="button-row button-row-compact">
+          <button class="button" id="check-sheet">Check sheet answers</button>
+          <button class="button button-secondary" id="reveal-sheet-answers">Reveal sheet answers</button>
+          <button class="button button-secondary" id="save-sheet">Save sheet progress</button>
+        </div>
       </div>
 
       <div id="feedback-panel" class="reveal-panel" hidden role="status" aria-live="polite"></div>
@@ -140,19 +175,27 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       </div>
     </section>
 
-    <aside class="panel stack-sm">
-      <div>
-        <p class="eyebrow">Session history</p>
-        <h2>Resume or replay</h2>
-      </div>
-      <div id="history-list" class="session-list">
-        <p class="muted">Your saved sessions will appear here.</p>
-      </div>
+    <aside class="panel stack-sm side-panel">
+      <details class="collapsible-block">
+        <summary>
+          <span>
+            <p class="eyebrow">Session history</p>
+            <h2>Resume or replay</h2>
+          </span>
+        </summary>
+        <div id="history-list" class="session-list">
+          <p class="muted">Your saved sessions will appear here.</p>
+        </div>
+      </details>
 
-      <div>
-        <p class="eyebrow">Exercise library</p>
-        <h3>Study by lesson if you prefer</h3>
-        <ul class="list-clean">
+      <details class="collapsible-block">
+        <summary>
+          <span>
+            <p class="eyebrow">Exercise library</p>
+            <h3>Study by lesson if you prefer</h3>
+          </span>
+        </summary>
+        <ul class="list-clean compact-library">
           {exercises.slice(0, 6).map((exercise) => (
             <li>
               <strong>{exercise.title}</strong>
@@ -164,6 +207,11 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
             </li>
           ))}
         </ul>
+      </details>
+
+      <div class="subtle-panel sora-sheet-note">
+        <p class="eyebrow">Soroban sheets</p>
+        <p class="muted">Use sheet mode when you want many questions at once, or print worksheets for desk-style repetition.</p>
       </div>
     </aside>
   </div>
@@ -288,7 +336,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     return Array.from({ length }, (_, index) => buildGeneratedQuestion(level, index, rng));
   };
 
-  const createSession = ({ type, level, length, checkMode, timerEnabled }) => {
+  const createSession = ({ type, level, length, checkMode, timerEnabled, format, questionStyle }) => {
     const sessionId = makeId();
     const questions = type === 'curated'
       ? buildCuratedQuestions(level, length, sessionId)
@@ -300,6 +348,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       length,
       checkMode,
       timerEnabled,
+      format,
+      questionStyle,
       createdAt: new Date().toISOString(),
       currentIndex: 0,
       completed: false,
@@ -461,6 +511,9 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     const answerInput = byId('answer-input');
     const feedback = byId('feedback-panel');
     const stepsPanel = byId('steps-panel');
+    const singleView = byId('single-session-view');
+    const sheetView = byId('sheet-session-view');
+    const sheetList = byId('sheet-list');
     const controls = ['answer-input', 'verify-answer', 'reveal-final', 'reveal-steps', 'next-question'];
     feedback.hidden = true;
     stepsPanel.hidden = true;
@@ -474,6 +527,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       questionTitle.textContent = 'Choose a session to begin.';
       questionPrompt.textContent = 'Curated lists follow the lessons; generated lists create replayable arithmetic practice.';
       answerInput.value = '';
+      singleView.hidden = false;
+      sheetView.hidden = true;
       renderVisual(null);
       controls.forEach((id) => { const node = byId(id); if (node) node.disabled = true; });
       activeTimerKey = null;
@@ -492,8 +547,37 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       ? 'Review your score, replay the same list, or start a fresh session with a new ID.'
       : question.prompt;
     answerInput.value = response.input || '';
+    const isSheetMode = currentSession.format === 'sheet';
+    singleView.hidden = isSheetMode;
+    sheetView.hidden = !isSheetMode;
     controls.forEach((id) => { const node = byId(id); if (node) node.disabled = currentSession.completed; });
     renderVisual(question.visualValue);
+
+    if (isSheetMode) {
+      sheetList.replaceChildren();
+      currentSession.questions.forEach((entry, index) => {
+        const row = document.createElement('div');
+        row.className = 'sheet-row';
+        const prompt = document.createElement('div');
+        prompt.className = 'sheet-prompt';
+        prompt.innerHTML = `<strong>${index + 1}.</strong> ${entry.prompt}`;
+        const input = document.createElement('input');
+        input.className = 'input';
+        input.type = 'text';
+        input.inputMode = 'numeric';
+        input.placeholder = 'Answer';
+        input.value = currentSession.responses[index]?.input || '';
+        input.addEventListener('input', () => {
+          currentSession.responses[index] = {
+            ...(currentSession.responses[index] || {}),
+            input: input.value,
+          };
+          persistCurrent();
+        });
+        row.append(prompt, input);
+        sheetList.appendChild(row);
+      });
+    }
 
     if (currentSession.timerEnabled && !currentSession.completed) {
       const nextTimerKey = `${currentSession.id}:${currentSession.currentIndex}`;
@@ -555,13 +639,15 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
   byId('start-session')?.addEventListener('click', () => {
     stopTimer();
-    currentSession = createSession({
-      type: byId('session-type').value,
-      level: byId('session-level').value,
-      length: Number(byId('session-length').value),
-      checkMode: byId('check-mode').value,
-      timerEnabled: byId('timer-mode').value === 'on',
-    });
+      currentSession = createSession({
+        type: byId('session-type').value,
+        level: byId('session-level').value,
+        length: Number(byId('session-length').value),
+        checkMode: byId('check-mode').value,
+        timerEnabled: byId('timer-mode').value === 'on',
+        format: byId('session-format').value,
+        questionStyle: byId('question-style').value,
+      });
     persistCurrent();
     renderSession();
   });
@@ -647,6 +733,52 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     feedback.textContent = `Session complete. Final score: ${currentSession.finalScore}/100. You can replay the same list from the history panel or start a fresh session.`;
     renderHistory();
   });
+
+  byId('check-sheet')?.addEventListener('click', () => {
+    if (!currentSession || currentSession.completed) return;
+    let correctCount = 0;
+    currentSession.questions.forEach((question, index) => {
+      const input = currentSession.responses[index]?.input?.trim() || '';
+      const correct = input !== '' && Number(input) === question.answer;
+      currentSession.responses[index] = {
+        ...(currentSession.responses[index] || {}),
+        input,
+        verified: true,
+        correct,
+      };
+      if (correct) correctCount += 1;
+    });
+    currentSession.finalScore = Math.round((correctCount / currentSession.questions.length) * 100);
+    persistCurrent();
+    const feedback = byId('feedback-panel');
+    feedback.hidden = false;
+    feedback.textContent = `Sheet checked. ${correctCount}/${currentSession.questions.length} correct. Current score ${currentSession.finalScore}/100.`;
+    renderSession();
+  });
+
+  byId('reveal-sheet-answers')?.addEventListener('click', () => {
+    if (!currentSession) return;
+    const stepsPanel = byId('steps-panel');
+    stepsPanel.hidden = false;
+    stepsPanel.replaceChildren();
+    const list = document.createElement('ol');
+    currentSession.questions.forEach((question) => {
+      const item = document.createElement('li');
+      item.textContent = `${question.prompt} → ${question.answer}`;
+      list.appendChild(item);
+    });
+    stepsPanel.appendChild(list);
+  });
+
+  byId('save-sheet')?.addEventListener('click', () => {
+    if (!currentSession) return;
+    persistCurrent();
+    const feedback = byId('feedback-panel');
+    feedback.hidden = false;
+    feedback.textContent = 'Sheet progress saved. You can return later and continue where you left off.';
+  });
+
+  byId('print-sheet')?.addEventListener('click', () => window.print());
 
   renderHistory();
   renderSession();
