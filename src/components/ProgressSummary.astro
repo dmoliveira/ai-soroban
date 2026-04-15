@@ -1,21 +1,63 @@
-<section class="panel">
+<section class="panel progress-panel">
   <div class="section-head">
     <div>
-      <p class="eyebrow">Local progress</p>
-      <h2>Your dojo summary</h2>
+      <p class="eyebrow">Progress garden · 歩み</p>
+      <h2>Your dojo landscape</h2>
+      <p class="muted">A quiet view of your study path: stones for consistency, lanterns for milestones, and blossoms for strong sessions.</p>
     </div>
     <button class="button button-secondary" id="reset-progress">Reset progress</button>
   </div>
-  <div class="stats-grid">
-    <article class="stat-card"><span id="completed-lessons">0</span><small>Lessons completed</small></article>
-    <article class="stat-card"><span id="attempted-exercises">0</span><small>Exercises attempted</small></article>
-    <article class="stat-card"><span id="review-items">0</span><small>Items to review</small></article>
-    <article class="stat-card"><span id="time-practiced">0m</span><small>Tracked practice time</small></article>
-    <article class="stat-card"><span id="finished-sessions">0</span><small>Sessions finished</small></article>
-    <article class="stat-card"><span id="best-score">0</span><small>Best saved score</small></article>
+
+  <div class="progress-hero-grid">
+    <section class="panel ink-panel">
+      <p class="eyebrow">Path of practice</p>
+      <h3 id="journey-title">Begin your first stone</h3>
+      <p id="journey-copy" class="muted">Small steps, steady hands.</p>
+      <div class="garden-strip" id="garden-strip" aria-label="Progress garden"></div>
+    </section>
+
+    <section class="panel ink-panel">
+      <p class="eyebrow">Dojo rank</p>
+      <h3 id="rank-title">Shoshin · Beginner’s mind</h3>
+      <p id="rank-copy" class="muted">Start calmly and let repetition shape confidence.</p>
+      <div class="ink-meter">
+        <div id="ink-meter-fill" class="ink-meter-fill"></div>
+      </div>
+      <p id="ink-meter-label" class="muted small">0 / 100 path energy</p>
+    </section>
   </div>
-  <p id="progress-note" class="muted">Your progress stays in this browser unless you clear it.</p>
-  <div id="recent-sessions" class="session-list"></div>
+
+  <div class="stats-grid progress-stats-grid">
+    <article class="stat-card stat-card-soft"><span id="completed-lessons">0</span><small>Lessons completed</small></article>
+    <article class="stat-card stat-card-soft"><span id="attempted-exercises">0</span><small>Exercises attempted</small></article>
+    <article class="stat-card stat-card-soft"><span id="review-items">0</span><small>Items to review</small></article>
+    <article class="stat-card stat-card-soft"><span id="time-practiced">0m</span><small>Practice time</small></article>
+    <article class="stat-card stat-card-soft"><span id="finished-sessions">0</span><small>Sessions finished</small></article>
+    <article class="stat-card stat-card-soft"><span id="best-score">0</span><small>Best score</small></article>
+  </div>
+
+  <div class="progress-hero-grid">
+    <section class="panel ink-panel">
+      <p class="eyebrow">Milestones</p>
+      <div class="milestone-row" id="milestone-row"></div>
+    </section>
+
+    <section class="panel ink-panel">
+      <p class="eyebrow">Recent sessions</p>
+      <div id="recent-sessions" class="session-list"></div>
+    </section>
+  </div>
+
+  <section class="panel ink-panel">
+    <p class="eyebrow">Today’s reflection</p>
+    <div class="reflection-grid">
+      <div>
+        <h3 id="reflection-title">Keep the brush light</h3>
+        <p id="reflection-copy" class="muted">Your progress stays in this browser unless you clear it.</p>
+      </div>
+      <div class="review-chip-row" id="reflection-chips"></div>
+    </div>
+  </section>
 </section>
 
 <script is:inline>
@@ -24,34 +66,18 @@
   const timerKey = 'soroban-dojo:timer-history';
   const sessionKey = 'soroban-dojo:practice-sessions';
 
-  const lessonData = (() => {
+  const read = (key, fallback) => {
     try {
-      return JSON.parse(localStorage.getItem(lessonKey) || '[]');
+      return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback));
     } catch {
-      return [];
+      return fallback;
     }
-  })();
-  const exerciseData = (() => {
-    try {
-      return JSON.parse(localStorage.getItem(exerciseKey) || '{}');
-    } catch {
-      return {};
-    }
-  })();
-  const timerData = (() => {
-    try {
-      return JSON.parse(localStorage.getItem(timerKey) || '[]');
-    } catch {
-      return [];
-    }
-  })();
-  const sessionData = (() => {
-    try {
-      return JSON.parse(localStorage.getItem(sessionKey) || '[]');
-    } catch {
-      return [];
-    }
-  })();
+  };
+
+  const lessonData = read(lessonKey, []);
+  const exerciseData = read(exerciseKey, {});
+  const timerData = read(timerKey, []);
+  const sessionData = read(sessionKey, []);
 
   const attempted = Object.values(exerciseData).filter(Boolean);
   const reviewItems = Object.values(exerciseData).filter((entry) => entry?.status === 'needs-review');
@@ -59,6 +85,21 @@
   const totalMinutes = Math.round(totalSeconds / 60);
   const finishedSessions = sessionData.filter((entry) => entry?.completed);
   const bestScore = finishedSessions.reduce((best, entry) => Math.max(best, entry.finalScore || 0), 0);
+  const journeyEnergy = Math.min(100, lessonData.length * 10 + attempted.length * 2 + finishedSessions.length * 6 + Math.floor(totalMinutes / 5));
+
+  const rankBands = [
+    { max: 20, title: 'Shoshin · Beginner’s mind', copy: 'Begin calmly and let each repetition become a brush stroke.' },
+    { max: 40, title: 'Kaizen · Steady growth', copy: 'Your path is forming through small, honest steps.' },
+    { max: 65, title: 'Rei · Disciplined rhythm', copy: 'You are building respectful consistency in the dojo.' },
+    { max: 85, title: 'Ma · Calm space', copy: 'Your work shows control, spacing, and steadier confidence.' },
+    { max: 100, title: 'Takumi · Refined hands', copy: 'Your sessions now carry a stronger sense of craft.' },
+  ];
+  const currentRank = rankBands.find((entry) => journeyEnergy <= entry.max) || rankBands[rankBands.length - 1];
+
+  const gardenStrip = document.getElementById('garden-strip');
+  const milestoneRow = document.getElementById('milestone-row');
+  const recentSessions = document.getElementById('recent-sessions');
+  const reflectionChips = document.getElementById('reflection-chips');
 
   document.getElementById('completed-lessons').textContent = String(lessonData.length);
   document.getElementById('attempted-exercises').textContent = String(attempted.length);
@@ -67,21 +108,79 @@
   document.getElementById('finished-sessions').textContent = String(finishedSessions.length);
   document.getElementById('best-score').textContent = String(bestScore);
 
-  const recentSessions = document.getElementById('recent-sessions');
+  document.getElementById('rank-title').textContent = currentRank.title;
+  document.getElementById('rank-copy').textContent = currentRank.copy;
+  document.getElementById('ink-meter-fill').style.width = `${journeyEnergy}%`;
+  document.getElementById('ink-meter-label').textContent = `${journeyEnergy} / 100 path energy`;
+
+  const journeyTitle = lessonData.length ? `You have placed ${lessonData.length} stones on your path` : 'Begin your first stone';
+  const journeyCopy = finishedSessions.length
+    ? `You have completed ${finishedSessions.length} formal sessions and your best score is ${bestScore}/100.`
+    : 'Small steps, steady hands.';
+  document.getElementById('journey-title').textContent = journeyTitle;
+  document.getElementById('journey-copy').textContent = journeyCopy;
+
+  const gardenPieces = [
+    ...Array.from({ length: Math.min(lessonData.length, 6) }, () => 'stone'),
+    ...Array.from({ length: Math.min(finishedSessions.length, 4) }, () => 'lantern'),
+    ...Array.from({ length: bestScore >= 70 ? 2 : bestScore >= 40 ? 1 : 0 }, () => 'blossom'),
+  ];
+  if (!gardenPieces.length) gardenPieces.push('stone');
+  gardenPieces.forEach((piece) => {
+    const node = document.createElement('div');
+    node.className = `garden-piece ${piece}`;
+    gardenStrip.appendChild(node);
+  });
+
+  const milestones = [
+    { label: 'First lesson', active: lessonData.length >= 1 },
+    { label: 'Five lessons', active: lessonData.length >= 5 },
+    { label: 'First session', active: finishedSessions.length >= 1 },
+    { label: 'Strong score', active: bestScore >= 70 },
+    { label: 'Long practice', active: totalMinutes >= 30 },
+  ];
+  milestones.forEach((milestone) => {
+    const card = document.createElement('div');
+    card.className = `milestone-chip ${milestone.active ? 'active' : ''}`;
+    card.textContent = milestone.label;
+    milestoneRow.appendChild(card);
+  });
+
   if (sessionData.length) {
-    recentSessions.innerHTML = '<p class="eyebrow">Recent sessions</p><h3>Saved dojo history</h3>';
-    sessionData.slice(0, 3).forEach((entry) => {
+    sessionData.slice(0, 4).forEach((entry) => {
       const card = document.createElement('article');
       card.className = 'session-card';
       const title = document.createElement('strong');
-      title.textContent = `${entry.type} · ${entry.level} · ${entry.id}`;
+      title.textContent = `${entry.type} · ${entry.level}`;
       const meta = document.createElement('p');
       meta.className = 'muted';
       meta.textContent = entry.completed ? `Final score ${entry.finalScore}/100` : `Progress ${entry.currentIndex}/${entry.questions.length}`;
       card.append(title, meta);
       recentSessions.appendChild(card);
     });
+  } else {
+    recentSessions.innerHTML = '<p class="muted">Your recent sessions will appear here after your first full practice.</p>';
   }
+
+  const reflectionItems = [
+    lessonData.length ? `${lessonData.length} lesson stones` : 'Start one lesson',
+    reviewItems.length ? `${reviewItems.length} items ready for repair` : 'No urgent review items',
+    finishedSessions.length ? `${finishedSessions.length} finished sessions` : 'Finish your first session',
+    bestScore ? `Best score ${bestScore}/100` : 'Aim for one strong score',
+  ];
+  reflectionItems.forEach((text) => {
+    const chip = document.createElement('span');
+    chip.className = 'review-chip';
+    chip.textContent = text;
+    reflectionChips.appendChild(chip);
+  });
+
+  const reflectionTitle = reviewItems.length ? 'Kintsugi moment' : 'Keep the brush light';
+  const reflectionCopy = reviewItems.length
+    ? 'A few places need repair. That is part of learning, not a setback.'
+    : 'Your progress stays in this browser unless you clear it.';
+  document.getElementById('reflection-title').textContent = reflectionTitle;
+  document.getElementById('reflection-copy').textContent = reflectionCopy;
 
   document.getElementById('reset-progress')?.addEventListener('click', () => {
     localStorage.removeItem(lessonKey);
