@@ -136,15 +136,20 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         <p class="eyebrow">Question</p>
         <h3 id="question-title">Choose a session to begin.</h3>
         <p id="question-prompt" class="muted">Curated lists follow the lessons; generated lists create replayable arithmetic practice.</p>
+        <div class="question-flow-note">
+          <span class="review-chip">1. Solve first</span>
+          <span class="review-chip">2. Write your response</span>
+          <span class="review-chip">3. Verify or reveal the answer</span>
+        </div>
         <label class="stack-sm answer-stack">
-          <span>Your answer · 答え</span>
-          <input id="answer-input" class="input" type="text" inputmode="numeric" placeholder="Write your answer before checking" />
+          <span>Your response · 記入</span>
+          <input id="answer-input" class="input" type="text" inputmode="numeric" placeholder="Write your response before checking" />
         </label>
 
         <div class="button-row button-row-compact">
-          <button class="button" id="verify-answer">Check my answer</button>
-          <button class="button button-secondary" id="reveal-final">Show final number</button>
-          <button class="button button-secondary" id="reveal-steps">Show steps</button>
+          <button class="button" id="verify-answer">Verify response</button>
+          <button class="button button-secondary" id="reveal-final">Reveal answer</button>
+          <button class="button button-secondary" id="reveal-steps">Reveal method</button>
           <button class="button button-secondary" id="next-question">Save and continue</button>
         </div>
       </div>
@@ -227,9 +232,9 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   let activeTimerKey = null;
 
   const curatedBank = [
-    { level: 'L0', title: 'Read seven', prompt: 'Read one upper bead and two lower beads touching the beam.', answer: 7, steps: ['Start with 5 for the upper bead.', 'Add 2 from the lower beads.', '5 + 2 = 7.'], visualValue: 7 },
-    { level: 'L0', title: 'Read twenty-four', prompt: 'Read 2 on the tens rod and 4 on the ones rod.', answer: 24, steps: ['The tens rod gives 20.', 'The ones rod gives 4.', '20 + 4 = 24.'], visualValue: 24 },
-    { level: 'L0', title: 'Set thirty-one', prompt: 'What number do you make by setting 3 on tens and 1 on ones?', answer: 31, steps: ['The tens rod means 30.', 'The ones rod means 1.', '30 + 1 = 31.'], visualValue: 31 },
+    { level: 'L0', title: 'Add 1 and 2', prompt: 'Start from 1. Add 2. What is the final value?', answer: 3, steps: ['Start at 1.', 'Add 2.', '1 + 2 = 3.'], visualValue: 3 },
+    { level: 'L0', title: 'Add 2 and 2', prompt: 'Start from 2. Add 2. What is the final value?', answer: 4, steps: ['Start at 2.', 'Add 2.', '2 + 2 = 4.'], visualValue: 4 },
+    { level: 'L0', title: 'Subtract 1 from 4', prompt: 'Start from 4. Subtract 1. What is the final value?', answer: 3, steps: ['Start at 4.', 'Subtract 1.', '4 - 1 = 3.'], visualValue: 3 },
     { level: 'L1', title: 'Add two and three', prompt: 'Start from 2. Add 3.', answer: 5, steps: ['Start at 2.', 'Add 3.', 'The rod becomes the clean five shape.', '2 + 3 = 5.'], visualValue: 5 },
     { level: 'L1', title: 'Add four and four', prompt: 'Start from 4. Add 4.', answer: 8, steps: ['Start at 4.', 'Add 4.', 'Read the rod as 5 + 3.', '4 + 4 = 8.'], visualValue: 8 },
     { level: 'L1', title: 'Subtract two from eight', prompt: 'Start from 8. Subtract 2.', answer: 6, steps: ['Start at 8.', 'Remove 2.', 'Read the rod again: 6.', '8 - 2 = 6.'], visualValue: 6 },
@@ -270,17 +275,17 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
   const buildGeneratedQuestion = (level, index, rng) => {
     if (level === 'L0') {
-      const tens = Math.floor(rng() * 4) + 1;
-      const ones = Math.floor(rng() * 9);
-      const answer = tens * 10 + ones;
+      const a = Math.floor(rng() * 4) + 1;
+      const b = Math.floor(rng() * (5 - a)) + 1;
+      const answer = a + b;
       return {
         id: `g-${level}-${index}`,
         progressKey: `generated-${simpleSlug(`${level}-${answer}`)}`,
-        title: `Generated reading ${index + 1}`,
-        prompt: `Read ${tens} on the tens rod and ${ones} on the ones rod. What number is shown?`,
+        title: `Generated starter sum ${index + 1}`,
+        prompt: `Start from ${a}. Add ${b}. What is the final value?`,
         answer,
         visualValue: answer,
-        steps: [`${tens} on tens means ${tens * 10}.`, `${ones} on ones means ${ones}.`, `${tens * 10} + ${ones} = ${answer}.`],
+        steps: [`Start at ${a}.`, `Add ${b}.`, `${a} + ${b} = ${answer}.`],
       };
     }
     if (level === 'L1') {
