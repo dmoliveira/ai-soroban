@@ -153,9 +153,11 @@ a { color: inherit; text-decoration: none; }
 .worksheet-operation-group legend { margin-bottom: 0.45rem; }
 .operation-chip-grid { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
 .operation-chip { display: inline-flex; align-items: center; gap: 0.28rem; padding: 0.32rem 0.6rem; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,0.78); cursor: pointer; font-size: 0.88rem; line-height: 1.1; }
-.worksheet-action-row { gap: 0.45rem; margin-top: 0.2rem; }
-.worksheet-action-row .button { padding: 0.52rem 0.78rem; font-size: 0.88rem; }
-.worksheet-action-row .button:not(:first-child) { opacity: 0.92; }
+.worksheet-toolbar-actions { display: grid; gap: 0.45rem; }
+.worksheet-action-row { gap: 0.45rem; margin-top: 0.1rem; }
+.worksheet-action-row .button { padding: 0.5rem 0.76rem; font-size: 0.86rem; }
+.worksheet-action-row-primary .button:first-child { box-shadow: 0 8px 18px rgba(30,26,23,0.08); }
+.worksheet-action-row-secondary .button { opacity: 0.88; }
 .operation-chip input { accent-color: var(--accent); }
 .worksheet-board { display: grid; gap: 1rem; }
 .worksheet-panel { display: grid; gap: 1rem; }

@@ -96,14 +96,18 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       </details>
     </div>
 
-    <div class="button-row worksheet-action-row">
-      <button class="button" id="generate-worksheet">Generate ledger</button>
-      <button class="button button-secondary" id="check-worksheet">Check answered</button>
-      <button class="button button-secondary" id="reveal-worksheet">Reveal answers</button>
-      <button class="button button-secondary" id="teacher-key">Teacher key</button>
-      <button class="button button-secondary" id="worksheet-timer-toggle">Start timer</button>
-      <button class="button button-secondary" onclick="window.print()">Print sheet</button>
-      <a class="button button-secondary" href={`${base}practice`}>Return to practice</a>
+    <div class="worksheet-toolbar-actions">
+      <div class="button-row worksheet-action-row worksheet-action-row-primary">
+        <button class="button" id="generate-worksheet">Generate ledger</button>
+        <button class="button button-secondary" id="check-worksheet">Check answered</button>
+        <button class="button button-secondary" id="reveal-worksheet">Reveal answers</button>
+      </div>
+      <div class="button-row worksheet-action-row worksheet-action-row-secondary">
+        <button class="button button-secondary" id="teacher-key">Teacher key</button>
+        <button class="button button-secondary" id="worksheet-timer-toggle">Start timer</button>
+        <button class="button button-secondary" onclick="window.print()">Print sheet</button>
+        <a class="button button-secondary" href={`${base}practice`}>Return to practice</a>
+      </div>
     </div>
 
     <div class="worksheet-scorebar subtle-panel" id="worksheet-scorebar">
