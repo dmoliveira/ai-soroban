@@ -6,15 +6,26 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 <BaseLayout title="Soroban Worksheets | Soroban Dojo">
   <section class="panel content-prose no-print">
     <p class="eyebrow">Soroban sheets · 印刷</p>
-    <h1>Compact drill sheets</h1>
-    <p>Use a fixed sheet for repeat practice or generate a dynamic set by type, digits, and range. Blank responses are ignored when scoring.</p>
+    <h1>Ledger-style drill sheets</h1>
+    <p>Choose a fixed curriculum sheet or generate a denser practice ledger by level, operation family, and digit band. Blank responses are skipped; partial score uses only answered drills.</p>
 
-    <div class="worksheet-controls-grid">
+    <div class="worksheet-controls-grid ledger-controls">
       <label class="stack-sm">
         <span>Sheet mode</span>
         <select id="worksheet-mode" class="select">
           <option value="fixed">Fixed sheet</option>
-          <option value="dynamic">Dynamic sheet</option>
+          <option value="dynamic">Dynamic ledger</option>
+        </select>
+      </label>
+      <label class="stack-sm">
+        <span>Level</span>
+        <select id="worksheet-level" class="select">
+          <option value="L0">L0 Foundations</option>
+          <option value="L1">L1 Beginner</option>
+          <option value="L2">L2 Complements</option>
+          <option value="L3">L3 Mixed</option>
+          <option value="L4">L4 Multiplication & division</option>
+          <option value="L5">L5 Mastery</option>
         </select>
       </label>
       <label class="stack-sm">
@@ -28,33 +39,40 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         </select>
       </label>
       <label class="stack-sm">
-        <span>Digits</span>
-        <select id="worksheet-digits" class="select">
+        <span>Digit band</span>
+        <select id="worksheet-band" class="select">
           <option value="1">1 digit</option>
-          <option value="2" selected>2 digits</option>
+          <option value="2">2 digits</option>
           <option value="3">3 digits</option>
+          <option value="4">4 digits</option>
+          <option value="1-2">1–2 digits</option>
+          <option value="2-3" selected>2–3 digits</option>
+          <option value="3-4">3–4 digits</option>
+          <option value="4-6">4–6 digits</option>
+        </select>
+      </label>
+      <label class="stack-sm">
+        <span>Sheet type</span>
+        <select id="worksheet-style" class="select">
+          <option value="practice">Practice</option>
+          <option value="speed">Speed</option>
+          <option value="review">Review</option>
+          <option value="exam">Exam</option>
         </select>
       </label>
       <label class="stack-sm">
         <span>Drills</span>
         <select id="worksheet-count" class="select">
-          <option value="10">10</option>
-          <option value="20" selected>20</option>
-          <option value="30">30</option>
+          <option value="20">20</option>
+          <option value="40" selected>40</option>
+          <option value="60">60</option>
+          <option value="100">100</option>
         </select>
-      </label>
-      <label class="stack-sm">
-        <span>Minimum</span>
-        <input id="worksheet-min" class="input" type="number" value="1" />
-      </label>
-      <label class="stack-sm">
-        <span>Maximum</span>
-        <input id="worksheet-max" class="input" type="number" value="99" />
       </label>
     </div>
 
     <div class="button-row">
-      <button class="button" id="generate-worksheet">Generate sheet</button>
+      <button class="button" id="generate-worksheet">Generate ledger</button>
       <button class="button button-secondary" id="check-worksheet">Check answered</button>
       <button class="button button-secondary" id="reveal-worksheet">Reveal answers</button>
       <button class="button button-secondary" onclick="window.print()">Print sheet</button>
@@ -68,25 +86,56 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   </section>
 
   <section class="worksheet-board">
-    <article class="panel worksheet-panel">
+    <article class="panel worksheet-panel ledger-panel">
       <div class="section-head">
         <div>
-          <p class="eyebrow">Drill sheet</p>
+          <p class="eyebrow">Drill ledger</p>
           <h2 id="worksheet-title">Standard Soroban drill set</h2>
         </div>
-        <span class="badge" id="worksheet-count-badge">20 drills</span>
+        <span class="badge" id="worksheet-count-badge">40 drills</span>
       </div>
-      <div id="worksheet-table" class="worksheet-table compact-table"></div>
+      <div class="ledger-head ledger-row">
+        <span>No.</span>
+        <span>Drill</span>
+        <span>Response</span>
+        <span>Result</span>
+      </div>
+      <div id="worksheet-table" class="worksheet-table ledger-table"></div>
     </article>
   </section>
 
   <script is:inline>
     const fixedBanks = {
-      addition: ['1 + 2','2 + 1','2 + 2','3 + 1','4 + 1','1 + 3','2 + 3','3 + 2','4 + 2','5 + 1','6 + 2','7 + 1','8 + 1','5 + 3','9 + 1','12 + 5','24 + 7','31 + 4','18 + 6','42 + 13'],
-      subtraction: ['4 - 1','5 - 2','6 - 1','7 - 3','8 - 2','6 - 2','7 - 1','8 - 4','9 - 3','9 - 2','12 - 5','24 - 7','31 - 4','18 - 6','42 - 13','55 - 12','63 - 21','80 - 15','74 - 32','91 - 18'],
-      mixed: ['24 + 7','31 - 4','18 + 5','42 - 11','25 + 6','36 - 12','27 + 8','44 - 9','52 - 18','19 + 14','61 - 22','37 + 15','80 - 17','46 + 13','72 - 19','25 + 25','64 - 28','53 + 16','91 - 33','38 + 27'],
-      multiplication: ['3 × 4','4 × 3','2 × 6','5 × 2','3 × 5','6 × 2','4 × 4','3 × 6','7 × 2','5 × 3','8 × 2','6 × 3','7 × 4','9 × 2','5 × 5','8 × 4','6 × 6','9 × 3','7 × 5','8 × 5'],
-      division: ['12 ÷ 3','12 ÷ 4','10 ÷ 2','15 ÷ 3','18 ÷ 6','16 ÷ 4','20 ÷ 5','21 ÷ 3','24 ÷ 6','18 ÷ 3','27 ÷ 3','32 ÷ 4','40 ÷ 5','36 ÷ 6','45 ÷ 5','48 ÷ 6','56 ÷ 7','63 ÷ 9','72 ÷ 8','81 ÷ 9'],
+      L0: {
+        addition: ['1 + 2','2 + 1','2 + 2','3 + 1','4 + 1','1 + 3','2 + 3','3 + 2','4 + 2','5 + 1'],
+        subtraction: ['4 - 1','5 - 2','6 - 1','7 - 3','8 - 2','6 - 2','7 - 1','8 - 4','9 - 3','9 - 2'],
+      },
+      L1: {
+        addition: ['12 + 5','24 + 7','31 + 4','18 + 6','42 + 13','25 + 11','33 + 14','47 + 21','51 + 8','62 + 17'],
+        subtraction: ['24 - 7','31 - 4','18 - 6','42 - 13','55 - 12','63 - 21','80 - 15','74 - 32','91 - 18','64 - 9'],
+      },
+      L2: {
+        mixed: ['24 + 7','31 - 4','18 + 5','42 - 11','25 + 6','36 - 12','27 + 8','44 - 9','52 - 18','19 + 14'],
+      },
+      L3: {
+        mixed: ['124 + 37','231 - 44','318 + 56','442 - 111','205 + 16','360 - 124','274 + 88','440 - 95','520 - 184','193 + 147'],
+      },
+      L4: {
+        multiplication: ['3 × 4','4 × 3','12 × 2','5 × 12','13 × 5','6 × 12','14 × 4','3 × 16','17 × 2','15 × 3'],
+        division: ['12 ÷ 3','12 ÷ 4','40 ÷ 5','45 ÷ 5','36 ÷ 6','48 ÷ 6','56 ÷ 7','63 ÷ 9','72 ÷ 8','81 ÷ 9'],
+      },
+      L5: {
+        mixed: ['1245 + 378','2318 - 444','3186 + 567','4420 - 1114','2057 + 168','3604 - 1248','2745 + 889','4400 - 955','5208 - 1842','1937 + 1476'],
+      },
+    };
+
+    const levelBands = {
+      L0: '1',
+      L1: '2',
+      L2: '2-3',
+      L3: '3-4',
+      L4: '2-4',
+      L5: '4-6',
     };
 
     const byId = (id) => document.getElementById(id);
@@ -105,64 +154,86 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       return null;
     };
 
+    const parseBand = (band) => {
+      if (band.includes('-')) {
+        const [min, max] = band.split('-').map(Number);
+        return { min, max };
+      }
+      const digits = Number(band);
+      return { min: digits, max: digits };
+    };
+
     const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
-    const makeDynamicPrompt = (family, min, max, digits) => {
-      const limitMin = Math.max(min, 1);
-      const limitMax = Math.max(limitMin, max);
-      const pow = Math.max(1, 10 ** (digits - 1));
-      const localMin = Math.max(limitMin, digits === 1 ? 1 : pow);
-      const localMax = Math.max(localMin, Math.min(limitMax, (10 ** digits) - 1));
-      if (family === 'addition') {
-        const a = rand(localMin, localMax);
-        const b = rand(localMin, localMax);
-        return `${a} + ${b}`;
-      }
-      if (family === 'subtraction') {
-        const a = rand(localMin, localMax);
-        const b = rand(localMin, a);
-        return `${a} - ${b}`;
-      }
-      if (family === 'multiplication') {
-        const a = rand(2, Math.min(9, localMax));
-        const b = rand(2, Math.min(9, localMax));
+    const randomDigits = (band) => {
+      const { min, max } = parseBand(band);
+      return rand(min, max);
+    };
+    const randomNumberForDigits = (digits) => {
+      const min = digits === 1 ? 1 : 10 ** (digits - 1);
+      const max = (10 ** digits) - 1;
+      return rand(min, max);
+    };
+
+    const chooseFamily = (level, selectedFamily) => {
+      if (selectedFamily !== 'mixed') return selectedFamily;
+      if (level === 'L0' || level === 'L1') return Math.random() > 0.5 ? 'addition' : 'subtraction';
+      return Math.random() > 0.5 ? 'addition' : 'subtraction';
+    };
+
+    const makeDynamicPrompt = (level, family, band) => {
+      const resolvedFamily = chooseFamily(level, family);
+      const digits = randomDigits(band);
+      if (resolvedFamily === 'multiplication') {
+        const a = randomNumberForDigits(Math.min(2, digits));
+        const b = rand(2, 9);
         return `${a} × ${b}`;
       }
-      if (family === 'division') {
+      if (resolvedFamily === 'division') {
         const divisor = rand(2, 9);
-        const quotient = rand(2, 9);
+        const quotient = randomNumberForDigits(Math.max(1, Math.min(2, digits)));
         return `${divisor * quotient} ÷ ${divisor}`;
       }
-      const choice = Math.random() > 0.5 ? 'addition' : 'subtraction';
-      return makeDynamicPrompt(choice, localMin, localMax, digits);
+      const aDigits = digits;
+      const bDigits = Math.max(1, digits - (Math.random() > 0.5 ? 0 : 1));
+      const a = randomNumberForDigits(aDigits);
+      const bRaw = randomNumberForDigits(bDigits);
+      if (resolvedFamily === 'addition') return `${a} + ${bRaw}`;
+      const b = Math.min(bRaw, a);
+      return `${a} - ${b}`;
     };
 
     const buildPrompts = () => {
       const mode = byId('worksheet-mode').value;
+      const level = byId('worksheet-level').value;
       const family = byId('worksheet-family').value;
-      const digits = Number(byId('worksheet-digits').value);
       const count = Number(byId('worksheet-count').value);
-      const min = Number(byId('worksheet-min').value || 1);
-      const max = Number(byId('worksheet-max').value || 99);
-      if (mode === 'fixed') return fixedBanks[family].slice(0, count);
-      return Array.from({ length: count }, () => makeDynamicPrompt(family, min, max, digits));
+      const band = byId('worksheet-band').value || levelBands[level] || '2';
+      const bank = fixedBanks[level] || {};
+      const fixedFamily = bank[family] || bank.mixed || Object.values(bank)[0] || [];
+      if (mode === 'fixed') {
+        return Array.from({ length: count }, (_, index) => fixedFamily[index % fixedFamily.length]);
+      }
+      return Array.from({ length: count }, () => makeDynamicPrompt(level, family, band));
     };
 
     const renderSheet = () => {
       const prompts = buildPrompts();
       table.replaceChildren();
-      const columns = 5;
-      for (let i = 0; i < prompts.length; i += columns) {
-        const row = document.createElement('div');
-        row.className = 'worksheet-row compact-row';
-        prompts.slice(i, i + columns).forEach((prompt, index) => {
-          const cell = document.createElement('label');
-          cell.className = 'worksheet-cell compact-cell';
-          cell.innerHTML = `<span class="worksheet-prompt">${i + index + 1}. ${prompt}</span><input class="input worksheet-input" data-prompt="${prompt}" type="text" inputmode="numeric" placeholder="Ans." /><small class="worksheet-feedback"></small>`;
-          row.appendChild(cell);
-        });
+      prompts.forEach((prompt, index) => {
+        const row = document.createElement('label');
+        row.className = 'ledger-row worksheet-row';
+        row.innerHTML = `
+          <span class="ledger-no">${index + 1}</span>
+          <span class="worksheet-prompt ledger-prompt">${prompt}</span>
+          <input class="input worksheet-input ledger-input" data-prompt="${prompt}" type="text" inputmode="numeric" placeholder="Write" />
+          <small class="worksheet-feedback ledger-feedback"></small>
+        `;
         table.appendChild(row);
-      }
-      byId('worksheet-title').textContent = `${byId('worksheet-family').value} drills`;
+      });
+      const familyLabel = byId('worksheet-family').value;
+      const levelLabel = byId('worksheet-level').value;
+      const bandLabel = byId('worksheet-band').value;
+      byId('worksheet-title').textContent = `${levelLabel} ${familyLabel} ledger · ${bandLabel} digits`;
       byId('worksheet-count-badge').textContent = `${prompts.length} drills`;
       scoreCopy.textContent = 'No answers checked yet.';
     };
@@ -177,30 +248,31 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         const value = input.value.trim();
         if (!value) {
           feedback.textContent = '';
-          feedback.className = 'worksheet-feedback';
-          if (reveal) {
-            feedback.textContent = `Answer: ${expected}`;
-            feedback.className = 'worksheet-feedback revealed';
-          }
+          feedback.className = 'worksheet-feedback ledger-feedback';
           return;
         }
         answered += 1;
         const isCorrect = Number(value) === expected;
         if (isCorrect) correct += 1;
-        feedback.textContent = reveal ? `Answer: ${expected}` : (isCorrect ? '✓ correct' : 'Check again');
-        feedback.className = `worksheet-feedback ${reveal ? 'revealed' : isCorrect ? 'ok' : 'needs-work'}`;
+        feedback.textContent = reveal ? `${expected}` : (isCorrect ? '✓' : '○');
+        feedback.className = `worksheet-feedback ledger-feedback ${reveal ? 'revealed' : isCorrect ? 'ok' : 'needs-work'}`;
       });
       if (!answered) {
-        scoreCopy.textContent = reveal ? 'Answers revealed. Blank cells were skipped.' : 'No answered cells yet. Blank cells are skipped.';
+        scoreCopy.textContent = reveal ? 'Answers revealed for answered rows only. Blank rows were skipped.' : 'No answered rows yet. Blank rows are skipped.';
         return;
       }
       const percent = Math.round((correct / answered) * 100);
-      scoreCopy.textContent = `${correct}/${answered} answered items correct · ${percent}% partial score`;
+      const completion = Math.round((answered / inputs.length) * 100);
+      scoreCopy.textContent = `${correct}/${answered} correct · ${percent}% answered score · ${completion}% completion`;
     };
 
+    byId('worksheet-level')?.addEventListener('change', () => {
+      byId('worksheet-band').value = levelBands[byId('worksheet-level').value] || '2';
+    });
     byId('generate-worksheet')?.addEventListener('click', renderSheet);
     byId('check-worksheet')?.addEventListener('click', () => scoreSheet(false));
     byId('reveal-worksheet')?.addEventListener('click', () => scoreSheet(true));
+    byId('worksheet-band').value = levelBands[byId('worksheet-level').value] || '2';
     renderSheet();
   </script>
 </BaseLayout>
