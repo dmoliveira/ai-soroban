@@ -435,12 +435,14 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       let answered = 0;
       let correct = 0;
       inputs.forEach((input) => {
+        const row = input.closest('.ledger-row, .vertical-drill-row');
         const expected = solvePrompt(input.dataset.prompt);
         const feedback = input.parentElement.querySelector('.worksheet-feedback');
         const value = input.value.trim();
         if (!value) {
           feedback.textContent = '';
           feedback.className = 'worksheet-feedback ledger-feedback';
+          row?.classList.remove('row-ok', 'row-needs-work', 'row-revealed');
           return;
         }
         answered += 1;
@@ -448,6 +450,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         if (isCorrect) correct += 1;
         feedback.textContent = reveal ? `${expected}` : (isCorrect ? '✓' : '○');
         feedback.className = `worksheet-feedback ledger-feedback ${reveal ? 'revealed' : isCorrect ? 'ok' : 'needs-work'}`;
+        row?.classList.remove('row-ok', 'row-needs-work', 'row-revealed');
+        row?.classList.add(reveal ? 'row-revealed' : isCorrect ? 'row-ok' : 'row-needs-work');
       });
       if (!answered) {
         scoreCopy.textContent = reveal ? 'Answers revealed for answered rows only. Blank rows were skipped.' : 'No answered rows yet. Blank rows are skipped.';
@@ -475,11 +479,15 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       if (!value) {
         feedback.textContent = reveal ? `${expected}` : 'Write first';
         feedback.className = `worksheet-feedback ${reveal ? 'revealed' : 'needs-work'}`;
+        row.classList.remove('row-ok', 'row-needs-work', 'row-revealed');
+        row.classList.add(reveal ? 'row-revealed' : 'row-needs-work');
         return;
       }
       const isCorrect = Number(value) === expected;
       feedback.textContent = reveal ? `${expected}` : (isCorrect ? '✓' : '○');
       feedback.className = `worksheet-feedback ${reveal ? 'revealed' : isCorrect ? 'ok' : 'needs-work'}`;
+      row.classList.remove('row-ok', 'row-needs-work', 'row-revealed');
+      row.classList.add(reveal ? 'row-revealed' : isCorrect ? 'row-ok' : 'row-needs-work');
     };
 
     const syncTimer = () => {

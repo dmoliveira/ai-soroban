@@ -183,8 +183,14 @@ a { color: inherit; text-decoration: none; }
 .ledger-input { border-radius: 10px; padding: 0.45rem 0.6rem; text-align: right; background: rgba(255,255,255,0.8); }
 .ledger-feedback { text-align: right; min-height: 1rem; } 
 .worksheet-row-actions { display: flex; justify-content: flex-end; gap: 0.35rem; } 
-.mini-action { border: 1px solid var(--line); background: rgba(255,255,255,0.86); border-radius: 999px; padding: 0.28rem 0.55rem; font: inherit; font-size: 0.82rem; cursor: pointer; color: var(--muted); } 
-.mini-action:hover { background: rgba(166,57,43,0.08); color: var(--ink); } 
+.mini-action { border: 1px solid var(--line); background: rgba(255,255,255,0.86); border-radius: 999px; padding: 0.28rem 0.55rem; font: inherit; font-size: 0.82rem; cursor: pointer; color: var(--muted); }
+.mini-action:hover { background: rgba(166,57,43,0.08); color: var(--ink); }
+.ledger-row.row-ok,
+.vertical-drill-row.row-ok { background: linear-gradient(90deg, rgba(43,110,69,0.08), rgba(255,255,255,0)); }
+.ledger-row.row-needs-work,
+.vertical-drill-row.row-needs-work { background: linear-gradient(90deg, rgba(166,57,43,0.08), rgba(255,255,255,0)); }
+.ledger-row.row-revealed,
+.vertical-drill-row.row-revealed { background: linear-gradient(90deg, rgba(217,178,111,0.12), rgba(255,255,255,0)); }
 .worksheet-prompt { font-weight: 700; }
 .worksheet-input { min-width: 0; }
 .worksheet-feedback { min-height: 1.2rem; color: var(--muted); }
