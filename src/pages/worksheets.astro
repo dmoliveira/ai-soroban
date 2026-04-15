@@ -29,18 +29,18 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
           <option value="L5">L5 Mastery</option>
         </select>
       </label>
-      <label class="stack-sm">
-        <span>Operation family</span>
-        <select id="worksheet-family" class="select">
-          <option value="addition">Addition</option>
-          <option value="subtraction">Subtraction</option>
-          <option value="mixed">Mixed</option>
-          <option value="sequence">Sequence</option>
-          <option value="multiplication">Multiplication</option>
-          <option value="division">Division</option>
-          <option value="anzan">Anzan / mental</option>
-        </select>
-      </label>
+      <fieldset class="stack-sm worksheet-operation-group">
+        <legend>Operation family</legend>
+        <div class="operation-chip-grid">
+          <label class="operation-chip"><input type="checkbox" name="worksheet-family" value="addition" checked />Addition</label>
+          <label class="operation-chip"><input type="checkbox" name="worksheet-family" value="subtraction" />Subtraction</label>
+          <label class="operation-chip"><input type="checkbox" name="worksheet-family" value="mixed" />Mixed</label>
+          <label class="operation-chip"><input type="checkbox" name="worksheet-family" value="sequence" />Sequence</label>
+          <label class="operation-chip"><input type="checkbox" name="worksheet-family" value="multiplication" />Multiplication</label>
+          <label class="operation-chip"><input type="checkbox" name="worksheet-family" value="division" />Division</label>
+          <label class="operation-chip"><input type="checkbox" name="worksheet-family" value="anzan" />Anzan / mental</label>
+        </div>
+      </fieldset>
       <label class="stack-sm">
         <span>Digit band</span>
         <select id="worksheet-band" class="select">
@@ -80,6 +80,13 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
           <option value="100">100</option>
         </select>
       </label>
+      <label class="stack-sm">
+        <span>Stopwatch</span>
+        <select id="worksheet-timer-mode" class="select">
+          <option value="off">Off</option>
+          <option value="on">On</option>
+        </select>
+      </label>
     </div>
 
     <div class="button-row">
@@ -87,6 +94,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       <button class="button button-secondary" id="check-worksheet">Check answered</button>
       <button class="button button-secondary" id="reveal-worksheet">Reveal answers</button>
       <button class="button button-secondary" id="teacher-key">Teacher key</button>
+      <button class="button button-secondary" id="worksheet-timer-toggle">Start timer</button>
       <button class="button button-secondary" onclick="window.print()">Print sheet</button>
       <a class="button button-secondary" href={`${base}practice`}>Return to practice</a>
     </div>
@@ -94,6 +102,13 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     <div class="worksheet-scorebar subtle-panel" id="worksheet-scorebar">
       <strong>Score</strong>
       <span id="worksheet-score-copy" class="muted">No answers checked yet.</span>
+    </div>
+    <div class="worksheet-score-grid">
+      <article class="stat-card stat-card-soft"><span id="worksheet-answered">0</span><small>Answered</small></article>
+      <article class="stat-card stat-card-soft"><span id="worksheet-correct">0</span><small>Correct</small></article>
+      <article class="stat-card stat-card-soft"><span id="worksheet-accuracy">0%</span><small>Accuracy</small></article>
+      <article class="stat-card stat-card-soft"><span id="worksheet-completion">0%</span><small>Completion</small></article>
+      <article class="stat-card stat-card-soft"><span id="worksheet-time">0s</span><small>Time</small></article>
     </div>
     <div id="adaptive-note" class="subtle-panel no-print" hidden>
       <strong>Adaptive recommendation</strong>
@@ -163,10 +178,15 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
     const byId = (id) => document.getElementById(id);
     const table = byId('worksheet-table');
-      const scoreCopy = byId('worksheet-score-copy');
-      const adaptiveNote = byId('adaptive-note');
-      const adaptiveNoteCopy = byId('adaptive-note-copy');
+    const scoreCopy = byId('worksheet-score-copy');
+    const adaptiveNote = byId('adaptive-note');
+    const adaptiveNoteCopy = byId('adaptive-note-copy');
     const exerciseStateKey = 'soroban-dojo:exercise-states';
+    let worksheetTimerStartedAt = null;
+    let worksheetTimerInterval = null;
+
+    const selectedFamilies = () => Array.from(document.querySelectorAll('input[name="worksheet-family"]:checked')).map((node) => node.value);
+    const setMetric = (id, value) => { byId(id).textContent = String(value); };
 
     const solvePrompt = (prompt) => {
       const normalized = prompt.replace('×', '*').replace('÷', '/');
@@ -205,6 +225,22 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       if (level === 'L0' || level === 'L1') return Math.random() > 0.5 ? 'addition' : 'subtraction';
       if (level === 'L4') return Math.random() > 0.5 ? 'multiplication' : 'division';
       return Math.random() > 0.5 ? 'addition' : 'subtraction';
+    };
+
+    const applyLevelDefaults = () => {
+      const level = byId('worksheet-level').value;
+      const defaults = {
+        L0: ['addition', 'subtraction'],
+        L1: ['addition', 'subtraction'],
+        L2: ['mixed', 'sequence'],
+        L3: ['mixed', 'sequence'],
+        L4: ['multiplication', 'division'],
+        L5: ['anzan', 'sequence'],
+      };
+      document.querySelectorAll('input[name="worksheet-family"]').forEach((node) => {
+        node.checked = defaults[level].includes(node.value);
+      });
+      byId('worksheet-band').value = levelBands[level] || '2';
     };
 
     const readWeakAreas = () => {
@@ -275,12 +311,13 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     const buildPrompts = () => {
       const mode = byId('worksheet-mode').value;
       const level = byId('worksheet-level').value;
-      const family = byId('worksheet-family').value;
+      const families = selectedFamilies();
       const style = byId('worksheet-style').value;
       const count = Number(byId('worksheet-count').value);
       const band = byId('worksheet-band').value || levelBands[level] || '2';
       const bank = fixedBanks[level] || {};
-      const fixedFamily = bank[family] || bank.mixed || Object.values(bank)[0] || [];
+      const fixedPool = families.flatMap((family) => bank[family] || []).filter(Boolean);
+      const fixedFamily = fixedPool.length ? fixedPool : bank.mixed || Object.values(bank)[0] || [];
       if (mode === 'fixed') {
         return Array.from({ length: count }, (_, index) => fixedFamily[index % fixedFamily.length]);
       }
@@ -290,10 +327,10 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
           ? 'multiplication'
           : weakAreas.complements > weakAreas.arithmetic
             ? 'anzan'
-            : family;
+            : families[0] || 'addition';
         return Array.from({ length: count }, () => makeDynamicPrompt(level, adaptiveFamily, band, style));
       }
-      return Array.from({ length: count }, () => makeDynamicPrompt(level, family, band, style));
+      return Array.from({ length: count }, (_, index) => makeDynamicPrompt(level, families[index % Math.max(1, families.length)] || 'addition', band, style));
     };
 
     const renderSheet = () => {
@@ -344,7 +381,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
           table.appendChild(row);
         });
       }
-      const familyLabel = byId('worksheet-family').value;
+      const familyLabel = selectedFamilies().join(', ') || 'addition';
       const levelLabel = byId('worksheet-level').value;
       const bandLabel = byId('worksheet-band').value;
       byId('worksheet-title').textContent = `${levelLabel} ${familyLabel} ${orientation === 'vertical' ? 'columns' : 'ledger'} · ${bandLabel} digits`;
@@ -354,6 +391,10 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         : adaptiveMode
         ? 'Adaptive mode favors your recent weak areas. Blank answers are skipped.'
         : 'No answers checked yet.';
+      setMetric('worksheet-answered', 0);
+      setMetric('worksheet-correct', 0);
+      setMetric('worksheet-accuracy', '0%');
+      setMetric('worksheet-completion', '0%');
     };
 
     const scoreSheet = (reveal = false) => {
@@ -377,15 +418,54 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       });
       if (!answered) {
         scoreCopy.textContent = reveal ? 'Answers revealed for answered rows only. Blank rows were skipped.' : 'No answered rows yet. Blank rows are skipped.';
+        setMetric('worksheet-answered', 0);
+        setMetric('worksheet-correct', 0);
+        setMetric('worksheet-accuracy', '0%');
+        setMetric('worksheet-completion', '0%');
         return;
       }
       const percent = Math.round((correct / answered) * 100);
       const completion = Math.round((answered / inputs.length) * 100);
       scoreCopy.textContent = `${correct}/${answered} correct · ${percent}% answered score · ${completion}% completion`;
+      setMetric('worksheet-answered', answered);
+      setMetric('worksheet-correct', correct);
+      setMetric('worksheet-accuracy', `${percent}%`);
+      setMetric('worksheet-completion', `${completion}%`);
     };
 
+    const syncTimer = () => {
+      if (!worksheetTimerStartedAt) return;
+      const seconds = Math.max(0, Math.round((Date.now() - worksheetTimerStartedAt) / 1000));
+      setMetric('worksheet-time', `${seconds}s`);
+    };
+
+    byId('worksheet-timer-toggle')?.addEventListener('click', () => {
+      if (byId('worksheet-timer-mode').value === 'off') return;
+      if (worksheetTimerStartedAt) {
+        window.clearInterval(worksheetTimerInterval);
+        worksheetTimerInterval = null;
+        worksheetTimerStartedAt = null;
+        byId('worksheet-timer-toggle').textContent = 'Start timer';
+        return;
+      }
+      worksheetTimerStartedAt = Date.now();
+      byId('worksheet-timer-toggle').textContent = 'Pause timer';
+      syncTimer();
+      worksheetTimerInterval = window.setInterval(syncTimer, 1000);
+    });
+
+    byId('worksheet-timer-mode')?.addEventListener('change', () => {
+      if (byId('worksheet-timer-mode').value === 'off') {
+        window.clearInterval(worksheetTimerInterval);
+        worksheetTimerInterval = null;
+        worksheetTimerStartedAt = null;
+        byId('worksheet-timer-toggle').textContent = 'Start timer';
+        setMetric('worksheet-time', '0s');
+      }
+    });
+
     byId('worksheet-level')?.addEventListener('change', () => {
-      byId('worksheet-band').value = levelBands[byId('worksheet-level').value] || '2';
+      applyLevelDefaults();
     });
     byId('generate-worksheet')?.addEventListener('click', renderSheet);
     byId('check-worksheet')?.addEventListener('click', () => scoreSheet(false));
@@ -398,7 +478,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     document.querySelectorAll('#worksheet-mode, #worksheet-level, #worksheet-family, #worksheet-band, #worksheet-style, #worksheet-orientation, #worksheet-count').forEach((node) => {
       node.addEventListener('change', renderSheet);
     });
-    byId('worksheet-band').value = levelBands[byId('worksheet-level').value] || '2';
+    applyLevelDefaults();
+    setMetric('worksheet-time', '0s');
     renderSheet();
   </script>
 </BaseLayout>
