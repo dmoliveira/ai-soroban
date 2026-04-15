@@ -175,6 +175,8 @@ a { color: inherit; text-decoration: none; }
 .worksheet-scorebar { display: flex; justify-content: space-between; align-items: center; }
 .worksheet-scorebar strong { letter-spacing: 0.04em; }
 .ledger-panel.teacher-mode { background: linear-gradient(180deg, rgba(250,244,231,0.96), rgba(241,236,227,0.96)); }
+.teacher-mode .ledger-feedback,
+.teacher-mode .vertical-feedback { font-weight: 700; }
 .no-print { display: block; }
 a:focus-visible,
 button:focus-visible,
