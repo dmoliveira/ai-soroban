@@ -12,6 +12,6 @@ const exercises = (await getCollection('exercises')).map((exercise) => ({
 }));
 ---
 
-<BaseLayout title="Practice Now | Soroban Dojo">
+<BaseLayout title="Interactive Soroban Practice | Soroban Dojo" description="Practice Soroban online with guided one-by-one drills, worksheet mode, adaptive review, and mental abacus exercises in ai-soroban.">
   <PracticeClient exercises={exercises} />
 </BaseLayout>

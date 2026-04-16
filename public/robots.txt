@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://dmoliveira.github.io/ai-soroban/sitemap.xml
