@@ -49,7 +49,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       <button class="button button-secondary practice-preset" data-preset="mental">Mental</button>
     </div>
     <div class="practice-grid">
-      <div class="stack-sm">
+      <div class="stack-sm subtle-panel practice-config-panel">
+        <p class="eyebrow">Session shape</p>
         <label class="stack-sm">
           <span>Practice format · 形式</span>
           <select id="session-format" class="select">
@@ -85,7 +86,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
           </select>
         </label>
       </div>
-      <div class="stack-sm">
+      <div class="stack-sm subtle-panel practice-config-panel">
+        <p class="eyebrow">Answering</p>
         <label class="stack-sm">
           <span>Check style · 確認</span>
           <select id="check-mode" class="select">
