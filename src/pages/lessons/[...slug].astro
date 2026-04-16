@@ -27,18 +27,25 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       <span>{lesson.data.audience.join(', ')}</span>
       {lesson.data.visualValue !== undefined && <span>数 {numberToKanji(lesson.data.visualValue)}</span>}
     </div>
-    <p>{lesson.data.summary}</p>
+    <div class="lesson-summary-grid">
+      <section class="subtle-panel lesson-summary-panel">
+        <p class="eyebrow">Core idea</p>
+        <p>{lesson.data.summary}</p>
+        <div class="button-row">
+          <button class="button button-secondary lesson-complete-toggle" data-lesson-id={lesson.data.id}>Mark lesson complete</button>
+          <a class="button button-secondary" href={`${base}progress`}>View progress</a>
+        </div>
+      </section>
+      <section class="subtle-panel lesson-summary-panel">
+        <p class="eyebrow">Objectives</p>
+        <ul>
+          {lesson.data.objectives.map((objective) => <li>{objective}</li>)}
+        </ul>
+      </section>
+    </div>
     {lesson.data.visualValue !== undefined && (
       <SorobanVisualizer value={lesson.data.visualValue} stepValues={lesson.data.stepValues} label={`Worked visual for ${lesson.data.title}`} />
     )}
-    <div class="button-row">
-      <button class="button button-secondary lesson-complete-toggle" data-lesson-id={lesson.data.id}>Mark lesson complete</button>
-      <a class="button button-secondary" href={`${base}progress`}>View progress</a>
-    </div>
-    <h2>Objectives</h2>
-    <ul>
-      {lesson.data.objectives.map((objective) => <li>{objective}</li>)}
-    </ul>
     <Content />
     <section class="panel lesson-next-panel">
       <p class="eyebrow">Next step</p>
