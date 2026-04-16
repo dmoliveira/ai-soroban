@@ -28,14 +28,66 @@ const { Content } = await render(exercise);
       <SorobanVisualizer value={exercise.data.visualValue} stepValues={exercise.data.stepValues} label={`Visual support for ${exercise.data.title}`} />
     )}
     <Content />
-    <details>
-      <summary>Need a hint?</summary>
-      <p>{exercise.data.hint}</p>
-    </details>
-    <details>
-      <summary>Check the answer</summary>
-      <p><strong>{exercise.data.answer}</strong></p>
-      <p>{exercise.data.explanation}</p>
-    </details>
+
+    <section class="panel exercise-interaction-panel">
+      <p class="eyebrow">Attempt first</p>
+      <div class="question-flow-note">
+        <span class="review-chip">1. Solve first</span>
+        <span class="review-chip">2. Write your response</span>
+        <span class="review-chip">3. Verify or reveal</span>
+      </div>
+      <label class="stack-sm answer-stack">
+        <span>Your response</span>
+        <input id="exercise-response" class="input" type="text" inputmode="numeric" placeholder="Write your response before checking" />
+      </label>
+      <div class="button-row button-row-compact">
+        <button class="button" id="verify-exercise">Verify response</button>
+        <button class="button button-secondary" id="hint-exercise">Need a hint?</button>
+        <button class="button button-secondary" id="reveal-answer">Reveal answer</button>
+        <button class="button button-secondary" id="reveal-method">Reveal method</button>
+      </div>
+      <div id="exercise-feedback" class="reveal-panel" hidden role="status" aria-live="polite"></div>
+      <div id="exercise-method" class="reveal-panel" hidden></div>
+    </section>
   </article>
+
+  <script is:inline define:vars={{ answer: exercise.data.answer, hint: exercise.data.hint, explanation: exercise.data.explanation }}>
+    const responseInput = document.getElementById('exercise-response');
+    const feedback = document.getElementById('exercise-feedback');
+    const method = document.getElementById('exercise-method');
+
+    const normalizeNumber = (value) => {
+      const parsed = Number(value.trim());
+      return Number.isNaN(parsed) ? null : parsed;
+    };
+
+    document.getElementById('verify-exercise')?.addEventListener('click', () => {
+      const value = responseInput.value.trim();
+      if (!value) {
+        feedback.hidden = false;
+        feedback.textContent = 'Write your response first, or choose to reveal the answer or method.';
+        return;
+      }
+      const expected = normalizeNumber(answer);
+      const actual = normalizeNumber(value);
+      const correct = expected !== null && actual === expected;
+      feedback.hidden = false;
+      feedback.textContent = correct ? 'Correct. Your response matches the answer.' : 'Not correct yet. Revise your response, ask for a hint, or reveal the answer.';
+    });
+
+    document.getElementById('hint-exercise')?.addEventListener('click', () => {
+      feedback.hidden = false;
+      feedback.textContent = `Hint: ${hint}`;
+    });
+
+    document.getElementById('reveal-answer')?.addEventListener('click', () => {
+      feedback.hidden = false;
+      feedback.textContent = `Answer: ${answer}`;
+    });
+
+    document.getElementById('reveal-method')?.addEventListener('click', () => {
+      method.hidden = false;
+      method.textContent = explanation;
+    });
+  </script>
 </BaseLayout>
