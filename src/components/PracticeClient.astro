@@ -261,12 +261,18 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
     osc.type = 'sine';
-    osc.frequency.value = type === 'success' ? 880 : 220;
-    gain.gain.value = 0.03;
+    const start = audioCtx.currentTime;
+    const freqA = type === 'success' ? 660 : 280;
+    const freqB = type === 'success' ? 880 : 220;
+    osc.frequency.setValueAtTime(freqA, start);
+    osc.frequency.linearRampToValueAtTime(freqB, start + 0.16);
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.linearRampToValueAtTime(0.028, start + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.2);
     osc.connect(gain);
     gain.connect(audioCtx.destination);
     osc.start();
-    osc.stop(audioCtx.currentTime + 0.12);
+    osc.stop(start + 0.22);
   };
 
   const curatedBank = [
