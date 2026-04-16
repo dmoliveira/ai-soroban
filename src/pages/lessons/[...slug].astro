@@ -27,13 +27,21 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       <span>{lesson.data.audience.join(', ')}</span>
       {lesson.data.visualValue !== undefined && <span>数 {numberToKanji(lesson.data.visualValue)}</span>}
     </div>
+    <nav class="lesson-nav-strip" aria-label="Lesson sections">
+      <a href="#lesson-core">Core idea</a>
+      <a href="#lesson-objectives">Objectives</a>
+      {lesson.data.visualValue !== undefined && <a href="#lesson-visual">Worked example</a>}
+      <a href="#lesson-content">Lesson</a>
+      <a href="#lesson-next">Next step</a>
+      <a href="#lesson-exercises">Exercises</a>
+    </nav>
     <div class="review-chip-row lesson-flow-strip">
       <span class="review-chip">1. Read the core idea</span>
       <span class="review-chip">2. Study the worked example</span>
       <span class="review-chip">3. Practice the related drills</span>
     </div>
     <div class="lesson-summary-grid">
-      <section class="subtle-panel lesson-summary-panel">
+      <section id="lesson-core" class="subtle-panel lesson-summary-panel">
         <p class="eyebrow">Core idea</p>
         <p>{lesson.data.summary}</p>
         <div class="button-row">
@@ -41,7 +49,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
           <a class="button button-secondary" href={`${base}progress`}>View progress</a>
         </div>
       </section>
-      <section class="subtle-panel lesson-summary-panel">
+      <section id="lesson-objectives" class="subtle-panel lesson-summary-panel">
         <p class="eyebrow">Objectives</p>
         <ul>
           {lesson.data.objectives.map((objective) => <li>{objective}</li>)}
@@ -49,10 +57,14 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       </section>
     </div>
     {lesson.data.visualValue !== undefined && (
+      <div id="lesson-visual">
       <SorobanVisualizer value={lesson.data.visualValue} stepValues={lesson.data.stepValues} label={`Worked visual for ${lesson.data.title}`} />
+      </div>
     )}
-    <Content />
-    <section class="panel lesson-next-panel">
+    <div id="lesson-content">
+      <Content />
+    </div>
+    <section id="lesson-next" class="panel lesson-next-panel">
       <p class="eyebrow">Next step</p>
       <h2>Continue with guided practice</h2>
       <div class="button-row">
@@ -64,7 +76,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       </div>
       <p class="muted">Use practice mode for immediate repetition, or open worksheets for denser drill sets tied to this level and skill.</p>
     </section>
-    <h2>Related exercises</h2>
+    <h2 id="lesson-exercises">Related exercises</h2>
     <ul class="list-clean">
       {relatedExercises.map((exercise) => (
         <li>
