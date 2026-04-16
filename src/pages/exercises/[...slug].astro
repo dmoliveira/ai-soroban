@@ -11,6 +11,9 @@ export async function getStaticPaths() {
 
 const { exercise } = Astro.props;
 const { Content } = await render(exercise);
+const lessons = await getCollection('lessons');
+const relatedLesson = lessons.find((lesson) => lesson.data.relatedExercises.includes(exercise.data.id));
+const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
 ---
 
 <BaseLayout title={`${exercise.data.title} | Soroban Dojo`}>
@@ -52,6 +55,17 @@ const { Content } = await render(exercise);
       </div>
       <div id="exercise-feedback" class="reveal-panel" hidden role="status" aria-live="polite"></div>
       <div id="exercise-method" class="reveal-panel" hidden></div>
+    </section>
+
+    <section class="panel lesson-next-panel">
+      <p class="eyebrow">Next step</p>
+      <h2>Continue with guided practice</h2>
+      <div class="button-row">
+        <a class="button" href={`${base}practice`}>Practice this level</a>
+        <a class="button button-secondary" href={`${base}worksheets`}>Open worksheet</a>
+        {relatedLesson && <a class="button button-secondary" href={`${base}lessons/${relatedLesson.slug}`}>Review lesson</a>}
+      </div>
+      <p class="muted">Move straight into guided practice, or open worksheets for a denser set of drills around this same skill.</p>
     </section>
   </article>
 
