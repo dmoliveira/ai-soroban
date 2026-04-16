@@ -1,8 +1,12 @@
 ---
+import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import ProgressSummary from '../components/ProgressSummary.astro';
+
+const lessons = (await getCollection('lessons')).map((entry) => ({ id: entry.data.id, skill: entry.data.skill, level: entry.data.level }));
+const exercises = (await getCollection('exercises')).map((entry) => ({ id: entry.data.id, skill: entry.data.skill, level: entry.data.level }));
 ---
 
 <BaseLayout title="Progress | Soroban Dojo">
-  <ProgressSummary />
+  <ProgressSummary lessons={lessons} exercises={exercises} />
 </BaseLayout>

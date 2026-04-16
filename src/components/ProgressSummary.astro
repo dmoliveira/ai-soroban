@@ -1,4 +1,19 @@
-<section class="panel progress-panel">
+---
+interface EntrySummary {
+  id: string;
+  skill: string;
+  level: string;
+}
+
+interface Props {
+  lessons: EntrySummary[];
+  exercises: EntrySummary[];
+}
+
+const { lessons, exercises } = Astro.props;
+---
+
+<section class="panel progress-panel" data-lessons={JSON.stringify(lessons)} data-exercises={JSON.stringify(exercises)}>
   <div class="section-head">
     <div>
       <p class="eyebrow">Progress garden · 歩み</p>
@@ -49,6 +64,12 @@
   </div>
 
   <section class="panel ink-panel">
+    <p class="eyebrow">Skill map</p>
+    <h3>Mastery by practice area</h3>
+    <div id="skill-map" class="skill-map"></div>
+  </section>
+
+  <section class="panel ink-panel">
     <p class="eyebrow">Today’s reflection</p>
     <div class="reflection-grid">
       <div>
@@ -61,10 +82,13 @@
 </section>
 
 <script is:inline>
+  const root = document.querySelector('.progress-panel');
   const lessonKey = 'soroban-dojo:completed-lessons';
   const exerciseKey = 'soroban-dojo:exercise-states';
   const timerKey = 'soroban-dojo:timer-history';
   const sessionKey = 'soroban-dojo:practice-sessions';
+  const lessonMeta = JSON.parse(root?.dataset.lessons || '[]');
+  const exerciseMeta = JSON.parse(root?.dataset.exercises || '[]');
 
   const read = (key, fallback) => {
     try {
@@ -100,6 +124,7 @@
   const milestoneRow = document.getElementById('milestone-row');
   const recentSessions = document.getElementById('recent-sessions');
   const reflectionChips = document.getElementById('reflection-chips');
+  const skillMap = document.getElementById('skill-map');
 
   document.getElementById('completed-lessons').textContent = String(lessonData.length);
   document.getElementById('attempted-exercises').textContent = String(attempted.length);
@@ -181,6 +206,31 @@
     : 'Your progress stays in this browser unless you clear it.';
   document.getElementById('reflection-title').textContent = reflectionTitle;
   document.getElementById('reflection-copy').textContent = reflectionCopy;
+
+  const skillBuckets = ['abacus-orientation', 'number-reading', 'place-value', 'number-setting', 'addition', 'subtraction', 'complements', 'mixed-operations', 'multiplication', 'division'];
+  const labelize = (value) => value.replace(/-/g, ' ');
+  skillBuckets.forEach((skill) => {
+    const lessonHits = lessonMeta.filter((entry) => entry.skill === skill && lessonData.includes(entry.id)).length;
+    const exerciseHits = exerciseMeta.filter((entry) => entry.skill === skill && exerciseData[entry.id]).length;
+    const reviewHits = exerciseMeta.filter((entry) => entry.skill === skill && exerciseData[entry.id]?.status === 'needs-review').length;
+    const energy = Math.min(100, lessonHits * 30 + exerciseHits * 15 - reviewHits * 10);
+    const row = document.createElement('article');
+    row.className = 'skill-row';
+    const name = document.createElement('div');
+    name.className = 'skill-label';
+    name.innerHTML = `<strong>${labelize(skill)}</strong><small>${lessonHits} lessons · ${exerciseHits} exercises</small>`;
+    const meter = document.createElement('div');
+    meter.className = 'skill-meter';
+    const fill = document.createElement('div');
+    fill.className = 'skill-meter-fill';
+    fill.style.width = `${Math.max(8, energy)}%`;
+    meter.appendChild(fill);
+    const meta = document.createElement('span');
+    meta.className = 'muted small';
+    meta.textContent = reviewHits ? `${reviewHits} review item(s)` : `${energy}% steady`;
+    row.append(name, meter, meta);
+    skillMap.appendChild(row);
+  });
 
   document.getElementById('reset-progress')?.addEventListener('click', () => {
     localStorage.removeItem(lessonKey);
