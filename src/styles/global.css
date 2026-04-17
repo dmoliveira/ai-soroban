@@ -234,6 +234,10 @@ a { color: inherit; text-decoration: none; }
 .worksheet-note-panel { padding: 0.7rem 0.85rem; border-radius: 12px; }
 .worksheet-note-panel p { margin: 0.25rem 0 0; font-size: 0.92rem; }
 .lesson-next-panel { margin: 1.2rem 0; background: linear-gradient(180deg, rgba(255,255,255,0.75), rgba(248,242,233,0.85)); }
+.lesson-page-panel h1,
+.exercise-page-panel h1 { margin-bottom: 0.45rem; }
+.lesson-page-panel .meta-row,
+.exercise-page-panel .meta-row { margin: 0.25rem 0 0.55rem; }
 .lesson-summary-grid { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 0.8rem; margin: 0.3rem 0 0.8rem; }
 .lesson-facts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.45rem; margin: 0.35rem 0 0.45rem; }
 .lesson-facts-grid .stat-card { padding: 0.55rem 0.65rem; border-radius: 10px; }
@@ -245,6 +249,12 @@ a { color: inherit; text-decoration: none; }
 .lesson-summary-panel p { margin: 0; }
 .lesson-summary-panel ul { margin: 0; padding-left: 1.15rem; }
 .exercise-interaction-panel { margin-top: 1rem; background: linear-gradient(180deg, rgba(255,255,255,0.8), rgba(248,242,233,0.74)); }
+.exercise-facts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.45rem; margin: 0.35rem 0 0.55rem; }
+.exercise-facts-grid .stat-card { padding: 0.7rem 0.8rem; border-radius: 12px; }
+.exercise-facts-grid .stat-card span { font-size: 1rem; }
+.exercise-facts-grid .stat-card small { display: block; margin-top: 0.18rem; }
+.exercise-intro-panel { margin: 0.35rem 0 1rem; background: linear-gradient(180deg, rgba(255,255,255,0.75), rgba(248,242,233,0.82)); }
+.exercise-intro-panel p { margin-top: 0; }
 .exercise-state-strip { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin-top: 0.2rem; }
 .exercise-state-card { display: grid; gap: 0.18rem; padding: 0.7rem 0.85rem; border-radius: 12px; border: 1px solid rgba(99,88,79,0.12); background: rgba(255,255,255,0.52); }
 .exercise-state-card span { display: block; font-weight: 700; line-height: 1.2; }

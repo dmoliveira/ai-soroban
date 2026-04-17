@@ -17,7 +17,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 ---
 
 <BaseLayout title={`${exercise.data.title} | Soroban Dojo`}>
-  <article class="panel content-prose">
+  <article class="panel content-prose exercise-page-panel">
     <p class="eyebrow">Exercise · {exercise.data.level}</p>
     <h1>{exercise.data.title}</h1>
     <div class="meta-row">
@@ -26,11 +26,19 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       <span>{exercise.data.estimatedMinutes} min</span>
       {exercise.data.visualValue !== undefined && <span>数 {numberToKanji(exercise.data.visualValue)}</span>}
     </div>
-    <p><strong>Practice rule:</strong> try this before opening the hint or answer.</p>
+    <section class="exercise-facts-grid">
+      <article class="stat-card stat-card-soft"><span>{exercise.data.level}</span><small>Level</small></article>
+      <article class="stat-card stat-card-soft"><span>{exercise.data.skill}</span><small>Skill</small></article>
+      <article class="stat-card stat-card-soft"><span>{exercise.data.type}</span><small>Type</small></article>
+      <article class="stat-card stat-card-soft"><span>{exercise.data.estimatedMinutes}m</span><small>Time</small></article>
+    </section>
+    <div class="exercise-intro-panel subtle-panel">
+      <p><strong>Practice rule:</strong> try this before opening the hint or answer.</p>
+      <Content />
+    </div>
     {exercise.data.visualValue !== undefined && (
       <SorobanVisualizer value={exercise.data.visualValue} stepValues={exercise.data.stepValues} label={`Visual support for ${exercise.data.title}`} />
     )}
-    <Content />
 
     <section class="panel exercise-interaction-panel">
       <p class="eyebrow">Attempt first</p>
