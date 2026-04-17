@@ -202,12 +202,15 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
       <div id="feedback-panel" class="reveal-panel" hidden role="status" aria-live="polite"></div>
       <div id="steps-panel" class="reveal-panel" hidden aria-live="polite"></div>
-      <div class="review-chip-row">
-        <span class="review-chip">Verify only if you just want confirmation</span>
-        <span class="review-chip">Reveal the final number when you want a quick check</span>
-        <span class="review-chip">Reveal steps when you want to study the method</span>
-        <span class="review-chip">Resume or replay later with the saved session ID</span>
-      </div>
+      <details class="practice-help-block">
+        <summary>How to use this session</summary>
+        <div class="review-chip-row">
+          <span class="review-chip">Verify only if you just want confirmation</span>
+          <span class="review-chip">Reveal the final number when you want a quick check</span>
+          <span class="review-chip">Reveal steps when you want to study the method</span>
+          <span class="review-chip">Resume or replay later with the saved session ID</span>
+        </div>
+      </details>
     </section>
 
     <aside class="panel stack-sm side-panel">
