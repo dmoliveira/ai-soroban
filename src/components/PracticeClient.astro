@@ -113,6 +113,15 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
             <option value="adaptive">Adaptive weak-area</option>
           </select>
         </label>
+        <label class="stack-sm">
+          <span>Term count · 項数</span>
+          <select id="term-count" class="select">
+            <option value="auto" selected>Auto</option>
+            <option value="2">2 terms</option>
+            <option value="3">3 terms</option>
+            <option value="4">4 terms</option>
+          </select>
+        </label>
         <div class="button-row">
           <button class="button" id="start-session">Start new session</button>
           <button class="button button-secondary" id="resume-latest">Resume latest</button>
@@ -324,37 +333,44 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     const length = byId('session-length');
     const checkMode = byId('check-mode');
     const questionStyle = byId('question-style');
-    if (!format || !length || !checkMode || !questionStyle) return;
+    const termCount = byId('term-count');
+    if (!format || !length || !checkMode || !questionStyle || !termCount) return;
     if (level === 'L0') {
       format.value = 'single';
       length.value = '5';
       checkMode.value = 'final';
       questionStyle.value = 'visual';
+      termCount.value = '2';
     } else if (level === 'L1') {
       format.value = 'single';
       length.value = '10';
       checkMode.value = 'final';
       questionStyle.value = 'mixed';
+      termCount.value = '2';
     } else if (level === 'L2') {
       format.value = 'single';
       length.value = '10';
       checkMode.value = 'steps';
       questionStyle.value = 'mixed';
+      termCount.value = '3';
     } else if (level === 'L3') {
       format.value = 'sheet';
       length.value = '10';
       checkMode.value = 'verify';
       questionStyle.value = 'mixed';
+      termCount.value = '3';
     } else if (level === 'L4') {
       format.value = 'sheet';
       length.value = '15';
       checkMode.value = 'verify';
       questionStyle.value = 'mixed';
+      termCount.value = '3';
     } else {
       format.value = 'single';
       length.value = '10';
       checkMode.value = 'steps';
       questionStyle.value = 'mental';
+      termCount.value = '4';
     }
   };
 
@@ -387,8 +403,37 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       return 'visual';
     };
 
-    const buildGeneratedQuestion = (level, index, rng, questionStyle = 'mixed') => {
+  const resolveTermCount = (level, termCount) => {
+    if (termCount !== 'auto') return Number(termCount);
+    if (level === 'L0' || level === 'L1') return 2;
+    if (level === 'L2') return 3;
+    if (level === 'L3' || level === 'L4') return 3;
+    return 4;
+  };
+
+  const buildSequence = (rng, start, stepCount, maxStep) => {
+    const ops = [];
+    let total = start;
+    for (let i = 0; i < stepCount; i += 1) {
+      const add = rng() > 0.45;
+      const value = Math.max(1, Math.floor(rng() * maxStep) + 1);
+      if (!add && total - value <= 0) {
+        total += value;
+        ops.push({ op: '+', value });
+      } else if (add) {
+        total += value;
+        ops.push({ op: '+', value });
+      } else {
+        total -= value;
+        ops.push({ op: '-', value });
+      }
+    }
+    return { ops, total };
+  };
+
+  const buildGeneratedQuestion = (level, index, rng, questionStyle = 'mixed', termCount = 'auto') => {
     const effectiveStyle = resolveAdaptiveStyle(level, questionStyle);
+    const terms = resolveTermCount(level, termCount);
     if (level === 'L0') {
       const a = Math.floor(rng() * 4) + 1;
       const b = Math.floor(rng() * (5 - a)) + 1;
@@ -431,33 +476,30 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     }
     if (level === 'L3') {
       const a = Math.floor(rng() * 300) + 100;
-      const b = Math.floor(rng() * 80) + 10;
-      const c = Math.floor(rng() * 50) + 5;
-      const answer = a + b - c;
+      const sequence = buildSequence(rng, a, Math.max(2, terms - 1), 80);
+      const promptOps = sequence.ops.map(({ op, value }) => `${op} ${value}`).join(' ');
       return {
         id: `g-${level}-${index}`,
-        progressKey: `generated-${simpleSlug(`${level}-${a}-${b}-${c}-${answer}`)}`,
+        progressKey: `generated-${simpleSlug(`${level}-${a}-${promptOps}-${sequence.total}`)}`,
         title: `Generated sequence drill ${index + 1}`,
-        prompt: `Solve this sequence carefully: ${a} + ${b} - ${c}.`,
-        answer,
-        visualValue: answer,
-        steps: [`Start at ${a}.`, `Add ${b} to reach ${a + b}.`, `Subtract ${c} to reach ${answer}.`],
+        prompt: `Solve this sequence carefully: ${a} ${promptOps}.`,
+        answer: sequence.total,
+        visualValue: sequence.total,
+        steps: [`Start at ${a}.`, ...sequence.ops.map(({ op, value }) => `${op === '+' ? 'Add' : 'Subtract'} ${value}.`), `Final value: ${sequence.total}.`],
       };
     }
     if (level === 'L5' || effectiveStyle === 'mental') {
       const a = Math.floor(rng() * 60) + 20;
-      const b = Math.floor(rng() * 30) + 5;
-      const c = Math.floor(rng() * 20) + 1;
-      const d = Math.floor(rng() * 20) + 1;
-      const answer = a + b - c + d;
+      const sequence = buildSequence(rng, a, Math.max(2, terms - 1), 30);
+      const promptOps = sequence.ops.map(({ op, value }) => `${op} ${value}`).join(' ');
       return {
         id: `g-${level}-${index}`,
-        progressKey: `generated-${simpleSlug(`${level}-${a}-${b}-${c}-${d}-${answer}`)}`,
+        progressKey: `generated-${simpleSlug(`${level}-${a}-${promptOps}-${sequence.total}`)}`,
         title: `Generated mental drill ${index + 1}`,
-        prompt: `Without moving beads, solve ${a} + ${b} - ${c} + ${d}.`,
-        answer,
-        visualValue: answer,
-        steps: [`Start at ${a}.`, `Add ${b} to reach ${a + b}.`, `Subtract ${c} to reach ${a + b - c}.`, `Add ${d} to reach ${answer}.`],
+        prompt: `Without moving beads, solve ${a} ${promptOps}.`,
+        answer: sequence.total,
+        visualValue: sequence.total,
+        steps: [`Start at ${a}.`, ...sequence.ops.map(({ op, value }) => `${op === '+' ? 'Add' : 'Subtract'} ${value}.`), `Final value: ${sequence.total}.`],
       };
     }
     const base = Math.floor(rng() * 8) + 1;
@@ -482,23 +524,23 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     });
   };
 
-  const buildGeneratedQuestions = (level, length, sessionId, questionStyle) => {
+  const buildGeneratedQuestions = (level, length, sessionId, questionStyle, termCount) => {
     const rng = createRng(sessionId);
-    return Array.from({ length }, (_, index) => buildGeneratedQuestion(level, index, rng, questionStyle));
+    return Array.from({ length }, (_, index) => buildGeneratedQuestion(level, index, rng, questionStyle, termCount));
   };
 
   const presets = {
-    warmup: { format: 'single', type: 'curated', level: 'L0', length: '5', checkMode: 'final', timerMode: 'off', questionStyle: 'visual' },
-    practice: { format: 'single', type: 'generated', level: 'L2', length: '10', checkMode: 'verify', timerMode: 'off', questionStyle: 'mixed' },
-    review: { format: 'sheet', type: 'generated', level: 'L2', length: '10', checkMode: 'steps', timerMode: 'off', questionStyle: 'adaptive' },
-    speed: { format: 'single', type: 'generated', level: 'L3', length: '20', checkMode: 'verify', timerMode: 'on', questionStyle: 'mixed' },
-    mental: { format: 'single', type: 'generated', level: 'L5', length: '10', checkMode: 'steps', timerMode: 'off', questionStyle: 'mental' },
+    warmup: { format: 'single', type: 'curated', level: 'L0', length: '5', checkMode: 'final', timerMode: 'off', questionStyle: 'visual', termCount: '2' },
+    practice: { format: 'single', type: 'generated', level: 'L2', length: '10', checkMode: 'verify', timerMode: 'off', questionStyle: 'mixed', termCount: '3' },
+    review: { format: 'sheet', type: 'generated', level: 'L2', length: '10', checkMode: 'steps', timerMode: 'off', questionStyle: 'adaptive', termCount: '3' },
+    speed: { format: 'single', type: 'generated', level: 'L3', length: '20', checkMode: 'verify', timerMode: 'on', questionStyle: 'mixed', termCount: '3' },
+    mental: { format: 'single', type: 'generated', level: 'L5', length: '10', checkMode: 'steps', timerMode: 'off', questionStyle: 'mental', termCount: '4' },
   };
 
   const syncPracticeSetupCopy = () => {
     const target = byId('practice-current-setup-copy');
     if (!target) return;
-    target.textContent = `${byId('session-format').value} · ${byId('session-type').value} · ${byId('session-level').value} · ${byId('session-length').value} questions · ${byId('question-style').value}`;
+    target.textContent = `${byId('session-format').value} · ${byId('session-type').value} · ${byId('session-level').value} · ${byId('session-length').value} questions · ${byId('question-style').value} · ${byId('term-count').value} terms`;
   };
 
   const applyPreset = (key) => {
@@ -511,14 +553,15 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     byId('check-mode').value = preset.checkMode;
     byId('timer-mode').value = preset.timerMode;
     byId('question-style').value = preset.questionStyle;
+    byId('term-count').value = preset.termCount;
     syncPracticeSetupCopy();
   };
 
-  const createSession = ({ type, level, length, checkMode, timerEnabled, format, questionStyle }) => {
+  const createSession = ({ type, level, length, checkMode, timerEnabled, format, questionStyle, termCount }) => {
     const sessionId = makeId();
     const questions = type === 'curated'
       ? buildCuratedQuestions(level, length, sessionId)
-      : buildGeneratedQuestions(level, length, sessionId, questionStyle);
+      : buildGeneratedQuestions(level, length, sessionId, questionStyle, termCount);
     return {
       id: sessionId,
       type,
@@ -528,6 +571,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       timerEnabled,
       format,
       questionStyle,
+      termCount,
       createdAt: new Date().toISOString(),
       currentIndex: 0,
       completed: false,
@@ -831,6 +875,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         timerEnabled: byId('timer-mode').value === 'on',
         format: byId('session-format').value,
         questionStyle: byId('question-style').value,
+        termCount: byId('term-count').value,
       });
     persistCurrent();
     renderSession();
@@ -984,7 +1029,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   document.querySelectorAll('[data-preset]').forEach((button) => {
     button.addEventListener('click', () => applyPreset(button.dataset.preset));
   });
-  document.querySelectorAll('#session-format, #session-type, #session-level, #session-length, #question-style').forEach((node) => {
+  document.querySelectorAll('#session-format, #session-type, #session-level, #session-length, #question-style, #term-count').forEach((node) => {
     node.addEventListener('change', syncPracticeSetupCopy);
   });
 
