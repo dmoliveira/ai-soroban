@@ -137,6 +137,10 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       <strong>Current setup</strong>
       <span id="practice-current-setup-copy" class="muted small">single · curated · L0 · 10 questions · mixed · auto terms · timer off</span>
     </div>
+    <div class="subtle-panel practice-mode-guide">
+      <strong id="practice-guide-title">Recommended use</strong>
+      <p id="practice-guide-copy" class="muted small">Use this setup for short focused repetition before moving to sheets or review.</p>
+    </div>
   </section>
 
   <div class="practice-grid practice-main-grid">
@@ -542,8 +546,27 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
   const syncPracticeSetupCopy = () => {
     const target = byId('practice-current-setup-copy');
+    const guideTitle = byId('practice-guide-title');
+    const guideCopy = byId('practice-guide-copy');
     if (!target) return;
     target.textContent = `${byId('session-format').value} · ${byId('session-type').value} · ${byId('session-level').value} · ${byId('session-length').value} questions · ${byId('question-style').value} · ${byId('term-count').value} terms · ${byId('timer-mode').value}`;
+    if (!guideTitle || !guideCopy) return;
+    const format = byId('session-format').value;
+    const style = byId('question-style').value;
+    const level = byId('session-level').value;
+    if (format === 'sheet') {
+      guideTitle.textContent = 'Best for dense worksheet-style practice';
+      guideCopy.textContent = 'Use sheet mode when you want many questions at once, calmer review, or something close to printed drill work.';
+    } else if (style === 'mental') {
+      guideTitle.textContent = 'Best for mental / anzan focus';
+      guideCopy.textContent = 'This setup is tuned for mental work. Solve without moving beads, then verify carefully.';
+    } else if (level === 'L0' || level === 'L1') {
+      guideTitle.textContent = 'Best for guided fundamentals';
+      guideCopy.textContent = 'This setup favors shorter, clearer drills so you can build confidence before increasing length or speed.';
+    } else {
+      guideTitle.textContent = 'Best for steady mixed practice';
+      guideCopy.textContent = 'Use this configuration to keep rhythm while building fluency across several related drill types.';
+    }
   };
 
   const applyPreset = (key) => {
