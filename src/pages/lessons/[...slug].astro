@@ -27,6 +27,13 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       <span>{lesson.data.audience.join(', ')}</span>
       {lesson.data.visualValue !== undefined && <span>数 {numberToKanji(lesson.data.visualValue)}</span>}
     </div>
+    <section class="lesson-facts-grid">
+      <article class="stat-card stat-card-soft"><span>{lesson.data.level}</span><small>Level</small></article>
+      <article class="stat-card stat-card-soft"><span>{lesson.data.skill}</span><small>Skill</small></article>
+      <article class="stat-card stat-card-soft"><span>{lesson.data.estimatedMinutes}m</span><small>Time</small></article>
+      <article class="stat-card stat-card-soft"><span>{lesson.data.audience.join('/')}</span><small>Audience</small></article>
+      {prerequisiteLesson && <article class="stat-card stat-card-soft"><span>{prerequisiteLesson.data.title}</span><small>Prerequisite</small></article>}
+    </section>
     <nav class="lesson-nav-strip" aria-label="Lesson sections">
       <a href="#lesson-core">Core idea</a>
       <a href="#lesson-objectives">Objectives</a>
