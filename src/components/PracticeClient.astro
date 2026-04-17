@@ -543,7 +543,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   const syncPracticeSetupCopy = () => {
     const target = byId('practice-current-setup-copy');
     if (!target) return;
-    target.textContent = `${byId('session-format').value} · ${byId('session-type').value} · ${byId('session-level').value} · ${byId('session-length').value} questions · ${byId('question-style').value} · ${byId('term-count').value} terms`;
+    target.textContent = `${byId('session-format').value} · ${byId('session-type').value} · ${byId('session-level').value} · ${byId('session-length').value} questions · ${byId('question-style').value} · ${byId('term-count').value} terms · ${byId('timer-mode').value}`;
   };
 
   const applyPreset = (key) => {
