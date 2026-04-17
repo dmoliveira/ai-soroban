@@ -135,7 +135,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     </div>
     <div class="subtle-panel practice-current-setup">
       <strong>Current setup</strong>
-      <span id="practice-current-setup-copy" class="muted small">single · curated · L0 · 10 questions · mixed</span>
+      <span id="practice-current-setup-copy" class="muted small">single · curated · L0 · 10 questions · mixed · auto terms · timer off</span>
     </div>
   </section>
 
@@ -1032,7 +1032,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   document.querySelectorAll('[data-preset]').forEach((button) => {
     button.addEventListener('click', () => applyPreset(button.dataset.preset));
   });
-  document.querySelectorAll('#session-format, #session-type, #session-level, #session-length, #question-style, #term-count').forEach((node) => {
+  document.querySelectorAll('#session-format, #session-type, #session-level, #session-length, #question-style, #term-count, #timer-mode').forEach((node) => {
     node.addEventListener('change', syncPracticeSetupCopy);
   });
 
