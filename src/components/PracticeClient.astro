@@ -169,6 +169,10 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         <div class="practice-empty-note" id="practice-empty-note">
           <strong>Recommended start</strong>
           <p class="muted">Pick a preset above, then start one short session before moving into longer sheets.</p>
+          <div class="button-row button-row-compact">
+            <button class="button" id="empty-warmup">Use warm-up preset</button>
+            <a class="button button-secondary" href={`${base}worksheets`}>Open worksheets</a>
+          </div>
         </div>
         <div class="question-flow-note">
           <span class="review-chip">1. Solve first</span>
@@ -1055,6 +1059,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   document.querySelectorAll('[data-preset]').forEach((button) => {
     button.addEventListener('click', () => applyPreset(button.dataset.preset));
   });
+  byId('empty-warmup')?.addEventListener('click', () => applyPreset('warmup'));
   document.querySelectorAll('#session-format, #session-type, #session-level, #session-length, #question-style, #term-count, #timer-mode').forEach((node) => {
     node.addEventListener('change', syncPracticeSetupCopy);
   });
