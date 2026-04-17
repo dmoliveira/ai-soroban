@@ -94,6 +94,7 @@ const { lessons, exercises } = Astro.props;
 
 <script is:inline>
   const root = document.querySelector('.progress-panel');
+  const base = '/ai-soroban/';
   const lessonKey = 'soroban-dojo:completed-lessons';
   const exerciseKey = 'soroban-dojo:exercise-states';
   const timerKey = 'soroban-dojo:timer-history';
@@ -274,8 +275,19 @@ const { lessons, exercises } = Astro.props;
     meter.appendChild(fill);
     const meta = document.createElement('span');
     meta.className = 'muted small';
-    meta.textContent = reviewHits ? `${reviewHits} review item(s)` : `${energy}% steady`;
-    row.append(name, meter, meta);
+    meta.textContent = reviewHits ? `${reviewHits} review item(s)` : `${energy}% steady`; 
+    const actions = document.createElement('div');
+    actions.className = 'skill-actions';
+    const practiceLink = document.createElement('a');
+    practiceLink.href = `${base}practice`;
+    practiceLink.className = 'text-link';
+    practiceLink.textContent = 'Practice';
+    const worksheetLink = document.createElement('a');
+    worksheetLink.href = `${base}worksheets`;
+    worksheetLink.className = 'text-link';
+    worksheetLink.textContent = 'Worksheet';
+    actions.append(practiceLink, worksheetLink);
+    row.append(name, meter, meta, actions);
     skillMap.appendChild(row);
   });
 
