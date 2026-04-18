@@ -17,6 +17,16 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     summary="A local-first Soroban learning site for children and adults: lessons, attempt-first exercises, timed practice, progress that stays in your browser, and a quiet Japanese dojo atmosphere."
   />
 
+  <div class="hero-quick-links panel">
+    <strong>Quick links</strong>
+    <div class="button-row button-row-compact">
+      <a class="button button-secondary" href={`${base}lessons`}>Lessons</a>
+      <a class="button button-secondary" href={`${base}practice`}>Practice</a>
+      <a class="button button-secondary" href={`${base}worksheets`}>Worksheets</a>
+      <a class="button button-secondary" href={`${base}progress`}>Progress</a>
+    </div>
+  </div>
+
   <PathCards />
 
   <section class="split-grid">
