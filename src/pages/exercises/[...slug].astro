@@ -75,8 +75,8 @@ const bestFor = exercise.data.type === 'visual-check'
         <button class="button button-secondary" id="reset-exercise">Try again</button>
       </div>
       <div class="exercise-state-strip">
-        <div class="exercise-state-card"><small>Response</small><span id="exercise-state-response">Response: —</span></div>
-        <div class="exercise-state-card"><small>Status</small><span id="exercise-state-status">Status: Not checked</span></div>
+        <div class="exercise-state-card"><small>Response</small><span id="exercise-state-response">—</span></div>
+        <div class="exercise-state-card"><small>Status</small><span id="exercise-state-status">Not checked</span></div>
       </div>
       <div id="exercise-feedback" class="reveal-panel" hidden role="status" aria-live="polite"></div>
       <div id="exercise-method" class="reveal-panel" hidden></div>
@@ -142,8 +142,8 @@ const bestFor = exercise.data.type === 'visual-check'
       if (!value) {
         feedback.hidden = false;
         feedback.textContent = 'Write your response first, or choose to reveal the answer or method.';
-        responseState.textContent = 'Response: empty';
-        statusState.textContent = 'Status: waiting';
+        responseState.textContent = 'Empty';
+        statusState.textContent = 'Waiting';
         return;
       }
       const expected = normalizeNumber(answer);
@@ -152,27 +152,27 @@ const bestFor = exercise.data.type === 'visual-check'
       feedback.hidden = false;
       playTone(correct ? 'success' : 'error');
       feedback.textContent = correct ? 'Correct. Your response matches the answer.' : 'Not correct yet. Revise your response, ask for a hint, or reveal the answer.';
-      responseState.textContent = `Response: ${value}`;
-      statusState.textContent = correct ? 'Status: correct' : 'Status: try again';
+      responseState.textContent = value;
+      statusState.textContent = correct ? 'Correct' : 'Try again';
     });
 
     document.getElementById('hint-exercise')?.addEventListener('click', () => {
       feedback.hidden = false;
       feedback.textContent = `Hint: ${hint}`;
-      statusState.textContent = 'Status: hint shown';
+      statusState.textContent = 'Hint shown';
     });
 
     document.getElementById('reveal-answer')?.addEventListener('click', () => {
       feedback.hidden = false;
       playTone('success');
       feedback.textContent = `Answer: ${answer}`;
-      statusState.textContent = 'Status: answer shown';
+      statusState.textContent = 'Answer shown';
     });
 
     document.getElementById('reveal-method')?.addEventListener('click', () => {
       method.hidden = false;
       method.textContent = explanation;
-      statusState.textContent = 'Status: method shown';
+      statusState.textContent = 'Method shown';
     });
     document.getElementById('reset-exercise')?.addEventListener('click', () => {
       responseInput.value = '';
@@ -180,8 +180,8 @@ const bestFor = exercise.data.type === 'visual-check'
       feedback.textContent = '';
       method.hidden = true;
       method.textContent = '';
-      responseState.textContent = 'Response: —';
-      statusState.textContent = 'Status: not checked';
+      responseState.textContent = '—';
+      statusState.textContent = 'Not checked';
       responseInput.focus();
     });
     responseInput?.addEventListener('keydown', (event) => {
