@@ -15,6 +15,15 @@ const allLessons = await getCollection('lessons');
 const relatedExercises = (await getCollection('exercises')).filter((entry) => lesson.data.relatedExercises.includes(entry.data.id));
 const prerequisiteLesson = allLessons.find((entry) => lesson.data.prerequisites.includes(entry.data.id));
 const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
+const bestFor = lesson.data.skill === 'abacus-orientation'
+  ? 'Best for first contact with the soroban, naming the parts, and building calm familiarity.'
+  : lesson.data.skill === 'number-reading' || lesson.data.skill === 'place-value'
+    ? 'Best for reading structure accurately before moving into longer arithmetic drills.'
+    : lesson.data.skill === 'addition' || lesson.data.skill === 'subtraction'
+      ? 'Best for building confident arithmetic rhythm before moving into mixed worksheets.'
+      : lesson.data.skill === 'complements'
+        ? 'Best for strengthening number balance and cleaner movement on the soroban.'
+        : 'Best for guided progression in this stage of practice.';
 ---
 
 <BaseLayout title={`${lesson.data.title} | Soroban Dojo`} description={lesson.data.summary}>
@@ -39,6 +48,10 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       <article class="stat-card stat-card-soft"><span>{lesson.data.audience.join('/')}</span><small>Audience</small></article>
       {prerequisiteLesson && <article class="stat-card stat-card-soft"><span>{prerequisiteLesson.data.title}</span><small>Prerequisite</small></article>}
     </section>
+    <div class="subtle-panel lesson-best-for-panel">
+      <strong>Best for</strong>
+      <p class="muted">{bestFor}</p>
+    </div>
     <nav class="lesson-nav-strip" aria-label="Lesson sections">
       <a href="#lesson-core">Core idea</a>
       <a href="#lesson-objectives">Objectives</a>

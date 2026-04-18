@@ -254,6 +254,8 @@ a { color: inherit; text-decoration: none; }
 .lesson-facts-grid .stat-card { padding: 0.55rem 0.65rem; border-radius: 10px; }
 .lesson-facts-grid .stat-card span { font-size: 0.95rem; }
 .lesson-facts-grid .stat-card small { display: block; margin-top: 0.12rem; }
+.lesson-best-for-panel { margin: 0.1rem 0 0.45rem; background: linear-gradient(180deg, rgba(255,255,255,0.72), rgba(248,242,233,0.8)); }
+.lesson-best-for-panel p { margin: 0.25rem 0 0; }
 .lesson-nav-strip { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0.25rem 0 0.45rem; }
 .lesson-nav-strip a { padding: 0.26rem 0.56rem; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,0.66); color: var(--muted); font-size: 0.8rem; }
 .lesson-flow-strip { margin: 0.3rem 0 0.45rem; }
