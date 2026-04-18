@@ -279,7 +279,7 @@ a { color: inherit; text-decoration: none; }
 .exercise-state-strip { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 0.3rem; }
 .exercise-state-card { display: grid; gap: 0.24rem; padding: 0.75rem 0.95rem; border-radius: 12px; border: 1px solid rgba(99,88,79,0.12); background: rgba(255,255,255,0.56); }
 .exercise-state-card span { display: block; font-weight: 700; line-height: 1.2; min-height: 1.2rem; }
-.exercise-state-card small { display: block; color: var(--muted); line-height: 1.2; letter-spacing: 0.02em; }
+.exercise-state-card small { display: block; color: var(--muted); line-height: 1.2; letter-spacing: 0.02em; text-transform: uppercase; font-size: 0.76rem; }
 .ledger-panel.teacher-mode { background: linear-gradient(180deg, rgba(250,244,231,0.96), rgba(241,236,227,0.96)); }
 .teacher-mode .ledger-feedback,
 .teacher-mode .vertical-feedback { font-weight: 700; }
