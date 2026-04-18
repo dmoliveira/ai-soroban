@@ -114,10 +114,10 @@ a { color: inherit; text-decoration: none; }
 .practice-config-panel { background: linear-gradient(180deg, rgba(255,255,255,0.82), rgba(248,242,233,0.66)); padding: 0.48rem; }
 .practice-setup-block { border: 1px solid rgba(99,88,79,0.12); border-radius: 14px; background: rgba(255,255,255,0.34); padding: 0.5rem 0.75rem 0.75rem; }
 .practice-setup-block summary { cursor: pointer; color: var(--muted); font-weight: 600; margin-bottom: 0.45rem; }
-.option-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
-.choice-card { padding: 0.62rem; border: 1px solid var(--line); border-radius: 14px; background: rgba(255,255,255,0.5); }
-.choice-card h3 { margin: 0.25rem 0; }
-.choice-card p { margin: 0.2rem 0; color: var(--muted); }
+.option-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.6rem; }
+.choice-card { padding: 0.55rem 0.65rem; border: 1px solid var(--line); border-radius: 14px; background: rgba(255,255,255,0.5); }
+.choice-card h3 { margin: 0.18rem 0; font-size: 1.05rem; }
+.choice-card p { margin: 0.12rem 0; color: var(--muted); font-size: 0.92rem; }
 .option-grid-compact .choice-card { min-height: 0; }
 .practice-preset-row { display: flex; flex-wrap: wrap; gap: 0.28rem; margin: 0 0 0.08rem; }
 .practice-preset { padding: 0.34rem 0.66rem; font-size: 0.8rem; }
