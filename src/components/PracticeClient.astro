@@ -138,7 +138,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     </details>
     <div class="subtle-panel practice-current-setup">
       <strong>Current setup</strong>
-      <span id="practice-current-setup-copy" class="muted small">single · curated · L0 · 10 questions · mixed · auto terms · timer off</span>
+      <span id="practice-current-setup-copy" class="muted small">Format: single · Source: curated · Level: L0 · Questions: 10 · Style: mixed · Terms: auto · Timer: off</span>
     </div>
     <div class="subtle-panel practice-mode-guide">
       <strong id="practice-guide-title">Recommended use</strong>
@@ -582,7 +582,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     const guideCopy = byId('practice-guide-copy');
     const purposeCopy = byId('practice-purpose-copy');
     if (!target) return;
-    target.textContent = `${byId('session-format').value} · ${byId('session-type').value} · ${byId('session-level').value} · ${byId('session-length').value} questions · ${byId('question-style').value} · ${byId('term-count').value} terms · ${byId('timer-mode').value}`;
+    target.textContent = `Format: ${byId('session-format').value} · Source: ${byId('session-type').value} · Level: ${byId('session-level').value} · Questions: ${byId('session-length').value} · Style: ${byId('question-style').value} · Terms: ${byId('term-count').value} · Timer: ${byId('timer-mode').value}`;
     if (!guideTitle || !guideCopy || !purposeCopy) return;
     const format = byId('session-format').value;
     const style = byId('question-style').value;
