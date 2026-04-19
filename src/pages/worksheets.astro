@@ -405,16 +405,19 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     };
 
     const makeDynamicPrompt = (level, family, band, style) => {
+      const adjustedBand = styleAdjustBand(style, band);
+      const bandRange = parseBand(adjustedBand);
+      const randomNumberForBand = () => randomNumberForDigits(randomDigits(adjustedBand));
+
       if (family === 'sequence' || family === 'anzan') {
-        const digits = randomDigits(styleAdjustBand(style, band));
-        const a = randomNumberForDigits(Math.max(1, Math.min(digits, level === 'L5' ? 4 : 3)));
-        const b = randomNumberForDigits(Math.max(1, Math.min(digits, 2)));
-        const c = randomNumberForDigits(1);
-        const d = family === 'anzan' && level === 'L5' ? randomNumberForDigits(1) : null;
+        const a = randomNumberForBand();
+        const b = randomNumberForBand();
+        const c = randomNumberForBand();
+        const d = family === 'anzan' && level === 'L5' ? randomNumberForBand() : null;
         return d ? `${a} + ${b} - ${c} + ${d}` : `${a} + ${b} - ${c}`;
       }
       const resolvedFamily = chooseFamily(level, family);
-      const digits = randomDigits(styleAdjustBand(style, band));
+      const digits = randomDigits(adjustedBand);
       if (resolvedFamily === 'multiplication') {
         const a = randomNumberForDigits(Math.min(level === 'L5' ? 3 : 2, digits));
         const b = rand(2, level === 'L5' ? 12 : 9);
@@ -426,7 +429,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         return `${divisor * quotient} ÷ ${divisor}`;
       }
       const aDigits = digits;
-      const bDigits = Math.max(1, digits - (Math.random() > 0.5 ? 0 : 1));
+      const bDigits = rand(bandRange.min, aDigits);
       const a = randomNumberForDigits(aDigits);
       const bRaw = randomNumberForDigits(bDigits);
       if (resolvedFamily === 'addition') return `${a} + ${bRaw}`;
