@@ -32,6 +32,7 @@ const bestFor = exercise.data.type === 'visual-check'
       <span>{exercise.data.type}</span>
       <span>{exercise.data.estimatedMinutes} min</span>
       {exercise.data.visualValue !== undefined && <span>数 {numberToKanji(exercise.data.visualValue)}</span>}
+      {exercise.data.worksheetProfile && <span>{exercise.data.worksheetProfile.label ?? `${exercise.data.worksheetProfile.digitRange} digits · ${exercise.data.worksheetProfile.operationRange} ops · ${exercise.data.worksheetProfile.operatorMode}`}</span>}
     </div>
     <div class="exercise-utility-row">
       <a class="text-link" href={`${base}exercises`}>All exercises</a>
@@ -50,6 +51,9 @@ const bestFor = exercise.data.type === 'visual-check'
     </div>
     <div class="exercise-intro-panel subtle-panel">
       <p><strong>Practice rule:</strong> try this before opening the hint or answer.</p>
+      {exercise.data.worksheetDrill && (
+        <pre class="worksheet-ledger">{exercise.data.worksheetDrill.map((term, index) => index === 0 ? `${term.value}` : `${term.operator} ${term.value}`).join('\n')}</pre>
+      )}
       <Content />
     </div>
     {exercise.data.visualValue !== undefined && (
@@ -191,3 +195,15 @@ const bestFor = exercise.data.type === 'visual-check'
     });
   </script>
 </BaseLayout>
+
+<style>
+  .worksheet-ledger {
+    margin: 1rem 0;
+    padding: 0.9rem 1rem;
+    border: 1px dashed color-mix(in srgb, var(--border) 78%, white 22%);
+    border-radius: 1rem;
+    background: color-mix(in srgb, white 86%, var(--surface) 14%);
+    font: 600 1.05rem/1.7 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    white-space: pre-wrap;
+  }
+</style>

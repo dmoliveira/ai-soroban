@@ -1,4 +1,22 @@
 import { defineCollection, z } from 'astro:content';
+import { certifyWorksheetContentData } from '../lib/worksheet.js';
+
+const worksheetProfileSchema = z.object({
+  digitRange: z.string(),
+  operationRange: z.string(),
+  operatorMode: z.enum(['add', 'subtract', 'mixed']),
+  label: z.string().optional(),
+});
+
+const worksheetTermSchema = z.object({
+  operator: z.enum(['+', '-']).nullable().optional(),
+  value: z.number().int(),
+});
+
+const certifyWorksheetContent = (data: {
+  worksheetProfile?: { digitRange: string; operationRange: string; operatorMode: 'add' | 'subtract' | 'mixed'; label?: string };
+  worksheetDrill?: Array<{ operator?: '+' | '-' | null; value: number }>;
+}) => certifyWorksheetContentData(data).valid;
 
 const lessons = defineCollection({
   type: 'content',
@@ -37,6 +55,10 @@ const exercises = defineCollection({
     tags: z.array(z.string()).default([]),
     visualValue: z.number().int().nonnegative().optional(),
     stepValues: z.array(z.number().int().nonnegative()).default([]),
+    worksheetProfile: worksheetProfileSchema.optional(),
+    worksheetDrill: z.array(worksheetTermSchema).optional(),
+  }).refine(certifyWorksheetContent, {
+    message: 'worksheetProfile and worksheetDrill must exist together, comply with the declared worksheet profile, and use the normalized label',
   }),
 });
 

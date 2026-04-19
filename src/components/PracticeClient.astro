@@ -87,9 +87,35 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
             <option value="20">20 questions</option>
           </select>
         </label>
+        <label class="stack-sm">
+          <span>Digit range · 桁数</span>
+          <select id="worksheet-digit-range" class="select">
+            <option value="2-2">2 digits</option>
+            <option value="2-3" selected>2-3 digits</option>
+            <option value="3-4">3-4 digits</option>
+            <option value="4-4">4 digits</option>
+          </select>
+        </label>
       </div>
       <div class="stack-sm subtle-panel practice-config-panel">
         <p class="eyebrow">Answering</p>
+        <label class="stack-sm">
+          <span>Operation range · 手順数</span>
+          <select id="worksheet-operation-range" class="select">
+            <option value="2-3" selected>2-3 ops</option>
+            <option value="3-4">3-4 ops</option>
+            <option value="4-6">4-6 ops</option>
+            <option value="2-10">2-10 ops</option>
+          </select>
+        </label>
+        <label class="stack-sm">
+          <span>Operator mode · 記号</span>
+          <select id="worksheet-operator-mode" class="select">
+            <option value="add">Addition only</option>
+            <option value="subtract">Subtraction only</option>
+            <option value="mixed" selected>Mixed</option>
+          </select>
+        </label>
         <label class="stack-sm">
           <span>Check style · 確認</span>
           <select id="check-mode" class="select">
@@ -171,6 +197,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       <div class="practice-session-meta">
         <div class="subtle-panel practice-meta-card"><strong>Session ID:</strong><span id="session-id" class="muted small">—</span></div>
         <div class="subtle-panel practice-meta-card"><strong>Adaptive focus:</strong><span id="session-adaptive-note" class="muted small">—</span></div>
+        <div class="subtle-panel practice-meta-card"><strong>Profile:</strong><span id="session-profile" class="muted small">—</span></div>
       </div>
       <div class="practice-learning-strip">
         <strong>Learning path</strong>
@@ -194,6 +221,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
             <a class="button button-secondary" href={`${base}worksheets`}>Open worksheets</a>
           </div>
         </div>
+        <pre id="question-ledger" class="worksheet-ledger" hidden></pre>
         <div class="practice-next-strip">
           <strong>Quick path</strong>
           <div class="button-row button-row-compact">
@@ -291,7 +319,12 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   </div>
 </section>
 
-<script is:inline>
+<script>
+  // @ts-nocheck
+  import { buildGeneratedWorksheetQuestions, buildWorksheetProfileLabel, createRng, createWorksheetProfile } from '../lib/worksheet.js';
+
+  const root = document.querySelector('.practice-stack');
+  const library = JSON.parse(root?.dataset.library || '[]');
   const SESSION_KEY = 'soroban-dojo:practice-sessions';
   const TIMER_KEY = 'soroban-dojo:timer-history';
   const EXERCISE_STATE_KEY = 'soroban-dojo:exercise-states';
@@ -423,17 +456,9 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
   const makeId = () => `dojo-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
   const simpleSlug = (value) => value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
-  const hash = (value) => Array.from(value).reduce((acc, char) => ((acc << 5) - acc + char.charCodeAt(0)) | 0, 0);
-  const createRng = (seed) => {
-    let state = Math.abs(hash(seed)) || 1;
-    return () => {
-      state = (state * 1664525 + 1013904223) % 4294967296;
-      return state / 4294967296;
-    };
-  };
   const pick = (rng, items) => items[Math.floor(rng() * items.length)];
 
-    const resolveAdaptiveStyle = (level, questionStyle) => {
+  const resolveAdaptiveStyle = (level, questionStyle) => {
       if (questionStyle !== 'adaptive') return questionStyle;
       const weak = readWeakAreas();
       if (level === 'L5' || weak.mental >= weak.arithmetic) return 'mental';
@@ -622,14 +647,25 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
   const createSession = ({ type, level, length, checkMode, timerEnabled, format, questionStyle, termCount }) => {
     const sessionId = makeId();
+    const worksheetProfile = createWorksheetProfile({
+      digitRange: byId('worksheet-digit-range')?.value,
+      operationRange: byId('worksheet-operation-range')?.value,
+      operatorMode: byId('worksheet-operator-mode')?.value,
+    });
     const questions = type === 'curated'
       ? buildCuratedQuestions(level, length, sessionId)
-      : buildGeneratedQuestions(level, length, sessionId, questionStyle, termCount);
+      : level === 'L3'
+        ? buildGeneratedWorksheetQuestions({ level, length, sessionId, profile: worksheetProfile }).map((question) => ({
+        ...question,
+        progressKey: `generated-${simpleSlug(`${question.answer}-${question.id}`)}`,
+      }))
+        : buildGeneratedQuestions(level, length, sessionId, questionStyle, termCount);
     return {
       id: sessionId,
       type,
       level,
       length,
+      worksheetProfile: type === 'generated' ? worksheetProfile : null,
       checkMode,
       timerEnabled,
       format,
@@ -754,6 +790,9 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       const score = document.createElement('div');
       score.className = 'score-band';
       score.textContent = session.completed ? `${session.finalScore}/100` : 'In progress';
+      const profile = document.createElement('p');
+      profile.className = 'muted small';
+      profile.textContent = session.worksheetProfile ? buildWorksheetProfileLabel(session.worksheetProfile) : 'Lesson-aligned profile';
       const actions = document.createElement('div');
       actions.className = 'button-row';
       const resume = document.createElement('button');
@@ -780,7 +819,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         renderSession();
       });
       actions.append(resume, replay);
-      card.append(title, meta, score, actions);
+      card.append(title, meta, profile, score, actions);
       historyList.appendChild(card);
     });
   };
@@ -792,8 +831,10 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     const score = byId('session-score');
     const timer = byId('session-timer');
     const adaptiveNote = byId('session-adaptive-note');
+    const profile = byId('session-profile');
     const questionTitle = byId('question-title');
     const questionPrompt = byId('question-prompt');
+    const questionLedger = byId('question-ledger');
     const answerInput = byId('answer-input');
     const feedback = byId('feedback-panel');
     const stepsPanel = byId('steps-panel');
@@ -812,8 +853,11 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       score.textContent = 'Score —';
       timer.textContent = 'Timer off';
       adaptiveNote.textContent = '—';
+      profile.textContent = 'Profile —';
       questionTitle.textContent = 'Choose a session to begin.';
       questionPrompt.textContent = 'Curated lists follow the lessons; generated lists create replayable arithmetic practice.';
+      questionLedger.hidden = true;
+      questionLedger.textContent = '';
       answerInput.value = '';
       singleView.hidden = false;
       sheetView.hidden = true;
@@ -832,10 +876,13 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     score.textContent = `Score ${(currentSession.completed ? currentSession.finalScore : computeSessionScore(currentSession)) || 0}/100`;
     timer.textContent = currentSession.timerEnabled ? 'Timer on' : 'Timer off';
     adaptiveNote.textContent = currentSession.questionStyle === 'adaptive' ? describeAdaptivePractice(currentSession.level) : 'Standard session';
+    profile.textContent = `Profile ${currentSession.worksheetProfile ? buildWorksheetProfileLabel(currentSession.worksheetProfile) : 'Lesson-aligned'}`;
     questionTitle.textContent = currentSession.completed ? 'Session completed' : question.title;
     questionPrompt.textContent = currentSession.completed
       ? 'Review your score, replay the same list, or start a fresh session with a new ID.'
       : question.prompt;
+    questionLedger.hidden = !question.promptLines?.length || currentSession.completed;
+    questionLedger.textContent = question.promptLines?.join('\n') || '';
     answerInput.value = response.input || '';
     const isSheetMode = currentSession.format === 'sheet';
     singleView.hidden = isSheetMode;
@@ -1102,3 +1149,16 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   applyPracticeLevelDefaults(byId('session-level')?.value || 'L0');
   renderSession();
 </script>
+
+<style>
+  .worksheet-ledger {
+    margin: 0.75rem 0 0;
+    padding: 0.9rem 1rem;
+    border: 1px dashed color-mix(in srgb, var(--border) 78%, white 22%);
+    border-radius: 1rem;
+    background: color-mix(in srgb, white 86%, var(--surface) 14%);
+    color: var(--ink);
+    font: 600 1.1rem/1.7 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    white-space: pre-wrap;
+  }
+</style>

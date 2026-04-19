@@ -13,6 +13,8 @@
 - placement self-check
 - level milestone checks
 - richer filtering and review queue
+- configurable worksheet generator profiles
+- worksheet certification for generated and authored drills
 
 ## Phase 3
 
