@@ -15,6 +15,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       <button class="button button-secondary preset-button" data-preset="review">Review</button>
       <button class="button button-secondary preset-button" data-preset="speed">Speed</button>
       <button class="button button-secondary preset-button" data-preset="exam">Exam</button>
+      <button class="button button-secondary preset-button" data-preset="multiplication-focus">Multiplication</button>
+      <button class="button button-secondary preset-button" data-preset="division-focus">Division</button>
       <button class="button button-secondary preset-button" data-preset="carry">Carry</button>
       <button class="button button-secondary preset-button" data-preset="borrow">Borrow</button>
       <button class="button button-secondary preset-button" data-preset="complements">Complements</button>
@@ -223,6 +225,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       review: { mode: 'adaptive', level: 'L2', families: ['mixed', 'sequence'], band: '2-3', style: 'review', orientation: 'vertical', count: '40' },
       speed: { mode: 'dynamic', level: 'L3', families: ['addition', 'subtraction'], band: '2-3', style: 'speed', orientation: 'ledger', count: '60' },
       exam: { mode: 'dynamic', level: 'L4', families: ['multiplication', 'division', 'sequence'], band: '3-4', style: 'exam', orientation: 'vertical', count: '40' },
+      'multiplication-focus': { mode: 'dynamic', level: 'L4', families: ['multiplication'], band: '2-4', style: 'practice', orientation: 'ledger', count: '40' },
+      'division-focus': { mode: 'dynamic', level: 'L4', families: ['division'], band: '2-4', style: 'review', orientation: 'ledger', count: '40' },
       carry: { mode: 'dynamic', level: 'L2', families: ['addition'], band: '2-3', style: 'practice', orientation: 'vertical', count: '40' },
       borrow: { mode: 'dynamic', level: 'L2', families: ['subtraction'], band: '2-3', style: 'practice', orientation: 'vertical', count: '40' },
       complements: { mode: 'dynamic', level: 'L2', families: ['anzan'], band: '2-3', style: 'review', orientation: 'ledger', count: '40' },
@@ -841,9 +845,14 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     document.querySelectorAll('#worksheet-mode, #worksheet-level, #worksheet-family, #worksheet-band, #worksheet-style, #worksheet-orientation, #worksheet-count, #worksheet-print-mode').forEach((node) => {
       node.addEventListener('change', renderSheet);
     });
-    applyLevelDefaults();
+    const initialPreset = new URLSearchParams(window.location.search).get('preset');
+    if (initialPreset && presets[initialPreset]) {
+      applyPreset(initialPreset);
+    } else {
+      applyLevelDefaults();
+      renderSheet();
+    }
     setPrintMode();
     setMetric('worksheet-time', '0s');
-    renderSheet();
   </script>
 </BaseLayout>
