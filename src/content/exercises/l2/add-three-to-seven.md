@@ -11,6 +11,7 @@ prerequisites:
   - lesson-l2-002
 hint: Complete the ten.
 answer: 7 + 3 = 10.
+expectedValue: 10
 explanation: Reading the complement pair first makes the final value immediate.
 tags: [complements, addition]
 visualValue: 10

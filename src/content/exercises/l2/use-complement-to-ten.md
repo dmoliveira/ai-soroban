@@ -11,6 +11,7 @@ prerequisites:
   - lesson-l2-002
 hint: Ask what 7 needs to become 10.
 answer: 7 needs 3 to reach 10.
+expectedValue: 3
 explanation: The 7 and 3 pair is one of the core complements-to-ten patterns.
 tags: [complements, memory]
 visualValue: 10

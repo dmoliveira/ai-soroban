@@ -11,6 +11,7 @@ prerequisites:
   - lesson-l1-002
 hint: The result is a clean five.
 answer: 2 + 3 = 5.
+expectedValue: 5
 explanation: This is a useful first pattern because the result becomes the upper bead alone.
 tags: [addition, warmup]
 ---

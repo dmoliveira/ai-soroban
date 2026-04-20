@@ -51,6 +51,7 @@ const exercises = defineCollection({
     prerequisites: z.array(z.string()).default([]),
     hint: z.string(),
     answer: z.string(),
+    expectedValue: z.number().optional(),
     explanation: z.string(),
     tags: z.array(z.string()).default([]),
     visualValue: z.number().int().nonnegative().optional(),

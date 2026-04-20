@@ -11,6 +11,7 @@ prerequisites:
   - lesson-l0-002
 hint: Seven is five plus two.
 answer: One upper bead and two lower beads touching the beam represent 7.
+expectedValue: 7
 explanation: Read the upper bead first, then add the active lower beads.
 tags: [reading, beginner]
 ---

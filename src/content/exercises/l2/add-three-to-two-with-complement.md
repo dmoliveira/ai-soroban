@@ -11,6 +11,7 @@ prerequisites:
   - lesson-l2-001
 hint: Think of the pair that makes five.
 answer: 2 + 3 = 5.
+expectedValue: 5
 explanation: Complements let you move to a cleaner final shape instead of treating every step as unrelated.
 tags: [complements, addition]
 visualValue: 5

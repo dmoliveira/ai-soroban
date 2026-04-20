@@ -69,7 +69,7 @@ const bestFor = exercise.data.type === 'visual-check'
       </div>
       <label class="stack-sm answer-stack">
         <span>Your response</span>
-        <input id="exercise-response" class="input" type="text" inputmode="numeric" placeholder="Write your response before checking" />
+        <input id="exercise-response" class="input" type="text" inputmode={exercise.data.expectedValue !== undefined ? 'numeric' : 'text'} placeholder={exercise.data.expectedValue !== undefined ? 'Write your number before checking' : 'Write your response before checking'} />
       </label>
       <div class="button-row button-row-compact">
         <button class="button" id="verify-exercise">Verify response</button>
@@ -105,7 +105,7 @@ const bestFor = exercise.data.type === 'visual-check'
     </section>
   </article>
 
-  <script is:inline define:vars={{ answer: exercise.data.answer, hint: exercise.data.hint, explanation: exercise.data.explanation }}>
+  <script is:inline define:vars={{ answer: exercise.data.answer, expectedValue: exercise.data.expectedValue, hint: exercise.data.hint, explanation: exercise.data.explanation }}>
     const responseInput = document.getElementById('exercise-response');
     const feedback = document.getElementById('exercise-feedback');
     const method = document.getElementById('exercise-method');
@@ -141,6 +141,11 @@ const bestFor = exercise.data.type === 'visual-check'
       return Number.isNaN(parsed) ? null : parsed;
     };
 
+    const normalizeText = (value) => value
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim();
+
     const applyWriteCellShortcut = (event) => {
       const input = event.currentTarget;
       if (!(input instanceof HTMLInputElement) || event.metaKey || event.ctrlKey || event.altKey) return false;
@@ -166,12 +171,20 @@ const bestFor = exercise.data.type === 'visual-check'
         statusState.textContent = 'Waiting';
         return;
       }
-      const expected = normalizeNumber(answer);
-      const actual = normalizeNumber(value);
-      const correct = expected !== null && actual === expected;
+      const numericExpected = typeof expectedValue === 'number' ? expectedValue : null;
+      const numericActual = normalizeNumber(value);
+      const textExpected = normalizeText(answer);
+      const textActual = normalizeText(value);
+      const correct = numericExpected !== null
+        ? numericActual === numericExpected
+        : textActual.length > 0 && textActual === textExpected;
       feedback.hidden = false;
       playTone(correct ? 'success' : 'error');
-      feedback.textContent = correct ? 'Correct. Your response matches the answer.' : 'Not correct yet. Revise your response, ask for a hint, or reveal the answer.';
+      feedback.textContent = correct
+        ? 'Correct. Your response matches the answer.'
+        : numericExpected !== null
+          ? 'Not correct yet. Revise your number, ask for a hint, or reveal the answer.'
+          : 'Not correct yet. Revise your wording, ask for a hint, or reveal the answer.';
       responseState.textContent = value;
       statusState.textContent = correct ? 'Correct' : 'Try again';
     });

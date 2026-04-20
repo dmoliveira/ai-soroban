@@ -11,6 +11,7 @@ prerequisites:
   - lesson-l4-002
 hint: Ask how many equal groups of 4 fit into 12.
 answer: 12 ÷ 4 = 3.
+expectedValue: 3
 explanation: Try checking the result with 3 + 3 + 3 + 3.
 tags: [division, intermediate]
 visualValue: 3

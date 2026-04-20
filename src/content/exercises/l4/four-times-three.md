@@ -11,6 +11,7 @@ prerequisites:
   - lesson-l4-001
 hint: Four groups of 3 build the same total in a different rhythm.
 answer: 4 × 3 = 12.
+expectedValue: 12
 explanation: Seeing the same total through another grouping helps flexibility.
 tags: [multiplication, intermediate]
 visualValue: 12

@@ -11,6 +11,7 @@ prerequisites:
   - lesson-l4-001
 hint: Think in repeated groups of 4.
 answer: 3 × 4 = 12.
+expectedValue: 12
 explanation: Repeated addition is a gentle way to enter multiplication structure.
 tags: [multiplication, intermediate]
 visualValue: 12

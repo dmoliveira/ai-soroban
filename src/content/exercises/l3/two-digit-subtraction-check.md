@@ -11,6 +11,7 @@ prerequisites:
   - lesson-l3-001
 hint: Subtract the ones and tens carefully without losing the full number.
 answer: 36 - 12 = 24.
+expectedValue: 24
 explanation: Read the value again after subtraction to confirm each place stayed stable.
 tags: [mixed, subtraction]
 visualValue: 24

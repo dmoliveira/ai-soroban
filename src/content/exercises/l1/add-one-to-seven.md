@@ -11,6 +11,7 @@ prerequisites:
   - lesson-l1-002
 hint: Seven is five plus two; now add one more.
 answer: 7 + 1 = 8.
+expectedValue: 8
 explanation: Read the existing structure first, then add the smallest new movement possible.
 tags: [addition, beginner]
 ---

@@ -11,6 +11,7 @@ prerequisites:
   - lesson-l0-002
 hint: Think about what touches the beam.
 answer: Zero means no beads are touching the beam on that rod.
+expectedValue: 0
 explanation: On the soroban, an inactive rod shows zero when neither the upper nor lower beads touch the beam.
 tags: [reading, foundations]
 ---

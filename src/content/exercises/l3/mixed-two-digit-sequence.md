@@ -11,6 +11,7 @@ prerequisites:
   - lesson-l3-001
 hint: Read the full number after each operation, not only at the end.
 answer: 24 + 7 + 1 = 32.
+expectedValue: 32
 explanation: The key is holding place value calmly through each step.
 tags: [mixed, fluency]
 visualValue: 32

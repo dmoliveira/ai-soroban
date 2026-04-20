@@ -310,6 +310,14 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     };
 
     const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+    const shuffle = (items) => {
+      const copy = [...items];
+      for (let index = copy.length - 1; index > 0; index -= 1) {
+        const swapIndex = rand(0, index);
+        [copy[index], copy[swapIndex]] = [copy[swapIndex], copy[index]];
+      }
+      return copy;
+    };
     const randomDigits = (band) => {
       const { min, max } = parseBand(band);
       return rand(min, max);
@@ -437,6 +445,24 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       return `${a} - ${b}`;
     };
 
+    const buildUniquePrompts = (count, createPrompt) => {
+      const prompts = [];
+      const seen = new Set();
+      let attempts = 0;
+      const maxAttempts = Math.max(count * 30, 120);
+
+      while (prompts.length < count && attempts < maxAttempts) {
+        const prompt = createPrompt(prompts.length);
+        attempts += 1;
+        if (seen.has(prompt)) continue;
+        seen.add(prompt);
+        prompts.push(prompt);
+      }
+
+      while (prompts.length < count) prompts.push(createPrompt(prompts.length));
+      return prompts;
+    };
+
     const buildPrompts = () => {
       const mode = byId('worksheet-mode').value;
       const level = byId('worksheet-level').value;
@@ -447,8 +473,11 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       const bank = fixedBanks[level] || {};
       const fixedPool = families.flatMap((family) => bank[family] || []).filter(Boolean);
       const fixedFamily = fixedPool.length ? fixedPool : bank.mixed || Object.values(bank)[0] || [];
+      if (!fixedFamily.length) return [];
       if (mode === 'fixed') {
-        return Array.from({ length: count }, (_, index) => fixedFamily[index % fixedFamily.length]);
+        const cycled = [];
+        while (cycled.length < count) cycled.push(...shuffle(fixedFamily));
+        return cycled.slice(0, count);
       }
       if (mode === 'adaptive') {
         const weakAreas = readWeakAreas();
@@ -457,9 +486,9 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
           : weakAreas.complements > weakAreas.arithmetic
             ? 'anzan'
             : families[0] || 'addition';
-        return Array.from({ length: count }, () => makeDynamicPrompt(level, adaptiveFamily, band, style));
+        return buildUniquePrompts(count, () => makeDynamicPrompt(level, adaptiveFamily, band, style));
       }
-      return Array.from({ length: count }, (_, index) => makeDynamicPrompt(level, families[index % Math.max(1, families.length)] || 'addition', band, style));
+      return buildUniquePrompts(count, (index) => makeDynamicPrompt(level, families[index % Math.max(1, families.length)] || 'addition', band, style));
     };
 
     const renderSheet = () => {

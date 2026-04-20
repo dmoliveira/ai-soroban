@@ -11,6 +11,7 @@ prerequisites:
   - lesson-l4-002
 hint: Ask how many equal groups of 3 fit into 12.
 answer: 12 ÷ 3 = 4.
+expectedValue: 4
 explanation: Exact division becomes easier when you check it with repeated addition.
 tags: [division, intermediate]
 visualValue: 4

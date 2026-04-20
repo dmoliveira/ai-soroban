@@ -12,6 +12,7 @@ prerequisites:
   - lesson-l2-002
 hint: Work one line at a time and keep the sign changes calm.
 answer: 520 - 184 + 129 = 465.
+expectedValue: 465
 explanation: This authored worksheet now carries the same profile metadata used by generated worksheets, so its label and drill can be certified.
 tags: [worksheet, mixed, ledger, certification]
 worksheetProfile:

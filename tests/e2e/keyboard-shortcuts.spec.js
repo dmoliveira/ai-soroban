@@ -69,7 +69,7 @@ test('worksheet shortcuts clear, backspace, and advance after correct Enter', as
   await expect(page.locator('.worksheet-input').nth(1)).toBeFocused();
 });
 
-test('exercise shortcuts clear, backspace, and Enter triggers verification', async ({ page }) => {
+test('exercise shortcuts clear, backspace, and Enter verifies expected value', async ({ page }) => {
   await page.goto('/ai-soroban/exercises/l1/add-two-and-three');
 
   const input = page.locator('#exercise-response');
@@ -82,5 +82,5 @@ test('exercise shortcuts clear, backspace, and Enter triggers verification', asy
   await input.fill('5');
   await input.press('Enter');
 
-  await expect(page.locator('#exercise-state-status')).not.toContainText('Not checked');
+  await expect(page.locator('#exercise-state-status')).toContainText('Correct');
 });

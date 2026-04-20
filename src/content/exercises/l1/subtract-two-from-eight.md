@@ -11,6 +11,7 @@ prerequisites:
   - lesson-l1-003
 hint: Remove two lower beads from the active set.
 answer: 8 - 2 = 6.
+expectedValue: 6
 explanation: Eight is five plus three. Removing two leaves five plus one.
 tags: [subtraction, beginner]
 visualValue: 6

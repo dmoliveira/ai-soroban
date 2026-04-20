@@ -11,6 +11,7 @@ prerequisites:
   - lesson-l1-002
 hint: Four plus four is still on one rod.
 answer: 4 + 4 = 8.
+expectedValue: 8
 explanation: Read the final rod as five plus three.
 tags: [addition, beginner]
 visualValue: 8
