@@ -10,6 +10,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   <section class="panel">
     <p class="eyebrow">Lessons</p>
     <h1>Learn in order, then practice</h1>
+    <p class="muted">Need the full path from first beads through multiplication, division, worksheets, and mental practice? <a class="text-link" href={`${base}curriculum`}>Open the curriculum map</a>.</p>
     <ul class="list-clean">
       {lessons.map((lesson) => (
         <li>

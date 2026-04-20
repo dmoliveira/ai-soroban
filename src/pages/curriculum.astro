@@ -1,0 +1,133 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
+
+const stages = [
+  {
+    eyebrow: 'Stage 1',
+    title: 'Understand the device',
+    summary: 'Learn what each rod and bead means before solving anything. The goal is clean reading, clean setup, and no confusion about value.',
+    theory: ['Parts of the soroban', 'Zero and resting position', 'Single-digit reading', 'Two-rod place value'],
+    practice: ['Name the beam and bead groups', 'Read 0, 7, and 24', 'Set 31 and other two-rod values'],
+    lessons: [
+      { label: 'Parts of the Soroban', href: `${base}lessons/l0/parts-of-the-soroban` },
+      { label: 'Reading a Single Digit', href: `${base}lessons/l0/reading-a-single-digit` },
+      { label: 'Place Value on Two Rods', href: `${base}lessons/l0/place-value-on-two-rods` },
+    ],
+    action: { label: 'Open Foundations', href: `${base}levels/l0` },
+  },
+  {
+    eyebrow: 'Stage 2',
+    title: 'Move beads with control',
+    summary: 'Build the habit of moving only what is needed. This is where the device starts feeling physical instead of abstract.',
+    theory: ['How values change when beads touch the beam', 'Efficient setup and clearing', 'Direct one-rod addition and subtraction'],
+    practice: ['Set 4 and 8 quickly', 'Add and subtract on one rod', 'Re-read the rod after every move'],
+    lessons: [
+      { label: 'Setting First Numbers', href: `${base}lessons/l1/setting-first-numbers` },
+      { label: 'First Addition on One Rod', href: `${base}lessons/l1/first-addition-on-one-rod` },
+      { label: 'First Subtraction on One Rod', href: `${base}lessons/l1/first-subtraction-on-one-rod` },
+    ],
+    action: { label: 'Open Beginner Level', href: `${base}levels/l1` },
+  },
+  {
+    eyebrow: 'Stage 3',
+    title: 'Use complements and structured moves',
+    summary: 'This is where soroban starts becoming elegant. You stop forcing every move directly and learn the small patterns that make operations faster and cleaner.',
+    theory: ['Complements to 5', 'Complements to 10', 'When direct movement is blocked', 'How complements support carry and borrow'],
+    practice: ['Fill-to-5 drills', 'Fill-to-10 drills', 'Short complement additions and subtractions'],
+    lessons: [
+      { label: 'Complements to Five', href: `${base}lessons/l2/complements-to-five` },
+      { label: 'Complements to Ten', href: `${base}lessons/l2/complements-to-ten` },
+    ],
+    action: { label: 'Open Basic Operations', href: `${base}levels/l2` },
+  },
+  {
+    eyebrow: 'Stage 4',
+    title: 'Build fluency across multiple rods',
+    summary: 'Once single-digit movement is stable, the focus shifts to holding full numbers, keeping place value stable, and reading the total calmly after each step.',
+    theory: ['Two-digit and three-digit place handling', 'Mixed operations', 'Short vertical sequences', 'Reading the running total without drifting'],
+    practice: ['Two-digit mixed drills', '3-4 digit worksheet columns', 'Short timed fluency rounds'],
+    lessons: [
+      { label: 'Mixed Two-Digit Fluency', href: `${base}lessons/l3/mixed-two-digit-fluency` },
+    ],
+    action: { label: 'Open Intermediate Level', href: `${base}levels/l3` },
+  },
+  {
+    eyebrow: 'Stage 5',
+    title: 'Learn multiplication practically',
+    summary: 'Multiplication should not feel like a sudden jump. Start with grouped addition, then learn place shifts, then build partial-product confidence with drills that stay readable.',
+    theory: ['Multiplication as grouped addition', 'Multiplicand vs multiplier', 'Place shifts for tens', 'Small partial products and alignment'],
+    practice: ['3×4 and 4×3 grouped addition', '12×3 and 14×4 place-shift drills', 'Multiplication worksheets and repeated practice'],
+    lessons: [
+      { label: 'First Multiplication Patterns', href: `${base}lessons/l4/first-multiplication-patterns` },
+      { label: 'Place Shifts in Multiplication', href: `${base}lessons/l4/place-shifts-in-multiplication` },
+    ],
+    action: { label: 'Open Multiplication Track', href: `${base}levels/l4` },
+  },
+  {
+    eyebrow: 'Stage 6',
+    title: 'Learn division as controlled quotient building',
+    summary: 'Division becomes easier when it is treated as the inverse of multiplication: fit a known factor, place the quotient calmly, then confirm by multiplication.',
+    theory: ['Dividend, divisor, quotient', 'Equal grouping and missing-factor thinking', 'Exact division first', 'Checking with multiplication'],
+    practice: ['12÷3 and 12÷4', '24÷6 and 36÷9', 'Find-the-quotient pattern drills'],
+    lessons: [
+      { label: 'First Division Patterns', href: `${base}lessons/l4/first-division-patterns` },
+      { label: 'Building Quotients in Division', href: `${base}lessons/l4/building-quotients-in-division` },
+    ],
+    action: { label: 'Open Division Track', href: `${base}levels/l4` },
+  },
+  {
+    eyebrow: 'Stage 7',
+    title: 'Advance into speed and mental soroban',
+    summary: 'The final layer is not more theory first. It is compression: reading fewer patterns, holding more internally, and keeping accuracy under pace.',
+    theory: ['Mental soroban / anzan', 'Pattern compression', 'Speed without panic', 'Mixed review and error correction'],
+    practice: ['Sequence worksheets', 'Adaptive practice', 'Timed drills', 'Mistake review'],
+    lessons: [
+      { label: 'Practice Mode', href: `${base}practice` },
+      { label: 'Worksheet Mode', href: `${base}worksheets` },
+    ],
+    action: { label: 'Open Practice', href: `${base}practice` },
+  },
+];
+---
+
+<BaseLayout title="Curriculum Map | Soroban Dojo" description="A full end-to-end soroban curriculum from first device orientation through multiplication, division, worksheets, and mental practice.">
+  <section class="panel content-prose">
+    <p class="eyebrow">Curriculum</p>
+    <h1>Learn soroban end to end</h1>
+    <p>This map connects theory, worked examples, practical drills, worksheets, and review so each skill builds into the next one instead of feeling isolated.</p>
+    <div class="button-row">
+      <a class="button" href={`${base}start-here`}>Start here</a>
+      <a class="button button-secondary" href={`${base}lessons`}>Browse lessons</a>
+      <a class="button button-secondary" href={`${base}worksheets`}>Open worksheets</a>
+    </div>
+  </section>
+
+  <section class="split-grid">
+    {stages.map((stage) => (
+      <article class="panel content-prose">
+        <p class="eyebrow">{stage.eyebrow}</p>
+        <h2>{stage.title}</h2>
+        <p>{stage.summary}</p>
+        <p><strong>Theory</strong></p>
+        <ul>
+          {stage.theory.map((item) => <li>{item}</li>)}
+        </ul>
+        <p><strong>Practical work</strong></p>
+        <ul>
+          {stage.practice.map((item) => <li>{item}</li>)}
+        </ul>
+        <p><strong>Suggested lessons</strong></p>
+        <ul class="list-clean">
+          {stage.lessons.map((lesson) => (
+            <li><a class="text-link" href={lesson.href}>{lesson.label}</a></li>
+          ))}
+        </ul>
+        <div class="button-row">
+          <a class="button button-secondary" href={stage.action.href}>{stage.action.label}</a>
+        </div>
+      </article>
+    ))}
+  </section>
+</BaseLayout>

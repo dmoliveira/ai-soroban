@@ -9,8 +9,12 @@ export async function getStaticPaths() {
 }
 
 const { level } = Astro.props;
-const lessons = (await getCollection('lessons')).filter((entry) => entry.data.level === level.id);
-const exercises = (await getCollection('exercises')).filter((entry) => entry.data.level === level.id);
+const lessons = (await getCollection('lessons'))
+  .filter((entry) => entry.data.level === level.id)
+  .sort((a, b) => a.data.id.localeCompare(b.data.id));
+const exercises = (await getCollection('exercises'))
+  .filter((entry) => entry.data.level === level.id)
+  .sort((a, b) => a.data.id.localeCompare(b.data.id));
 const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
 ---
 
