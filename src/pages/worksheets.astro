@@ -455,11 +455,11 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       return parts.join(' ');
     };
 
-    const chooseFamily = (level, selectedFamily) => {
+    const chooseFamily = (level, selectedFamily, variant = 0) => {
       if (selectedFamily !== 'mixed') return selectedFamily;
-      if (level === 'L0' || level === 'L1') return Math.random() > 0.5 ? 'addition' : 'subtraction';
-      if (level === 'L4') return Math.random() > 0.5 ? 'multiplication' : 'division';
-      return Math.random() > 0.5 ? 'addition' : 'subtraction';
+      if (level === 'L0' || level === 'L1') return variant % 2 === 0 ? 'addition' : 'subtraction';
+      if (level === 'L4') return variant % 2 === 0 ? 'multiplication' : 'division';
+      return variant % 2 === 0 ? 'addition' : 'subtraction';
     };
 
     const applyLevelDefaults = () => {
@@ -546,7 +546,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       if (family === 'sequence' || family === 'anzan') {
         return buildSequencePrompt(family, bandRange, variant);
       }
-      const resolvedFamily = chooseFamily(level, family);
+      const resolvedFamily = chooseFamily(level, family, variant);
       const digits = randomDigits(adjustedBand);
       if (resolvedFamily === 'multiplication') {
         const a = randomNumberForDigits(Math.min(level === 'L5' ? 3 : 2, pickDigitsForVariant({ min: 1, max: digits }, variant)));
@@ -562,21 +562,44 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       return buildSubtractionPrompt({ min: bandRange.min, max: digits }, variant);
     };
 
+    const promptStructureSignature = (prompt) => {
+      const tokens = prompt.split(' ');
+      const parts = [];
+      for (let index = 0; index < tokens.length; index += 2) {
+        const value = tokens[index];
+        const operator = index === 0 ? 'start' : tokens[index - 1];
+        parts.push(`${operator}:${String(value).length}`);
+      }
+      return parts.join('|');
+    };
+
     const buildUniquePrompts = (count, createPrompt) => {
       const prompts = [];
       const seen = new Set();
+      const structureCounts = new Map();
       let attempts = 0;
-      const maxAttempts = Math.max(count * 30, 120);
+      const maxAttempts = Math.max(count * 120, 600);
+      const maxStructureRepeats = Math.max(2, Math.ceil(count / 10));
 
       while (prompts.length < count && attempts < maxAttempts) {
-        const prompt = createPrompt(prompts.length);
+        const prompt = createPrompt(prompts.length, attempts);
+        attempts += 1;
+        if (seen.has(prompt)) continue;
+        const structureSignature = promptStructureSignature(prompt);
+        const structureCount = structureCounts.get(structureSignature) || 0;
+        if (structureCount >= maxStructureRepeats) continue;
+        seen.add(prompt);
+        structureCounts.set(structureSignature, structureCount + 1);
+        prompts.push(prompt);
+      }
+
+      while (prompts.length < count && attempts < maxAttempts * 2) {
+        const prompt = createPrompt(prompts.length, attempts);
         attempts += 1;
         if (seen.has(prompt)) continue;
         seen.add(prompt);
         prompts.push(prompt);
       }
-
-      while (prompts.length < count) prompts.push(createPrompt(prompts.length));
       return prompts;
     };
 
@@ -603,9 +626,9 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
           : weakAreas.complements > weakAreas.arithmetic
             ? 'anzan'
             : families[0] || 'addition';
-        return buildUniquePrompts(count, (index) => makeDynamicPrompt(level, adaptiveFamily, band, style, index));
+        return buildUniquePrompts(count, (index, attempt) => makeDynamicPrompt(level, adaptiveFamily, band, style, index + attempt));
       }
-      return buildUniquePrompts(count, (index) => makeDynamicPrompt(level, families[index % Math.max(1, families.length)] || 'addition', band, style, index));
+      return buildUniquePrompts(count, (index, attempt) => makeDynamicPrompt(level, families[index % Math.max(1, families.length)] || 'addition', band, style, index + attempt));
     };
 
     const renderSheet = () => {

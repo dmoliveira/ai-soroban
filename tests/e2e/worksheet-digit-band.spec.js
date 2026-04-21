@@ -1,5 +1,11 @@
 import { expect, test } from '@playwright/test';
 
+const promptStructureSignature = (prompt) => prompt
+  .split(' ')
+  .filter((_, index) => index % 2 === 0)
+  .map((value, index) => `${index === 0 ? 'start' : prompt.split(' ')[(index * 2) - 1]}:${value.length}`)
+  .join('|');
+
 test('3-4 digit sequence worksheet keeps every rendered operand in band', async ({ page }) => {
   await page.goto('/ai-soroban/worksheets');
 
@@ -14,8 +20,10 @@ test('3-4 digit sequence worksheet keeps every rendered operand in band', async 
 
   const values = await page.locator('.vertical-drill-row .v-arith-value').allTextContents();
   const prompts = await page.locator('.worksheet-input').evaluateAll((inputs) => inputs.map((input) => input.getAttribute('data-prompt') || ''));
+  const structureCount = new Set(prompts.map(promptStructureSignature)).size;
   expect(values.length).toBeGreaterThan(0);
   expect(new Set(prompts).size).toBe(prompts.length);
+  expect(structureCount).toBeGreaterThanOrEqual(8);
 
   values.forEach((value) => {
     const digitsOnly = value.trim().replace(/\D/g, '');
