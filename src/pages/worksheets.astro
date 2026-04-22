@@ -69,9 +69,11 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
           <option value="4">4 digits</option>
           <option value="1-2">1–2 digits</option>
           <option value="2-3" selected>2–3 digits</option>
+          <option value="2-4">2–4 digits</option>
           <option value="3-4">3–4 digits</option>
           <option value="4-6">4–6 digits</option>
         </select>
+        <small id="worksheet-band-guide" class="muted small">Every displayed operand will stay inside this digit band.</small>
       </label>
       </div>
       <details class="worksheet-advanced-block">
@@ -111,6 +113,13 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
             </select>
           </label>
           <label class="stack-sm">
+            <span>Difficulty flow</span>
+            <select id="worksheet-flow-mode" class="select">
+              <option value="balanced">Balanced variety</option>
+              <option value="ramp">Ramp up through the sheet</option>
+            </select>
+          </label>
+          <label class="stack-sm">
             <span>Print mode</span>
             <select id="worksheet-print-mode" class="select">
               <option value="student">Student sheet</option>
@@ -137,6 +146,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     <div class="worksheet-current-setup subtle-panel">
       <strong>Current setup</strong>
       <div id="worksheet-current-setup-copy" class="muted small">L0 · fixed · addition/subtraction · 1 digit · ledger</div>
+      <div id="worksheet-band-summary" class="muted small">Each shown operand stays in the selected digit band.</div>
     </div>
 
     <div class="worksheet-scorebar subtle-panel" id="worksheet-scorebar">
@@ -227,18 +237,18 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       warmup: { mode: 'fixed', level: 'L0', families: ['addition', 'subtraction'], band: '1', style: 'practice', orientation: 'ledger', count: '20' },
       'foundations-focus': { mode: 'fixed', level: 'L0', families: ['addition', 'subtraction'], band: '1', style: 'practice', orientation: 'ledger', count: '20' },
       'one-rod-focus': { mode: 'fixed', level: 'L1', families: ['addition', 'subtraction'], band: '2', style: 'practice', orientation: 'ledger', count: '20' },
-      practice: { mode: 'dynamic', level: 'L2', families: ['mixed', 'sequence'], band: '2-3', style: 'practice', orientation: 'vertical', count: '40' },
-      'mixed-fluency': { mode: 'dynamic', level: 'L3', families: ['mixed', 'sequence'], band: '3-4', style: 'practice', orientation: 'vertical', count: '40' },
+      practice: { mode: 'dynamic', level: 'L2', families: ['mixed', 'sequence'], band: '2-3', style: 'practice', orientation: 'vertical', count: '40', flowMode: 'balanced' },
+      'mixed-fluency': { mode: 'dynamic', level: 'L3', families: ['mixed', 'sequence'], band: '3-4', style: 'practice', orientation: 'vertical', count: '40', flowMode: 'ramp' },
       review: { mode: 'adaptive', level: 'L2', families: ['mixed', 'sequence'], band: '2-3', style: 'review', orientation: 'vertical', count: '40' },
       speed: { mode: 'dynamic', level: 'L3', families: ['addition', 'subtraction'], band: '2-3', style: 'speed', orientation: 'ledger', count: '60' },
-      exam: { mode: 'dynamic', level: 'L4', families: ['multiplication', 'division', 'sequence'], band: '3-4', style: 'exam', orientation: 'vertical', count: '40' },
-      'multiplication-focus': { mode: 'dynamic', level: 'L4', families: ['multiplication'], band: '2-4', style: 'practice', orientation: 'ledger', count: '40' },
-      'division-focus': { mode: 'dynamic', level: 'L4', families: ['division'], band: '2-4', style: 'review', orientation: 'ledger', count: '40' },
-      'anzan-focus': { mode: 'dynamic', level: 'L5', families: ['anzan', 'sequence'], band: '4-6', style: 'review', orientation: 'vertical', count: '40' },
-      carry: { mode: 'dynamic', level: 'L2', families: ['addition'], band: '2-3', style: 'practice', orientation: 'vertical', count: '40' },
-      borrow: { mode: 'dynamic', level: 'L2', families: ['subtraction'], band: '2-3', style: 'practice', orientation: 'vertical', count: '40' },
+      exam: { mode: 'dynamic', level: 'L4', families: ['multiplication', 'division', 'sequence'], band: '3-4', style: 'exam', orientation: 'vertical', count: '40', flowMode: 'ramp' },
+      'multiplication-focus': { mode: 'dynamic', level: 'L4', families: ['multiplication'], band: '2-4', style: 'practice', orientation: 'ledger', count: '40', flowMode: 'ramp' },
+      'division-focus': { mode: 'dynamic', level: 'L4', families: ['division'], band: '2-4', style: 'review', orientation: 'ledger', count: '40', flowMode: 'ramp' },
+      'anzan-focus': { mode: 'dynamic', level: 'L5', families: ['anzan', 'sequence'], band: '4-6', style: 'review', orientation: 'vertical', count: '40', flowMode: 'ramp' },
+      carry: { mode: 'dynamic', level: 'L2', families: ['addition'], band: '2-3', style: 'practice', orientation: 'vertical', count: '40', flowMode: 'ramp' },
+      borrow: { mode: 'dynamic', level: 'L2', families: ['subtraction'], band: '2-3', style: 'practice', orientation: 'vertical', count: '40', flowMode: 'ramp' },
       complements: { mode: 'dynamic', level: 'L2', families: ['anzan'], band: '2-3', style: 'review', orientation: 'ledger', count: '40' },
-      'sequence-mix': { mode: 'dynamic', level: 'L3', families: ['sequence', 'mixed'], band: '3-4', style: 'practice', orientation: 'vertical', count: '40' },
+      'sequence-mix': { mode: 'dynamic', level: 'L3', families: ['sequence', 'mixed'], band: '3-4', style: 'practice', orientation: 'vertical', count: '40', flowMode: 'ramp' },
     };
 
     const byId = (id) => document.getElementById(id);
@@ -329,10 +339,6 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         [copy[index], copy[swapIndex]] = [copy[swapIndex], copy[index]];
       }
       return copy;
-    };
-    const randomDigits = (band) => {
-      const { min, max } = parseBand(band);
-      return rand(min, max);
     };
     const randomNumberForDigits = (digits) => {
       const min = digits === 1 ? 1 : 10 ** (digits - 1);
@@ -492,6 +498,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       byId('worksheet-style').value = preset.style;
       byId('worksheet-orientation').value = preset.orientation;
       byId('worksheet-count').value = preset.count;
+      byId('worksheet-flow-mode').value = preset.flowMode || 'balanced';
       document.querySelectorAll('input[name="worksheet-family"]').forEach((node) => {
         node.checked = preset.families.includes(node.value);
       });
@@ -539,15 +546,28 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       return band;
     };
 
-    const makeDynamicPrompt = (level, family, band, style, variant = 0) => {
+    const digitBandForProgress = (bandRange, count, index, flowMode) => {
+      if (flowMode !== 'ramp' || bandRange.min === bandRange.max) return bandRange;
+      const progress = count <= 1 ? 1 : index / (count - 1);
+      const threshold = bandRange.max > bandRange.min ? 0.45 : 1;
+      if (progress < threshold) {
+        return { min: bandRange.min, max: Math.max(bandRange.min, bandRange.max - 1) };
+      }
+      if (progress < 0.8) {
+        return { min: Math.max(bandRange.min, bandRange.max - 1), max: bandRange.max };
+      }
+      return { min: bandRange.max, max: bandRange.max };
+    };
+
+    const makeDynamicPrompt = (level, family, band, style, variant = 0, flowBand = null) => {
       const adjustedBand = styleAdjustBand(style, band);
-      const bandRange = parseBand(adjustedBand);
+      const bandRange = flowBand || parseBand(adjustedBand);
 
       if (family === 'sequence' || family === 'anzan') {
         return buildSequencePrompt(family, bandRange, variant);
       }
       const resolvedFamily = chooseFamily(level, family, variant);
-      const digits = randomDigits(adjustedBand);
+      const digits = rand(bandRange.min, bandRange.max);
       if (resolvedFamily === 'multiplication') {
         const a = randomNumberForDigits(Math.min(level === 'L5' ? 3 : 2, pickDigitsForVariant({ min: 1, max: digits }, variant)));
         const b = variant % 2 === 0 ? rand(2, level === 'L5' ? 12 : 9) : rand(3, level === 'L5' ? 11 : 8);
@@ -610,6 +630,9 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       const style = byId('worksheet-style').value;
       const count = Number(byId('worksheet-count').value);
       const band = byId('worksheet-band').value || levelBands[level] || '2';
+      const flowMode = byId('worksheet-flow-mode').value || 'balanced';
+      const adjustedBand = styleAdjustBand(style, band);
+      const overallBandRange = parseBand(adjustedBand);
       const bank = fixedBanks[level] || {};
       const fixedPool = families.flatMap((family) => bank[family] || []).filter(Boolean);
       const fixedFamily = fixedPool.length ? fixedPool : bank.mixed || Object.values(bank)[0] || [];
@@ -626,9 +649,9 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
           : weakAreas.complements > weakAreas.arithmetic
             ? 'anzan'
             : families[0] || 'addition';
-        return buildUniquePrompts(count, (index, attempt) => makeDynamicPrompt(level, adaptiveFamily, band, style, index + attempt));
+        return buildUniquePrompts(count, (index, attempt) => makeDynamicPrompt(level, adaptiveFamily, band, style, index + attempt, digitBandForProgress(overallBandRange, count, index, flowMode)));
       }
-      return buildUniquePrompts(count, (index, attempt) => makeDynamicPrompt(level, families[index % Math.max(1, families.length)] || 'addition', band, style, index + attempt));
+      return buildUniquePrompts(count, (index, attempt) => makeDynamicPrompt(level, families[index % Math.max(1, families.length)] || 'addition', band, style, index + attempt, digitBandForProgress(overallBandRange, count, index, flowMode)));
     };
 
     const renderSheet = () => {
@@ -684,9 +707,14 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       const familyLabel = selectedFamilies().join(', ') || 'addition';
       const levelLabel = byId('worksheet-level').value;
       const bandLabel = byId('worksheet-band').value;
+      const flowLabel = byId('worksheet-flow-mode').value === 'ramp' ? 'ramp up' : 'balanced variety';
+      const bandGuide = byId('worksheet-band-guide');
+      const bandSummary = byId('worksheet-band-summary');
       byId('worksheet-title').textContent = `${levelLabel} ${familyLabel} ${orientation === 'vertical' ? 'columns' : 'ledger'} · ${bandLabel} digits`;
       byId('worksheet-count-badge').textContent = `${prompts.length} drills`;
-      currentSetupCopy.textContent = `${levelLabel} · ${byId('worksheet-mode').value} · ${familyLabel} · ${bandLabel} digits · ${orientation}`;
+      currentSetupCopy.textContent = `${levelLabel} · ${byId('worksheet-mode').value} · ${familyLabel} · ${bandLabel} digits · ${flowLabel} · ${orientation}`;
+      if (bandGuide) bandGuide.textContent = `Every shown operand stays within ${bandLabel} digits. ${flowLabel === 'ramp up' ? 'The sheet starts easier and finishes denser.' : 'The sheet balances several prompt shapes across the full set.'}`;
+      if (bandSummary) bandSummary.textContent = `Operand band: ${bandLabel} digits. Flow: ${flowLabel}. Families: ${familyLabel}.`;
       scoreCopy.textContent = teacherMode
         ? 'Teacher key mode is active. Print or reveal for guided review.'
         : adaptiveMode
@@ -873,7 +901,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       const nextInput = inputs[inputs.indexOf(input) + 1];
       if (nextInput instanceof HTMLInputElement) nextInput.focus();
     });
-    document.querySelectorAll('#worksheet-mode, #worksheet-level, #worksheet-family, #worksheet-band, #worksheet-style, #worksheet-orientation, #worksheet-count, #worksheet-print-mode').forEach((node) => {
+    document.querySelectorAll('#worksheet-mode, #worksheet-level, #worksheet-family, #worksheet-band, #worksheet-style, #worksheet-orientation, #worksheet-count, #worksheet-flow-mode, #worksheet-print-mode').forEach((node) => {
       node.addEventListener('change', renderSheet);
     });
     const initialPreset = new URLSearchParams(window.location.search).get('preset');

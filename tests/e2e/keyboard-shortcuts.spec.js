@@ -51,6 +51,15 @@ test('practice Enter verifies and advances on correct answer', async ({ page }) 
   await expect(page.locator('#session-progress')).toContainText('Question 2 / 5');
 });
 
+test('practice fast start launches a warm-up session immediately', async ({ page }) => {
+  await page.goto('/ai-soroban/practice');
+
+  await page.getByRole('button', { name: 'Start warm-up now' }).click();
+
+  await expect(page.locator('#session-title')).toContainText('Curated L0 session');
+  await expect(page.locator('#session-progress')).toContainText('Question 1 / 5');
+});
+
 test('worksheet shortcuts clear, backspace, and advance after correct Enter', async ({ page }) => {
   await page.goto('/ai-soroban/worksheets');
 

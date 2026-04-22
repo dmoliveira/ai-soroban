@@ -179,9 +179,6 @@ const bestFor = lesson.data.skill === 'abacus-orientation'
       <SorobanVisualizer value={lesson.data.visualValue} stepValues={lesson.data.stepValues} label={`Worked visual for ${lesson.data.title}`} />
       </div>
     )}
-    <div id="lesson-content">
-      <Content components={{ LessonMiniCheck }} />
-    </div>
     {lessonMiniChecks && (
       <LessonMiniCheck title={lessonMiniChecks.title} prompt={lessonMiniChecks.prompt} answer={lessonMiniChecks.answer} inputMode={lessonMiniChecks.inputMode}>
         <ul>
@@ -189,6 +186,9 @@ const bestFor = lesson.data.skill === 'abacus-orientation'
         </ul>
       </LessonMiniCheck>
     )}
+    <div id="lesson-content">
+      <Content components={{ LessonMiniCheck }} />
+    </div>
     <section id="lesson-next" class="panel lesson-next-panel">
       <p class="eyebrow">Next step</p>
       <h2>Continue with guided practice</h2>

@@ -42,6 +42,8 @@ test('worksheet preset query opens focused multiplication drills', async ({ page
   const prompts = await page.locator('.worksheet-input').evaluateAll((inputs) => inputs.map((input) => input.getAttribute('data-prompt') || ''));
   expect(prompts.length).toBeGreaterThan(0);
   prompts.forEach((prompt) => expect(prompt).toContain('×'));
+  await expect(page.locator('#worksheet-band-guide')).toContainText('Every shown operand stays within 2-4 digits');
+  await expect(page.locator('#worksheet-current-setup-copy')).toContainText('ramp up');
 });
 
 test('curriculum mastery worksheet link opens anzan-focused sheet', async ({ page }) => {

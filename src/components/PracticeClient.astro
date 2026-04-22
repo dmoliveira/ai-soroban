@@ -48,6 +48,15 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       <button class="button button-secondary practice-preset" data-preset="speed">Speed</button>
       <button class="button button-secondary practice-preset" data-preset="mental">Mental</button>
     </div>
+    <div class="subtle-panel practice-fast-start">
+      <strong>Fast start</strong>
+      <p class="muted small">Launch a recommended session immediately, then fine-tune only if you need to.</p>
+      <div class="button-row button-row-compact">
+        <button class="button" id="start-warmup-now">Start warm-up now</button>
+        <button class="button button-secondary" id="start-practice-now">Start focused practice</button>
+        <a class="button button-secondary" href={`${base}curriculum`}>Follow curriculum</a>
+      </div>
+    </div>
     <details class="practice-setup-block">
       <summary>Adjust session setup</summary>
       <div class="practice-grid">
@@ -278,7 +287,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     </section>
 
     <aside class="panel stack-sm side-panel">
-      <details class="collapsible-block">
+      <details class="collapsible-block" id="history-block">
         <summary>
           <span>
             <p class="eyebrow">Session history</p>
@@ -290,7 +299,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         </div>
       </details>
 
-      <details class="collapsible-block">
+      <details class="collapsible-block" open>
         <summary>
           <span>
             <p class="eyebrow">Exercise library</p>
@@ -645,6 +654,11 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     syncPracticeSetupCopy();
   };
 
+  const startFromPreset = (key) => {
+    applyPreset(key);
+    byId('start-session')?.click();
+  };
+
   const createSession = ({ type, level, length, checkMode, timerEnabled, format, questionStyle, termCount }) => {
     const sessionId = makeId();
     const worksheetProfile = createWorksheetProfile({
@@ -814,15 +828,18 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
   const renderHistory = () => {
     const historyList = byId('history-list');
+    const historyBlock = byId('history-block');
     const sessions = readSessions();
     historyList.replaceChildren();
     if (!sessions.length) {
       const note = document.createElement('p');
       note.className = 'muted';
-      note.textContent = 'Your saved sessions will appear here.';
+      note.textContent = 'No saved sessions yet. Start one quick warm-up and it will appear here for resume or replay.';
       historyList.appendChild(note);
+      if (historyBlock) historyBlock.open = false;
       return;
     }
+    if (historyBlock) historyBlock.open = true;
     sessions.forEach((session) => {
       const card = document.createElement('article');
       card.className = 'session-card';
@@ -1162,6 +1179,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     button.addEventListener('click', () => applyPreset(button.dataset.preset));
   });
   byId('empty-warmup')?.addEventListener('click', () => applyPreset('warmup'));
+  byId('start-warmup-now')?.addEventListener('click', () => startFromPreset('warmup'));
+  byId('start-practice-now')?.addEventListener('click', () => startFromPreset('practice'));
   document.querySelectorAll('#session-format, #session-type, #session-level, #session-length, #question-style, #term-count, #timer-mode').forEach((node) => {
     node.addEventListener('change', syncPracticeSetupCopy);
   });
