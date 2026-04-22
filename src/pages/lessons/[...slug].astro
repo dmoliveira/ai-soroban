@@ -32,6 +32,21 @@ const worksheetPreset = lesson.data.level === 'L4' && lesson.data.skill === 'mul
       : lesson.data.skill === 'complements'
         ? 'complements'
         : null;
+const worksheetActions = lesson.data.skill === 'multiplication'
+  ? [
+      { label: 'Table-family worksheet', href: `${base}worksheets?preset=multiplication-focus&submode=table-family` },
+      { label: 'Place-shift worksheet', href: `${base}worksheets?preset=multiplication-focus&submode=place-shifts` },
+    ]
+  : lesson.data.skill === 'division'
+    ? [
+        { label: 'Division-facts worksheet', href: `${base}worksheets?preset=division-focus&submode=division-facts` },
+        { label: 'Quotient-building worksheet', href: `${base}worksheets?preset=division-focus&submode=quotient-building` },
+      ]
+    : lesson.data.skill === 'anzan' || lesson.data.skill === 'mastery'
+      ? [
+          { label: 'Mental recall worksheet', href: `${base}worksheets?preset=anzan-focus&submode=anzan-recall` },
+        ]
+      : [];
 const lessonMiniChecks = ({
   'lesson-l4-001': {
     title: 'Mini checks for first multiplication',
@@ -195,6 +210,7 @@ const bestFor = lesson.data.skill === 'abacus-orientation'
       <div class="button-row">
         <a class="button" href={`${base}practice`}>Practice this level</a>
         <a class="button button-secondary" href={worksheetPreset ? `${base}worksheets?preset=${worksheetPreset}` : `${base}worksheets`}>Open worksheet</a>
+        {worksheetActions.map((action) => <a class="button button-secondary" href={action.href}>{action.label}</a>)}
         {prerequisiteLesson && (
           <a class="button button-secondary" href={`${base}lessons/${prerequisiteLesson.slug}`}>Review prerequisite</a>
         )}

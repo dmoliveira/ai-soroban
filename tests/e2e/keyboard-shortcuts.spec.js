@@ -70,6 +70,20 @@ test('practice journey can launch multiplication and division training', async (
   await expect(page.locator('#session-profile')).toContainText('Profile');
 });
 
+test('practice adaptive next move updates from weakness history', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('soroban-dojo:exercise-states', JSON.stringify({
+      a: { status: 'needs-review', level: 'L4', skill: 'division', sessionId: 'exercise:L4:division' },
+      b: { status: 'needs-review', level: 'L4', skill: 'division', sessionId: 'exercise:L4:division' },
+    }));
+  });
+
+  await page.goto('/ai-soroban/practice');
+
+  await expect(page.locator('#adaptive-next-title')).toContainText('Division quotient-building');
+  await expect(page.locator('#adaptive-next-worksheet')).toHaveAttribute('href', /submode=quotient-building/);
+});
+
 test('worksheet shortcuts clear, backspace, and advance after correct Enter', async ({ page }) => {
   await page.goto('/ai-soroban/worksheets');
 

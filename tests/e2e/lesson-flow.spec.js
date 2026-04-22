@@ -20,3 +20,12 @@ test('lesson mini-checks and completion reveal exact next moves', async ({ page 
   await page.getByRole('link', { name: 'Matching worksheet' }).click();
   await expect(page).toHaveURL(/preset=multiplication-focus/);
 });
+
+test('division lesson links into focused worksheet submodes', async ({ page }) => {
+  await page.goto('/ai-soroban/lessons/l4/first-division-patterns');
+
+  await page.getByRole('link', { name: 'Quotient-building worksheet' }).click();
+
+  await expect(page).toHaveURL(/submode=quotient-building/);
+  await expect(page.locator('#worksheet-focus-title')).toContainText('Division quotient building');
+});

@@ -163,6 +163,11 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       <div id="worksheet-band-summary" class="muted small">Each shown operand stays in the selected digit band.</div>
       <div id="worksheet-target-summary" class="muted small">Focus target: auto</div>
     </div>
+    <div class="subtle-panel worksheet-focus-guide">
+      <strong id="worksheet-focus-title">Focus guide</strong>
+      <p id="worksheet-focus-copy" class="muted small">This sheet can adapt its drill style to the selected family or your recent weak areas.</p>
+      <p id="worksheet-focus-example" class="muted small">Example focus: balanced variety across the current sheet.</p>
+    </div>
 
     <div class="worksheet-scorebar subtle-panel" id="worksheet-scorebar">
       <strong>Score</strong>
@@ -579,6 +584,54 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       return ordered[0][0];
     };
 
+    const focusGuideCopy = {
+      auto: {
+        title: 'Auto focus',
+        copy: 'Let the worksheet family or adaptive review choose the drill style that best matches the current goal.',
+        example: 'Example: sequence work will emphasize sign changes while multiplication review may shift toward place-value structure.',
+      },
+      'arithmetic-rhythm': {
+        title: 'Arithmetic rhythm',
+        copy: 'Build steadier addition and subtraction timing without overloading each row with the same shape.',
+        example: 'Example: near-pair sums, carry-like additions, and borrow-like subtractions are mixed across the sheet.',
+      },
+      'complement-balance': {
+        title: 'Complement balance',
+        copy: 'Use smaller balancing moves so complements to five and ten become more immediate.',
+        example: 'Example: rows favor values that complete five or ten instead of only direct moves.',
+      },
+      'sequence-signs': {
+        title: 'Sequence sign changes',
+        copy: 'Train the calm shift between adding and subtracting so the running total stays readable.',
+        example: 'Example: the sheet rotates through different sign patterns instead of repeating one sequence shape.',
+      },
+      'table-family': {
+        title: 'Multiplication table family',
+        copy: 'Hold one multiplier family for longer so the product pattern becomes more familiar before mixing widely.',
+        example: 'Example: several rows may revolve around 6, then 7, then 8 rather than jumping randomly every line.',
+      },
+      'place-shifts': {
+        title: 'Multiplication place shifts',
+        copy: 'Practice multiplying numbers with tens and ones so place value stays stable during partial products.',
+        example: 'Example: rows like 14 × 4 or 32 × 5 make you separate the tens product from the ones product.',
+      },
+      'division-facts': {
+        title: 'Division fact families',
+        copy: 'Reinforce exact divisor families so quotient recall becomes faster and more confident.',
+        example: 'Example: the sheet will keep revisiting exact facts like ÷6, ÷7, and ÷9 with clean products.',
+      },
+      'quotient-building': {
+        title: 'Division quotient building',
+        copy: 'Focus on finding the missing factor calmly, then confirming it with multiplication.',
+        example: 'Example: rows favor exact quotients where the divisor and quotient relationship should feel deliberate, not guessed.',
+      },
+      'anzan-recall': {
+        title: 'Mental recall',
+        copy: 'Keep short mental totals alive through sign changes before pushing to longer or faster sequences.',
+        example: 'Example: the sheet favors cleaner mental runs with stable checkpoints after subtraction steps.',
+      },
+    };
+
     const styleAdjustBand = (style, band) => {
       if (style === 'speed') {
         if (band === '4-6') return '3-4';
@@ -803,12 +856,20 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       const bandGuide = byId('worksheet-band-guide');
       const bandSummary = byId('worksheet-band-summary');
       const targetSummary = byId('worksheet-target-summary');
+      const focusTitle = byId('worksheet-focus-title');
+      const focusCopy = byId('worksheet-focus-copy');
+      const focusExample = byId('worksheet-focus-example');
+      const focusKey = submodeLabel === 'auto' ? resolvedWorksheetTarget : submodeLabel;
+      const focusGuide = focusGuideCopy[focusKey] || focusGuideCopy.auto;
       byId('worksheet-title').textContent = `${levelLabel} ${familyLabel} ${orientation === 'vertical' ? 'columns' : 'ledger'} · ${bandLabel} digits`;
       byId('worksheet-count-badge').textContent = `${prompts.length} drills`;
       currentSetupCopy.textContent = `${levelLabel} · ${byId('worksheet-mode').value} · ${familyLabel} · ${bandLabel} digits · ${flowLabel} · ${submodeLabel} · ${orientation}`;
       if (bandGuide) bandGuide.textContent = `Every shown operand stays within ${bandLabel} digits. ${flowLabel === 'ramp up' ? 'The sheet starts easier and finishes denser.' : 'The sheet balances several prompt shapes across the full set.'}`;
       if (bandSummary) bandSummary.textContent = `Operand band: ${bandLabel} digits. Flow: ${flowLabel}. Families: ${familyLabel}.`;
       if (targetSummary) targetSummary.textContent = `Focus target: ${submodeLabel === 'auto' ? `auto -> ${resolvedWorksheetTarget}` : submodeLabel}.`;
+      if (focusTitle) focusTitle.textContent = focusGuide.title;
+      if (focusCopy) focusCopy.textContent = focusGuide.copy;
+      if (focusExample) focusExample.textContent = focusGuide.example;
       scoreCopy.textContent = teacherMode
         ? 'Teacher key mode is active. Print or reveal for guided review.'
         : adaptiveMode

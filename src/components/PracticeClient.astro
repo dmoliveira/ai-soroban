@@ -15,7 +15,7 @@ const { exercises } = Astro.props;
 const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
 ---
 
-<section class="practice-stack" data-library={JSON.stringify(exercises)}>
+<section class="practice-stack" data-library={JSON.stringify(exercises)} data-base={base}>
   <section class="panel practice-options">
     <div class="section-head">
       <div>
@@ -102,6 +102,15 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         <button class="button" id="start-warmup-now">Start warm-up now</button>
         <button class="button button-secondary" id="start-practice-now">Start focused practice</button>
         <a class="button button-secondary" href={`${base}curriculum`}>Follow curriculum</a>
+      </div>
+    </div>
+    <div class="subtle-panel practice-adaptive-next">
+      <strong id="adaptive-next-title">Adaptive next move</strong>
+      <p id="adaptive-next-copy" class="muted small">Review recommendations will appear here as your weak areas become clearer.</p>
+      <div class="button-row button-row-compact">
+        <a class="button button-secondary" id="adaptive-next-lesson" href={`${base}lessons`}>Recommended lesson</a>
+        <a class="button button-secondary" id="adaptive-next-exercise" href={`${base}exercises`}>Recommended exercise</a>
+        <a class="button button-secondary" id="adaptive-next-worksheet" href={`${base}worksheets`}>Recommended worksheet</a>
       </div>
     </div>
     <details class="practice-setup-block">
@@ -380,6 +389,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   import { buildGeneratedWorksheetQuestions, buildWorksheetProfileLabel, createRng, createWorksheetProfile } from '../lib/worksheet.js';
 
   const root = document.querySelector('.practice-stack');
+  const basePath = root?.dataset.base || '/';
   const library = JSON.parse(root?.dataset.library || '[]');
   const SESSION_KEY = 'soroban-dojo:practice-sessions';
   const TIMER_KEY = 'soroban-dojo:timer-history';
@@ -451,11 +461,56 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       const level = entry.level || '';
       const sessionId = entry.sessionId || '';
       if (skill === 'anzan' || skill === 'mastery' || level === 'L5' || sessionId.includes('L5')) acc.mental += 1;
-      else if (skill === 'multiplication' || skill === 'division' || level === 'L4' || sessionId.includes('L4')) acc.multiplication += 1;
+      else if (skill === 'division') acc.division += 1;
+      else if (skill === 'multiplication' || level === 'L4' || sessionId.includes('L4')) acc.multiplication += 1;
       else if (skill === 'complements' || level === 'L2' || sessionId.includes('L2')) acc.complements += 1;
       else acc.arithmetic += 1;
       return acc;
-    }, { arithmetic: 0, complements: 0, multiplication: 0, mental: 0 });
+    }, { arithmetic: 0, complements: 0, multiplication: 0, division: 0, mental: 0 });
+  };
+
+  const adaptiveRecommendations = {
+    arithmetic: {
+      title: 'Arithmetic rhythm needs more support',
+      copy: 'Return to short mixed arithmetic until the running total feels stable again.',
+      lesson: `${basePath}lessons/l3/mixed-two-digit-fluency`,
+      exercise: `${basePath}exercises/l3/mixed-two-digit-sequence`,
+      worksheet: `${basePath}worksheets?preset=mixed-fluency`,
+    },
+    complements: {
+      title: 'Complements are the current weak point',
+      copy: 'Use complement review before longer mixed work so blocked moves feel smaller and cleaner.',
+      lesson: `${basePath}lessons/l2/complements-to-ten`,
+      exercise: `${basePath}exercises/l2/use-complement-to-ten`,
+      worksheet: `${basePath}worksheets?preset=complements`,
+    },
+    multiplication: {
+      title: 'Multiplication needs a cleaner progression',
+      copy: 'Review table families and place shifts before doing broad mixed multiplication sheets.',
+      lesson: `${basePath}lessons/l4/place-shifts-in-multiplication`,
+      exercise: `${basePath}exercises/l4/twelve-times-three`,
+      worksheet: `${basePath}worksheets?preset=multiplication-focus&submode=place-shifts`,
+    },
+    division: {
+      title: 'Division quotient-building needs more support',
+      copy: 'Focus on exact quotient families and verification before wider mixed division work.',
+      lesson: `${basePath}lessons/l4/building-quotients-in-division`,
+      exercise: `${basePath}exercises/l4/twenty-four-divided-by-six`,
+      worksheet: `${basePath}worksheets?preset=division-focus&submode=quotient-building`,
+    },
+    mental: {
+      title: 'Mental recall and rhythm need reinforcement',
+      copy: 'Short anzan sequences and sign-change review should come before faster mixed mastery work.',
+      lesson: `${basePath}lessons/l5/mental-soroban-sequences`,
+      exercise: `${basePath}exercises/l5/three-step-anzan-sequence`,
+      worksheet: `${basePath}worksheets?preset=anzan-focus&submode=anzan-recall`,
+    },
+  };
+
+  const resolveAdaptiveTarget = () => {
+    const weak = readWeakAreas();
+    return ['mental', 'division', 'multiplication', 'complements', 'arithmetic']
+      .sort((a, b) => weak[b] - weak[a])[0];
   };
 
   const applyPracticeLevelDefaults = (level) => {
@@ -507,7 +562,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   const describeAdaptivePractice = (level) => {
     const weak = readWeakAreas();
     if (level === 'L5' || weak.mental >= weak.arithmetic) return 'Adaptive focus: mental / anzan recovery';
-    if (weak.multiplication > weak.arithmetic && level === 'L4') return 'Adaptive focus: multiplication / division repair';
+    if ((weak.multiplication > weak.arithmetic || weak.division > weak.arithmetic) && level === 'L4') return 'Adaptive focus: multiplication / division repair';
     if (weak.complements > weak.arithmetic && level === 'L2') return 'Adaptive focus: complements and balancing';
     return 'Adaptive focus: arithmetic rhythm and accuracy';
   };
@@ -610,6 +665,35 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         steps: [`Start at ${a}.`, ...sequence.ops.map(({ op, value }) => `${op === '+' ? 'Add' : 'Subtract'} ${value}.`), `Final value: ${sequence.total}.`],
       };
     }
+    if (level === 'L4') {
+      const multiplication = rng() > 0.5;
+      if (multiplication) {
+        const multiplicand = Math.floor(rng() * 90) + 10;
+        const multiplier = Math.floor(rng() * 7) + 2;
+        const answer = multiplicand * multiplier;
+        return {
+          id: `g-${level}-${index}`,
+          progressKey: `generated-${simpleSlug(`${level}-${multiplicand}-${multiplier}-${answer}`)}`,
+          title: `Generated multiplication drill ${index + 1}`,
+          prompt: `Solve ${multiplicand} × ${multiplier}.`,
+          answer,
+          visualValue: answer,
+          steps: [`Read ${multiplicand} as its place values.`, `Multiply by ${multiplier}.`, `Combine the partial products to reach ${answer}.`],
+        };
+      }
+      const divisor = Math.floor(rng() * 7) + 3;
+      const quotient = Math.floor(rng() * 8) + 2;
+      const dividend = divisor * quotient;
+      return {
+        id: `g-${level}-${index}`,
+        progressKey: `generated-${simpleSlug(`${level}-${dividend}-${divisor}-${quotient}`)}`,
+        title: `Generated division drill ${index + 1}`,
+        prompt: `Solve ${dividend} ÷ ${divisor}.`,
+        answer: quotient,
+        visualValue: quotient,
+        steps: [`Start from ${dividend}.`, `Ask what times ${divisor} gives ${dividend}.`, `The quotient is ${quotient}.`],
+      };
+    }
     if (level === 'L5' || effectiveStyle === 'mental') {
       const a = Math.floor(rng() * 60) + 20;
       const sequence = buildSequence(rng, a, Math.max(2, terms - 1), 30);
@@ -672,6 +756,11 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     const guideTitle = byId('practice-guide-title');
     const guideCopy = byId('practice-guide-copy');
     const purposeCopy = byId('practice-purpose-copy');
+    const adaptiveTitle = byId('adaptive-next-title');
+    const adaptiveCopy = byId('adaptive-next-copy');
+    const adaptiveLesson = byId('adaptive-next-lesson');
+    const adaptiveExercise = byId('adaptive-next-exercise');
+    const adaptiveWorksheet = byId('adaptive-next-worksheet');
     if (!target) return;
     target.textContent = `Format: ${byId('session-format').value} · Source: ${byId('session-type').value} · Level: ${byId('session-level').value} · Questions: ${byId('session-length').value} · Style: ${byId('question-style').value} · Terms: ${byId('term-count').value} · Timer: ${byId('timer-mode').value}`;
     if (!guideTitle || !guideCopy || !purposeCopy) return;
@@ -694,6 +783,15 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       guideTitle.textContent = 'Best for steady mixed practice';
       guideCopy.textContent = 'Use this configuration to keep rhythm while building fluency across several related drill types.';
       purposeCopy.textContent = 'steady fluency, review, and progression';
+    }
+    const adaptiveTarget = resolveAdaptiveTarget();
+    const recommendation = adaptiveRecommendations[adaptiveTarget];
+    if (adaptiveTitle && adaptiveCopy && adaptiveLesson && adaptiveExercise && adaptiveWorksheet) {
+      adaptiveTitle.textContent = recommendation.title;
+      adaptiveCopy.textContent = recommendation.copy;
+      adaptiveLesson.href = recommendation.lesson;
+      adaptiveExercise.href = recommendation.exercise;
+      adaptiveWorksheet.href = recommendation.worksheet;
     }
   };
 
