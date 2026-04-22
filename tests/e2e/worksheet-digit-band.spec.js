@@ -44,6 +44,27 @@ test('worksheet preset query opens focused multiplication drills', async ({ page
   prompts.forEach((prompt) => expect(prompt).toContain('×'));
   await expect(page.locator('#worksheet-band-guide')).toContainText('Every shown operand stays within 2-4 digits');
   await expect(page.locator('#worksheet-current-setup-copy')).toContainText('ramp up');
+  await expect(page.locator('#worksheet-target-summary')).toContainText('place-shifts');
+});
+
+test('adaptive worksheet targets division weakness automatically', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('soroban-dojo:exercise-states', JSON.stringify({
+      a: { status: 'needs-review', level: 'L4', skill: 'division', sessionId: 'exercise:L4:division' },
+      b: { status: 'needs-review', level: 'L4', skill: 'division', sessionId: 'exercise:L4:division' },
+      c: { status: 'needs-review', level: 'L2', skill: 'complements', sessionId: 'exercise:L2:complements' },
+    }));
+  });
+
+  await page.goto('/ai-soroban/worksheets');
+  await page.selectOption('#worksheet-mode', 'adaptive');
+  await page.selectOption('#worksheet-level', 'L4');
+  await page.getByRole('button', { name: 'Generate ledger' }).click();
+
+  await expect(page.locator('#worksheet-target-summary')).toContainText('quotient-building');
+  const prompts = await page.locator('.worksheet-input').evaluateAll((inputs) => inputs.map((input) => input.getAttribute('data-prompt') || ''));
+  expect(prompts.length).toBeGreaterThan(0);
+  prompts.forEach((prompt) => expect(prompt).toContain('÷'));
 });
 
 test('curriculum mastery worksheet link opens anzan-focused sheet', async ({ page }) => {

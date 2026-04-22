@@ -105,12 +105,13 @@ const bestFor = exercise.data.type === 'visual-check'
     </section>
   </article>
 
-  <script is:inline define:vars={{ answer: exercise.data.answer, expectedValue: exercise.data.expectedValue, hint: exercise.data.hint, explanation: exercise.data.explanation }}>
+  <script is:inline define:vars={{ answer: exercise.data.answer, expectedValue: exercise.data.expectedValue, hint: exercise.data.hint, explanation: exercise.data.explanation, exerciseId: exercise.data.id, exerciseLevel: exercise.data.level, exerciseSkill: exercise.data.skill }}>
     const responseInput = document.getElementById('exercise-response');
     const feedback = document.getElementById('exercise-feedback');
     const method = document.getElementById('exercise-method');
     const responseState = document.getElementById('exercise-state-response');
     const statusState = document.getElementById('exercise-state-status');
+    const exerciseStateKey = 'soroban-dojo:exercise-states';
     const audioWindow = typeof window !== 'undefined' ? /** @type {any} */ (window) : null;
     const AudioContextCtor = audioWindow
       ? audioWindow.AudioContext || (audioWindow).webkitAudioContext || null
@@ -145,6 +146,16 @@ const bestFor = exercise.data.type === 'visual-check'
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, ' ')
       .trim();
+
+    const readExerciseStates = () => {
+      try {
+        return JSON.parse(localStorage.getItem(exerciseStateKey) || '{}');
+      } catch {
+        return {};
+      }
+    };
+
+    const writeExerciseStates = (state) => localStorage.setItem(exerciseStateKey, JSON.stringify(state));
 
     const applyWriteCellShortcut = (event) => {
       const input = event.currentTarget;
@@ -187,6 +198,15 @@ const bestFor = exercise.data.type === 'visual-check'
           : 'Not correct yet. Revise your wording, ask for a hint, or reveal the answer.';
       responseState.textContent = value;
       statusState.textContent = correct ? 'Correct' : 'Try again';
+      const state = readExerciseStates();
+      state[exerciseId] = {
+        status: correct ? 'got-it' : 'needs-review',
+        level: exerciseLevel,
+        skill: exerciseSkill,
+        sessionId: `exercise:${exerciseLevel}:${exerciseSkill}`,
+        updatedAt: new Date().toISOString(),
+      };
+      writeExerciseStates(state);
     });
 
     document.getElementById('hint-exercise')?.addEventListener('click', () => {

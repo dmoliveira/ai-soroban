@@ -60,6 +60,16 @@ test('practice fast start launches a warm-up session immediately', async ({ page
   await expect(page.locator('#session-progress')).toContainText('Question 1 / 5');
 });
 
+test('practice journey can launch multiplication and division training', async ({ page }) => {
+  await page.goto('/ai-soroban/practice');
+
+  await page.getByRole('button', { name: 'Start now' }).nth(3).click();
+
+  await expect(page.locator('#session-title')).toContainText('Generated L4 session');
+  await expect(page.locator('#session-progress')).toContainText('Question 1 / 15');
+  await expect(page.locator('#session-profile')).toContainText('Profile');
+});
+
 test('worksheet shortcuts clear, backspace, and advance after correct Enter', async ({ page }) => {
   await page.goto('/ai-soroban/worksheets');
 

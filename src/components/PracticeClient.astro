@@ -41,6 +41,53 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         <p>Continue where you stopped, compare scores, or replay a past list with a fresh answer sheet.</p>
       </article>
     </div>
+    <div class="option-grid option-grid-compact practice-journey-grid">
+      <article class="choice-card">
+        <p class="eyebrow">Journey</p>
+        <h3>Build foundations</h3>
+        <p>Short visual-first drills for reading, one-rod moves, and calm confidence.</p>
+        <div class="button-row button-row-compact">
+          <button class="button button-secondary practice-journey-button" data-journey="foundations">Use journey</button>
+          <button class="button button-secondary practice-journey-start" data-journey="foundations">Start now</button>
+        </div>
+      </article>
+      <article class="choice-card">
+        <p class="eyebrow">Journey</p>
+        <h3>Strengthen complements</h3>
+        <p>Train five and ten complements until blocked moves feel cleaner and smaller.</p>
+        <div class="button-row button-row-compact">
+          <button class="button button-secondary practice-journey-button" data-journey="complements">Use journey</button>
+          <button class="button button-secondary practice-journey-start" data-journey="complements">Start now</button>
+        </div>
+      </article>
+      <article class="choice-card">
+        <p class="eyebrow">Journey</p>
+        <h3>Mixed fluency</h3>
+        <p>Hold full numbers through short mixed sequences before pushing speed.</p>
+        <div class="button-row button-row-compact">
+          <button class="button button-secondary practice-journey-button" data-journey="fluency">Use journey</button>
+          <button class="button button-secondary practice-journey-start" data-journey="fluency">Start now</button>
+        </div>
+      </article>
+      <article class="choice-card">
+        <p class="eyebrow">Journey</p>
+        <h3>Multiply and divide</h3>
+        <p>Work through table facts, place shifts, and quotient building in a steadier order.</p>
+        <div class="button-row button-row-compact">
+          <button class="button button-secondary practice-journey-button" data-journey="muldiv">Use journey</button>
+          <button class="button button-secondary practice-journey-start" data-journey="muldiv">Start now</button>
+        </div>
+      </article>
+      <article class="choice-card">
+        <p class="eyebrow">Journey</p>
+        <h3>Mental mastery</h3>
+        <p>Use anzan-style sessions to stabilize mental totals, rhythm, and error recovery.</p>
+        <div class="button-row button-row-compact">
+          <button class="button button-secondary practice-journey-button" data-journey="mastery">Use journey</button>
+          <button class="button button-secondary practice-journey-start" data-journey="mastery">Start now</button>
+        </div>
+      </article>
+    </div>
     <div class="practice-preset-row">
       <button class="button button-secondary practice-preset" data-preset="warmup">Warm-up</button>
       <button class="button button-secondary practice-preset" data-preset="practice">Practice</button>
@@ -400,10 +447,12 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     const states = readExerciseStates();
     return Object.values(states).reduce((acc, entry) => {
       if (entry?.status !== 'needs-review') return acc;
+      const skill = entry.skill || '';
+      const level = entry.level || '';
       const sessionId = entry.sessionId || '';
-      if (sessionId.includes('L5')) acc.mental += 1;
-      else if (sessionId.includes('L4')) acc.multiplication += 1;
-      else if (sessionId.includes('L2')) acc.complements += 1;
+      if (skill === 'anzan' || skill === 'mastery' || level === 'L5' || sessionId.includes('L5')) acc.mental += 1;
+      else if (skill === 'multiplication' || skill === 'division' || level === 'L4' || sessionId.includes('L4')) acc.multiplication += 1;
+      else if (skill === 'complements' || level === 'L2' || sessionId.includes('L2')) acc.complements += 1;
       else acc.arithmetic += 1;
       return acc;
     }, { arithmetic: 0, complements: 0, multiplication: 0, mental: 0 });
@@ -610,6 +659,14 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     mental: { format: 'single', type: 'generated', level: 'L5', length: '10', checkMode: 'steps', timerMode: 'off', questionStyle: 'mental', termCount: '4' },
   };
 
+  const journeys = {
+    foundations: { format: 'single', type: 'curated', level: 'L0', length: '5', checkMode: 'final', timerMode: 'off', questionStyle: 'visual', termCount: '2' },
+    complements: { format: 'single', type: 'generated', level: 'L2', length: '10', checkMode: 'steps', timerMode: 'off', questionStyle: 'mixed', termCount: '3' },
+    fluency: { format: 'sheet', type: 'generated', level: 'L3', length: '10', checkMode: 'verify', timerMode: 'off', questionStyle: 'mixed', termCount: '3' },
+    muldiv: { format: 'sheet', type: 'generated', level: 'L4', length: '15', checkMode: 'verify', timerMode: 'off', questionStyle: 'mixed', termCount: '3' },
+    mastery: { format: 'single', type: 'generated', level: 'L5', length: '10', checkMode: 'steps', timerMode: 'off', questionStyle: 'mental', termCount: '4' },
+  };
+
   const syncPracticeSetupCopy = () => {
     const target = byId('practice-current-setup-copy');
     const guideTitle = byId('practice-guide-title');
@@ -654,8 +711,27 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     syncPracticeSetupCopy();
   };
 
+  const applyJourney = (key) => {
+    const journey = journeys[key];
+    if (!journey) return;
+    byId('session-format').value = journey.format;
+    byId('session-type').value = journey.type;
+    byId('session-level').value = journey.level;
+    byId('session-length').value = journey.length;
+    byId('check-mode').value = journey.checkMode;
+    byId('timer-mode').value = journey.timerMode;
+    byId('question-style').value = journey.questionStyle;
+    byId('term-count').value = journey.termCount;
+    syncPracticeSetupCopy();
+  };
+
   const startFromPreset = (key) => {
     applyPreset(key);
+    byId('start-session')?.click();
+  };
+
+  const startFromJourney = (key) => {
+    applyJourney(key);
     byId('start-session')?.click();
   };
 
@@ -763,6 +839,14 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     existing[question.progressKey || question.id] = {
       status: response.correct ? 'got-it' : 'needs-review',
       sessionId: currentSession.id,
+      level: currentSession.level,
+      skill: currentSession.level === 'L4'
+        ? 'multiplication'
+        : currentSession.level === 'L5'
+          ? 'anzan'
+          : currentSession.level === 'L2'
+            ? 'complements'
+            : 'arithmetic',
       updatedAt: new Date().toISOString(),
     };
     writeExerciseStates(existing);
@@ -1177,6 +1261,13 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
   document.querySelectorAll('[data-preset]').forEach((button) => {
     button.addEventListener('click', () => applyPreset(button.dataset.preset));
+  });
+  document.querySelectorAll('[data-journey]').forEach((button) => {
+    if (button.classList.contains('practice-journey-start')) {
+      button.addEventListener('click', () => startFromJourney(button.dataset.journey));
+      return;
+    }
+    button.addEventListener('click', () => applyJourney(button.dataset.journey));
   });
   byId('empty-warmup')?.addEventListener('click', () => applyPreset('warmup'));
   byId('start-warmup-now')?.addEventListener('click', () => startFromPreset('warmup'));
