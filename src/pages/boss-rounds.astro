@@ -1,0 +1,79 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
+
+const rounds = [
+  {
+    level: 'L0',
+    title: 'First bead boss',
+    challenge: 'Read and set values without confusing the beam, upper bead, and lower beads.',
+    lesson: `${base}lessons/l0/parts-of-the-soroban`,
+    exercise: `${base}exercises/l0/set-thirty-one`,
+    worksheet: `${base}worksheets?preset=foundations-focus`,
+  },
+  {
+    level: 'L1',
+    title: 'One-rod boss',
+    challenge: 'Use direct addition and subtraction calmly before rushing into complements.',
+    lesson: `${base}lessons/l1/first-addition-on-one-rod`,
+    exercise: `${base}exercises/l1/add-four-and-four`,
+    worksheet: `${base}worksheets?preset=one-rod-focus`,
+  },
+  {
+    level: 'L2',
+    title: 'Complement boss',
+    challenge: 'Prove that five and ten complements are patterns you can trust, not facts you are guessing.',
+    lesson: `${base}lessons/l2/complements-to-ten`,
+    exercise: `${base}exercises/l2/use-complement-to-ten`,
+    worksheet: `${base}worksheets?preset=complements&submode=complement-balance`,
+  },
+  {
+    level: 'L3',
+    title: 'Fluency boss',
+    challenge: 'Keep a stable running total through carries, borrows, and sign changes.',
+    lesson: `${base}lessons/l3/mixed-two-digit-fluency`,
+    exercise: `${base}exercises/l3/sign-switch-relay`,
+    worksheet: `${base}worksheets?preset=mixed-fluency&submode=sequence-signs`,
+  },
+  {
+    level: 'L4',
+    title: 'Product and quotient boss',
+    challenge: 'Switch between multiplication and division structure without losing place value or fact-family clarity.',
+    lesson: `${base}lessons/l4/building-quotients-in-division`,
+    exercise: `${base}exercises/l4/twenty-three-times-four`,
+    worksheet: `${base}worksheets?preset=division-focus&submode=quotient-building`,
+  },
+  {
+    level: 'L5',
+    title: 'Mental mastery boss',
+    challenge: 'Hold the full total through sign changes and finish accurately under pace.',
+    lesson: `${base}lessons/l5/speed-rhythm-and-error-checking`,
+    exercise: `${base}exercises/l5/mental-ladder-finish`,
+    worksheet: `${base}worksheets?preset=anzan-focus&submode=anzan-recall`,
+  },
+];
+---
+
+<BaseLayout title="Boss Rounds | Soroban Dojo">
+  <section class="panel content-prose">
+    <p class="eyebrow">Boss rounds</p>
+    <h1>Level endings that feel like milestones</h1>
+    <p>Each boss round combines one lesson, one exercise, and one focused worksheet so the end of a level feels earned instead of abrupt.</p>
+  </section>
+
+  <section class="card-grid">
+    {rounds.map((round) => (
+      <article class="panel content-prose">
+        <p class="eyebrow">{round.level}</p>
+        <h2>{round.title}</h2>
+        <p>{round.challenge}</p>
+        <div class="button-row button-row-compact">
+          <a class="button button-secondary" href={round.lesson}>Lesson</a>
+          <a class="button button-secondary" href={round.exercise}>Exercise</a>
+          <a class="button button-secondary" href={round.worksheet}>Worksheet</a>
+        </div>
+      </article>
+    ))}
+  </section>
+</BaseLayout>
