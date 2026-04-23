@@ -1,0 +1,181 @@
+<section class="panel mini-games-panel">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">Mini games</p>
+      <h1>Play short games that still build real skill</h1>
+      <p class="muted">Each mode is intentionally small: fast enough to feel playful, structured enough to strengthen one skill at a time.</p>
+    </div>
+    <span class="badge">Score, streak, improve</span>
+  </div>
+
+  <div class="card-grid">
+    <article class="choice-card">
+      <p class="eyebrow">Game</p>
+      <h3>Complement dash</h3>
+      <p>Answer missing-to-5 and missing-to-10 prompts quickly without losing accuracy.</p>
+      <div class="button-row button-row-compact">
+        <button class="button button-secondary minigame-select" data-game="complement-dash">Use game</button>
+        <button class="button button-secondary minigame-start" data-game="complement-dash">Start now</button>
+      </div>
+    </article>
+    <article class="choice-card">
+      <p class="eyebrow">Game</p>
+      <h3>Table tower</h3>
+      <p>Climb one multiplication family floor by floor and try to keep the streak alive.</p>
+      <div class="button-row button-row-compact">
+        <button class="button button-secondary minigame-select" data-game="table-tower">Use game</button>
+        <button class="button button-secondary minigame-start" data-game="table-tower">Start now</button>
+      </div>
+    </article>
+    <article class="choice-card">
+      <p class="eyebrow">Game</p>
+      <h3>Anzan flash</h3>
+      <p>Read short mental sequences, hold the total, and finish before the timer drains.</p>
+      <div class="button-row button-row-compact">
+        <button class="button button-secondary minigame-select" data-game="anzan-flash">Use game</button>
+        <button class="button button-secondary minigame-start" data-game="anzan-flash">Start now</button>
+      </div>
+    </article>
+  </div>
+
+  <div class="subtle-panel mini-game-summary">
+    <strong id="mini-game-title">Choose a mini-game</strong>
+    <p id="mini-game-copy" class="muted small">Pick a mode to see the rule, target skill, and best score.</p>
+    <div id="mini-game-best" class="muted small">Best score: 0</div>
+  </div>
+
+  <div class="subtle-panel mini-game-playfield">
+    <div class="button-row button-row-compact mini-game-controls">
+      <button class="button" id="mini-game-generate">Generate round</button>
+      <button class="button button-secondary" id="mini-game-check">Check answer</button>
+    </div>
+    <div class="stats-grid">
+      <article class="stat-card stat-card-soft"><small>Score</small><span id="mini-game-score">0</span></article>
+      <article class="stat-card stat-card-soft"><small>Streak</small><span id="mini-game-streak">0</span></article>
+      <article class="stat-card stat-card-soft"><small>Round</small><span id="mini-game-round">0</span></article>
+    </div>
+    <div class="subtle-panel">
+      <strong id="mini-game-prompt-title">Prompt</strong>
+      <p id="mini-game-prompt" class="muted small">Generate a round to start.</p>
+      <div class="button-row button-row-compact">
+        <input id="mini-game-answer" class="input" type="text" inputmode="numeric" placeholder="Write your answer" />
+      </div>
+      <p id="mini-game-feedback" class="muted small">Correct answers raise your score and streak.</p>
+    </div>
+  </div>
+</section>
+
+<script is:inline>
+  const scoreKey = 'soroban-dojo:minigame-scores';
+  const byId = (id) => document.getElementById(id);
+  const games = {
+    'complement-dash': {
+      title: 'Complement dash',
+      copy: 'Target skill: complements to five and ten under light time pressure.',
+      make: (round) => {
+        const toTen = round % 2 === 0;
+        const base = toTen ? 10 : 5;
+        const given = Math.floor(Math.random() * (base - 1)) + 1;
+        return { prompt: `What completes ${given} to ${base}?`, answer: base - given };
+      },
+    },
+    'table-tower': {
+      title: 'Table tower',
+      copy: 'Target skill: multiplication family recall with a visible streak loop.',
+      make: (round) => {
+        const table = [3, 4, 5, 6, 7, 8][round % 6];
+        const factor = (round % 8) + 2;
+        return { prompt: `${table} × ${factor}`, answer: table * factor };
+      },
+    },
+    'anzan-flash': {
+      title: 'Anzan flash',
+      copy: 'Target skill: short mental sequence recall with sign changes.',
+      make: (round) => {
+        const packs = [
+          { prompt: '18 + 7 - 4 + 5', answer: 26 },
+          { prompt: '42 - 9 + 16 - 3', answer: 46 },
+          { prompt: '57 + 18 - 26 + 9', answer: 58 },
+        ];
+        return packs[round % packs.length];
+      },
+    },
+  };
+
+  let currentGame = 'complement-dash';
+  let currentRound = null;
+  let score = 0;
+  let streak = 0;
+  let round = 0;
+
+  const readScores = () => {
+    try { return JSON.parse(localStorage.getItem(scoreKey) || '{}'); } catch { return {}; }
+  };
+  const writeScores = (state) => localStorage.setItem(scoreKey, JSON.stringify(state));
+  const syncGameMeta = () => {
+    const game = games[currentGame];
+    const scores = readScores();
+    byId('mini-game-title').textContent = game.title;
+    byId('mini-game-copy').textContent = game.copy;
+    byId('mini-game-best').textContent = `Best score: ${scores[currentGame] || 0}`;
+  };
+  const syncStats = () => {
+    byId('mini-game-score').textContent = String(score);
+    byId('mini-game-streak').textContent = String(streak);
+    byId('mini-game-round').textContent = String(round);
+  };
+  const startRound = () => {
+    round += 1;
+    currentRound = games[currentGame].make(round);
+    byId('mini-game-prompt').textContent = currentRound.prompt;
+    byId('mini-game-answer').value = '';
+    byId('mini-game-feedback').textContent = 'Solve it, then check your answer.';
+    syncStats();
+  };
+  const checkRound = () => {
+    if (!currentRound) return;
+    const value = Number(byId('mini-game-answer').value.trim());
+    if (Number.isNaN(value)) {
+      byId('mini-game-feedback').textContent = 'Write a numeric answer first.';
+      return;
+    }
+    const correct = value === currentRound.answer;
+    if (correct) {
+      streak += 1;
+      score += 10 + (streak * 2);
+      const scores = readScores();
+      scores[currentGame] = Math.max(scores[currentGame] || 0, score);
+      writeScores(scores);
+      byId('mini-game-feedback').textContent = `Correct. Score +${10 + (streak * 2)}.`;
+      syncGameMeta();
+      startRound();
+      return;
+    }
+    streak = 0;
+    byId('mini-game-feedback').textContent = `Not yet. Correct answer: ${currentRound.answer}. Streak reset.`;
+    syncStats();
+  };
+
+  document.querySelectorAll('.minigame-select').forEach((button) => button.addEventListener('click', () => {
+    currentGame = button.dataset.game;
+    score = 0; streak = 0; round = 0; currentRound = null;
+    syncGameMeta();
+    syncStats();
+    byId('mini-game-prompt').textContent = 'Generate a round to start.';
+  }));
+  document.querySelectorAll('.minigame-start').forEach((button) => button.addEventListener('click', () => {
+    currentGame = button.dataset.game;
+    score = 0; streak = 0; round = 0;
+    syncGameMeta();
+    startRound();
+  }));
+  byId('mini-game-generate')?.addEventListener('click', startRound);
+  byId('mini-game-check')?.addEventListener('click', checkRound);
+  byId('mini-game-answer')?.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter') return;
+    event.preventDefault();
+    checkRound();
+  });
+  syncGameMeta();
+  syncStats();
+</script>
