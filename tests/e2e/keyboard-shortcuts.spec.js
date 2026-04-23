@@ -70,6 +70,15 @@ test('practice journey can launch multiplication and division training', async (
   await expect(page.locator('#session-profile')).toContainText('Profile');
 });
 
+test('practice challenge can launch anzan burst mode', async ({ page }) => {
+  await page.goto('/ai-soroban/practice');
+
+  await page.getByRole('button', { name: 'Start now' }).last().click();
+
+  await expect(page.locator('#session-title')).toContainText('Generated L5 session');
+  await expect(page.locator('#session-progress')).toContainText('Question 1 / 10');
+});
+
 test('practice adaptive next move updates from weakness history', async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem('soroban-dojo:exercise-states', JSON.stringify({

@@ -88,6 +88,53 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         </div>
       </article>
     </div>
+    <div class="option-grid option-grid-compact practice-challenge-grid">
+      <article class="choice-card">
+        <p class="eyebrow">Challenge</p>
+        <h3>Streak sprint</h3>
+        <p>Short timed arithmetic bursts that reward clean momentum more than brute length.</p>
+        <div class="button-row button-row-compact">
+          <button class="button button-secondary practice-challenge-button" data-challenge="streak-sprint">Use challenge</button>
+          <button class="button button-secondary practice-challenge-start" data-challenge="streak-sprint">Start now</button>
+        </div>
+      </article>
+      <article class="choice-card">
+        <p class="eyebrow">Challenge</p>
+        <h3>Sign switch relay</h3>
+        <p>Keep your running total steady while addition and subtraction keep changing places.</p>
+        <div class="button-row button-row-compact">
+          <button class="button button-secondary practice-challenge-button" data-challenge="sign-switch-relay">Use challenge</button>
+          <button class="button button-secondary practice-challenge-start" data-challenge="sign-switch-relay">Start now</button>
+        </div>
+      </article>
+      <article class="choice-card">
+        <p class="eyebrow">Challenge</p>
+        <h3>Table ladder</h3>
+        <p>Climb one multiplication family at a time instead of jumping randomly across facts.</p>
+        <div class="button-row button-row-compact">
+          <button class="button button-secondary practice-challenge-button" data-challenge="table-ladder">Use challenge</button>
+          <button class="button button-secondary practice-challenge-start" data-challenge="table-ladder">Start now</button>
+        </div>
+      </article>
+      <article class="choice-card">
+        <p class="eyebrow">Challenge</p>
+        <h3>Quotient chase</h3>
+        <p>Train exact quotient finding quickly, then verify each result before moving on.</p>
+        <div class="button-row button-row-compact">
+          <button class="button button-secondary practice-challenge-button" data-challenge="quotient-chase">Use challenge</button>
+          <button class="button button-secondary practice-challenge-start" data-challenge="quotient-chase">Start now</button>
+        </div>
+      </article>
+      <article class="choice-card">
+        <p class="eyebrow">Challenge</p>
+        <h3>Anzan burst</h3>
+        <p>Fast mental-only sequences that test sign changes, rhythm, and recovery in one run.</p>
+        <div class="button-row button-row-compact">
+          <button class="button button-secondary practice-challenge-button" data-challenge="anzan-burst">Use challenge</button>
+          <button class="button button-secondary practice-challenge-start" data-challenge="anzan-burst">Start now</button>
+        </div>
+      </article>
+    </div>
     <div class="practice-preset-row">
       <button class="button button-secondary practice-preset" data-preset="warmup">Warm-up</button>
       <button class="button button-secondary practice-preset" data-preset="practice">Practice</button>
@@ -751,6 +798,14 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     mastery: { format: 'single', type: 'generated', level: 'L5', length: '10', checkMode: 'steps', timerMode: 'off', questionStyle: 'mental', termCount: '4' },
   };
 
+  const challenges = {
+    'streak-sprint': { format: 'single', type: 'generated', level: 'L3', length: '15', checkMode: 'verify', timerMode: 'on', questionStyle: 'mixed', termCount: '3' },
+    'sign-switch-relay': { format: 'sheet', type: 'generated', level: 'L3', length: '10', checkMode: 'verify', timerMode: 'off', questionStyle: 'mixed', termCount: '4' },
+    'table-ladder': { format: 'sheet', type: 'generated', level: 'L4', length: '15', checkMode: 'verify', timerMode: 'off', questionStyle: 'mixed', termCount: '3' },
+    'quotient-chase': { format: 'sheet', type: 'generated', level: 'L4', length: '15', checkMode: 'verify', timerMode: 'on', questionStyle: 'mixed', termCount: '3' },
+    'anzan-burst': { format: 'single', type: 'generated', level: 'L5', length: '10', checkMode: 'steps', timerMode: 'on', questionStyle: 'mental', termCount: '4' },
+  };
+
   const syncPracticeSetupCopy = () => {
     const target = byId('practice-current-setup-copy');
     const guideTitle = byId('practice-guide-title');
@@ -830,6 +885,25 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
   const startFromJourney = (key) => {
     applyJourney(key);
+    byId('start-session')?.click();
+  };
+
+  const applyChallenge = (key) => {
+    const challenge = challenges[key];
+    if (!challenge) return;
+    byId('session-format').value = challenge.format;
+    byId('session-type').value = challenge.type;
+    byId('session-level').value = challenge.level;
+    byId('session-length').value = challenge.length;
+    byId('check-mode').value = challenge.checkMode;
+    byId('timer-mode').value = challenge.timerMode;
+    byId('question-style').value = challenge.questionStyle;
+    byId('term-count').value = challenge.termCount;
+    syncPracticeSetupCopy();
+  };
+
+  const startFromChallenge = (key) => {
+    applyChallenge(key);
     byId('start-session')?.click();
   };
 
@@ -1366,6 +1440,13 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       return;
     }
     button.addEventListener('click', () => applyJourney(button.dataset.journey));
+  });
+  document.querySelectorAll('[data-challenge]').forEach((button) => {
+    if (button.classList.contains('practice-challenge-start')) {
+      button.addEventListener('click', () => startFromChallenge(button.dataset.challenge));
+      return;
+    }
+    button.addEventListener('click', () => applyChallenge(button.dataset.challenge));
   });
   byId('empty-warmup')?.addEventListener('click', () => applyPreset('warmup'));
   byId('start-warmup-now')?.addEventListener('click', () => startFromPreset('warmup'));
