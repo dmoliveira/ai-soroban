@@ -62,9 +62,15 @@ const rounds = [
     <p>Each boss round combines one lesson, one exercise, and one focused worksheet so the end of a level feels earned instead of abrupt.</p>
   </section>
 
+  <section class="panel boss-progress-panel">
+    <p class="eyebrow">Boss progress</p>
+    <h2>Milestones completed</h2>
+    <div id="boss-progress-strip" class="milestone-row"></div>
+  </section>
+
   <section class="card-grid">
     {rounds.map((round) => (
-      <article class="panel content-prose">
+      <article class="panel content-prose boss-round-card" data-level={round.level}>
         <p class="eyebrow">{round.level}</p>
         <h2>{round.title}</h2>
         <p>{round.challenge}</p>
@@ -72,8 +78,41 @@ const rounds = [
           <a class="button button-secondary" href={round.lesson}>Lesson</a>
           <a class="button button-secondary" href={round.exercise}>Exercise</a>
           <a class="button button-secondary" href={round.worksheet}>Worksheet</a>
+          <button class="button button-secondary boss-round-toggle" type="button">Mark boss done</button>
         </div>
+        <p class="muted small boss-round-status">Not completed yet.</p>
       </article>
     ))}
   </section>
+
+  <script is:inline>
+    const key = 'soroban-dojo:boss-rounds';
+    const read = () => { try { return JSON.parse(localStorage.getItem(key) || '{}'); } catch { return {}; } };
+    const write = (state) => localStorage.setItem(key, JSON.stringify(state));
+    const strip = document.getElementById('boss-progress-strip');
+    const sync = () => {
+      const state = read();
+      strip.replaceChildren();
+      document.querySelectorAll('.boss-round-card').forEach((card) => {
+        const level = card.dataset.level;
+        const done = !!state[level];
+        card.querySelector('.boss-round-status').textContent = done ? 'Completed for this level.' : 'Not completed yet.';
+        card.querySelector('.boss-round-toggle').textContent = done ? 'Mark boss pending' : 'Mark boss done';
+        const chip = document.createElement('div');
+        chip.className = `milestone-chip ${done ? 'active' : ''}`;
+        chip.textContent = `${level} boss`;
+        strip.appendChild(chip);
+      });
+    };
+    document.querySelectorAll('.boss-round-toggle').forEach((button) => button.addEventListener('click', () => {
+      const state = read();
+      const card = button.closest('.boss-round-card');
+      const level = card?.dataset.level;
+      if (!level) return;
+      state[level] = !state[level];
+      write(state);
+      sync();
+    }));
+    sync();
+  </script>
 </BaseLayout>
