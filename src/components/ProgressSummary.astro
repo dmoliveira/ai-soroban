@@ -118,6 +118,7 @@ const { lessons, exercises } = Astro.props;
   const timerKey = 'soroban-dojo:timer-history';
    const sessionKey = 'soroban-dojo:practice-sessions';
    const worksheetKey = 'soroban-dojo:worksheet-sessions';
+   const bossKey = 'soroban-dojo:boss-rounds';
   const lessonMeta = JSON.parse(root?.dataset.lessons || '[]');
   const exerciseMeta = JSON.parse(root?.dataset.exercises || '[]');
 
@@ -134,6 +135,7 @@ const { lessons, exercises } = Astro.props;
   const timerData = read(timerKey, []);
    const sessionData = read(sessionKey, []);
    const worksheetData = read(worksheetKey, []);
+   const bossData = read(bossKey, {});
 
   const attempted = Object.values(exerciseData).filter(Boolean);
   const reviewItems = Object.values(exerciseData).filter((entry) => entry?.status === 'needs-review');
@@ -232,6 +234,7 @@ const { lessons, exercises } = Astro.props;
     { label: 'First session', active: finishedSessions.length >= 1 },
     { label: 'Strong score', active: bestScore >= 70 },
     { label: 'Long practice', active: totalMinutes >= 30 },
+    { label: 'First boss', active: Object.values(bossData).some(Boolean) },
   ];
   milestones.forEach((milestone) => {
     const card = document.createElement('div');
