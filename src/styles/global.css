@@ -296,6 +296,8 @@ a { color: inherit; text-decoration: none; }
 .mini-game-playfield { display: grid; gap: 0.75rem; }
 .mini-tier-picker { min-width: 180px; }
 .boss-badge-panel { display: grid; gap: 0.75rem; }
+.boss-certificate-panel { display: grid; gap: 0.75rem; }
+.boss-certificate-preview { display: grid; gap: 0.25rem; }
 .exercise-page-panel h1 { margin-bottom: 0.45rem; }
 .exercise-page-panel .meta-row { margin: 0.25rem 0 0.45rem; }
 .exercise-utility-row { display: flex; flex-wrap: wrap; gap: 0.75rem; margin: 0.15rem 0 0.4rem; }

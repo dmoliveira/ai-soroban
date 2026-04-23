@@ -68,6 +68,24 @@ const rounds = [
     <div id="boss-progress-strip" class="milestone-row"></div>
   </section>
 
+  <section class="panel boss-certificate-panel">
+    <p class="eyebrow">Certificate</p>
+    <h2>Print your dojo certificate</h2>
+    <p class="muted">When you finish a boss round, you can print a simple certificate that marks the cleared level and the day you earned it.</p>
+    <div class="button-row button-row-compact">
+      <input id="certificate-name" class="input" type="text" placeholder="Student name" />
+      <select id="certificate-level" class="select">
+        {rounds.map((round) => <option value={round.level}>{round.level}</option>)}
+      </select>
+      <button class="button button-secondary" id="print-certificate">Print certificate</button>
+    </div>
+    <div id="boss-certificate-preview" class="subtle-panel boss-certificate-preview">
+      <p class="eyebrow">Preview</p>
+      <h3 id="certificate-title">Soroban Dojo milestone certificate</h3>
+      <p id="certificate-copy" class="muted">Earn a boss badge to fill this certificate with a completed level and date.</p>
+    </div>
+  </section>
+
   <section class="card-grid">
     {rounds.map((round) => (
       <article class="panel content-prose boss-round-card" data-level={round.level}>
@@ -90,6 +108,23 @@ const rounds = [
     const read = () => { try { return JSON.parse(localStorage.getItem(key) || '{}'); } catch { return {}; } };
     const write = (state) => localStorage.setItem(key, JSON.stringify(state));
     const strip = document.getElementById('boss-progress-strip');
+    const certificateName = document.getElementById('certificate-name');
+    const certificateLevel = document.getElementById('certificate-level');
+    const certificateTitle = document.getElementById('certificate-title');
+    const certificateCopy = document.getElementById('certificate-copy');
+    const printCertificate = document.getElementById('print-certificate');
+    const certificateKey = 'soroban-dojo:boss-certificates';
+    const readCertificates = () => { try { return JSON.parse(localStorage.getItem(certificateKey) || '{}'); } catch { return {}; } };
+    const writeCertificates = (state) => localStorage.setItem(certificateKey, JSON.stringify(state));
+    const syncCertificatePreview = () => {
+      const level = certificateLevel.value;
+      const certificates = readCertificates();
+      const earned = certificates[level];
+      certificateTitle.textContent = `Soroban Dojo · ${level} certificate`;
+      certificateCopy.textContent = earned
+        ? `${earned.name} cleared the ${level} boss round on ${earned.date}.`
+        : `Finish the ${level} boss round, then print a certificate for that milestone.`;
+    };
     const sync = () => {
       const state = read();
       strip.replaceChildren();
@@ -103,6 +138,7 @@ const rounds = [
         chip.textContent = `${level} boss`;
         strip.appendChild(chip);
       });
+      syncCertificatePreview();
     };
     document.querySelectorAll('.boss-round-toggle').forEach((button) => button.addEventListener('click', () => {
       const state = read();
@@ -111,8 +147,26 @@ const rounds = [
       if (!level) return;
       state[level] = !state[level];
       write(state);
+      if (state[level]) {
+        const certificates = readCertificates();
+        certificates[level] = {
+          name: certificateName.value.trim() || 'Dojo learner',
+          date: new Date().toLocaleDateString(),
+        };
+        writeCertificates(certificates);
+      }
       sync();
     }));
+    certificateLevel.addEventListener('change', syncCertificatePreview);
+    printCertificate.addEventListener('click', () => {
+      const certificates = readCertificates();
+      const level = certificateLevel.value;
+      if (!certificates[level]) {
+        certificateCopy.textContent = `Finish the ${level} boss round before printing its certificate.`;
+        return;
+      }
+      window.print();
+    });
     sync();
   </script>
 </BaseLayout>

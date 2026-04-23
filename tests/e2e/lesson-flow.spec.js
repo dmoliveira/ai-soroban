@@ -53,3 +53,13 @@ test('weekly study plan steps can be marked done', async ({ page }) => {
   await expect(page.getByText('Completed for this week.').first()).toBeVisible();
   await expect(firstToggle).toContainText('Mark pending');
 });
+
+test('boss certificate preview updates after boss completion', async ({ page }) => {
+  await page.goto('/ai-soroban/boss-rounds');
+
+  await page.locator('#certificate-name').fill('Diego');
+  await page.locator('.boss-round-toggle').first().click();
+
+  await expect(page.locator('#certificate-copy')).toContainText('Diego');
+  await expect(page.locator('#certificate-copy')).toContainText('L0');
+});
