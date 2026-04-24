@@ -89,6 +89,24 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         </select>
         <small id="worksheet-band-guide" class="muted small">Every displayed operand will stay inside this digit band.</small>
       </label>
+      <label class="stack-sm">
+        <span>Operations per drill · min</span>
+        <select id="worksheet-op-min" class="select">
+          <option value="1" selected>1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+        </select>
+      </label>
+      <label class="stack-sm">
+        <span>Operations per drill · max</span>
+        <select id="worksheet-op-max" class="select">
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3" selected>3</option>
+          <option value="4">4</option>
+        </select>
+      </label>
       </div>
       <details class="worksheet-advanced-block">
         <summary>Advanced options</summary>
@@ -159,7 +177,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     </div>
     <div class="worksheet-current-setup subtle-panel">
       <strong>Current setup</strong>
-      <div id="worksheet-current-setup-copy" class="muted small">L0 · fixed · addition/subtraction · 1 digit · ledger</div>
+      <div id="worksheet-current-setup-copy" class="muted small">L0 · fixed · addition/subtraction · 1 digit · 1-3 ops · ledger</div>
       <div id="worksheet-band-summary" class="muted small">Each shown operand stays in the selected digit band.</div>
       <div id="worksheet-target-summary" class="muted small">Focus target: auto</div>
     </div>
@@ -262,18 +280,18 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       warmup: { mode: 'fixed', level: 'L0', families: ['addition', 'subtraction'], band: '1', style: 'practice', orientation: 'ledger', count: '20' },
       'foundations-focus': { mode: 'fixed', level: 'L0', families: ['addition', 'subtraction'], band: '1', style: 'practice', orientation: 'ledger', count: '20' },
       'one-rod-focus': { mode: 'fixed', level: 'L1', families: ['addition', 'subtraction'], band: '2', style: 'practice', orientation: 'ledger', count: '20' },
-      practice: { mode: 'dynamic', level: 'L2', families: ['mixed', 'sequence'], band: '2-3', style: 'practice', orientation: 'vertical', count: '40', flowMode: 'balanced' },
-      'mixed-fluency': { mode: 'dynamic', level: 'L3', families: ['mixed', 'sequence'], band: '3-4', style: 'practice', orientation: 'vertical', count: '40', flowMode: 'ramp' },
-      review: { mode: 'adaptive', level: 'L2', families: ['mixed', 'sequence'], band: '2-3', style: 'review', orientation: 'vertical', count: '40', submode: 'auto' },
-      speed: { mode: 'dynamic', level: 'L3', families: ['addition', 'subtraction'], band: '2-3', style: 'speed', orientation: 'ledger', count: '60' },
-      exam: { mode: 'dynamic', level: 'L4', families: ['multiplication', 'division', 'sequence'], band: '3-4', style: 'exam', orientation: 'vertical', count: '40', flowMode: 'ramp' },
-      'multiplication-focus': { mode: 'dynamic', level: 'L4', families: ['multiplication'], band: '2-4', style: 'practice', orientation: 'ledger', count: '40', flowMode: 'ramp', submode: 'place-shifts' },
-      'division-focus': { mode: 'dynamic', level: 'L4', families: ['division'], band: '2-4', style: 'review', orientation: 'ledger', count: '40', flowMode: 'ramp', submode: 'quotient-building' },
-      'anzan-focus': { mode: 'dynamic', level: 'L5', families: ['anzan', 'sequence'], band: '4-6', style: 'review', orientation: 'vertical', count: '40', flowMode: 'ramp', submode: 'anzan-recall' },
-      carry: { mode: 'dynamic', level: 'L2', families: ['addition'], band: '2-3', style: 'practice', orientation: 'vertical', count: '40', flowMode: 'ramp' },
-      borrow: { mode: 'dynamic', level: 'L2', families: ['subtraction'], band: '2-3', style: 'practice', orientation: 'vertical', count: '40', flowMode: 'ramp' },
-      complements: { mode: 'dynamic', level: 'L2', families: ['anzan'], band: '2-3', style: 'review', orientation: 'ledger', count: '40', submode: 'complement-balance' },
-      'sequence-mix': { mode: 'dynamic', level: 'L3', families: ['sequence', 'mixed'], band: '3-4', style: 'practice', orientation: 'vertical', count: '40', flowMode: 'ramp', submode: 'sequence-signs' },
+      practice: { mode: 'dynamic', level: 'L2', families: ['mixed', 'sequence'], band: '2-3', style: 'practice', orientation: 'vertical', count: '40', flowMode: 'balanced', opMin: '1', opMax: '3' },
+      'mixed-fluency': { mode: 'dynamic', level: 'L3', families: ['mixed', 'sequence'], band: '3-4', style: 'practice', orientation: 'vertical', count: '40', flowMode: 'ramp', opMin: '1', opMax: '4' },
+      review: { mode: 'adaptive', level: 'L2', families: ['mixed', 'sequence'], band: '2-3', style: 'review', orientation: 'vertical', count: '40', submode: 'auto', opMin: '1', opMax: '3' },
+      speed: { mode: 'dynamic', level: 'L3', families: ['addition', 'subtraction'], band: '2-3', style: 'speed', orientation: 'ledger', count: '60', opMin: '1', opMax: '2' },
+      exam: { mode: 'dynamic', level: 'L4', families: ['multiplication', 'division', 'sequence'], band: '3-4', style: 'exam', orientation: 'vertical', count: '40', flowMode: 'ramp', opMin: '1', opMax: '3' },
+      'multiplication-focus': { mode: 'dynamic', level: 'L4', families: ['multiplication'], band: '2-4', style: 'practice', orientation: 'ledger', count: '40', flowMode: 'ramp', submode: 'place-shifts', opMin: '1', opMax: '1' },
+      'division-focus': { mode: 'dynamic', level: 'L4', families: ['division'], band: '2-4', style: 'review', orientation: 'ledger', count: '40', flowMode: 'ramp', submode: 'quotient-building', opMin: '1', opMax: '1' },
+      'anzan-focus': { mode: 'dynamic', level: 'L5', families: ['anzan', 'sequence'], band: '4-6', style: 'review', orientation: 'vertical', count: '40', flowMode: 'ramp', submode: 'anzan-recall', opMin: '2', opMax: '4' },
+      carry: { mode: 'dynamic', level: 'L2', families: ['addition'], band: '2-3', style: 'practice', orientation: 'vertical', count: '40', flowMode: 'ramp', opMin: '1', opMax: '2' },
+      borrow: { mode: 'dynamic', level: 'L2', families: ['subtraction'], band: '2-3', style: 'practice', orientation: 'vertical', count: '40', flowMode: 'ramp', opMin: '1', opMax: '2' },
+      complements: { mode: 'dynamic', level: 'L2', families: ['anzan'], band: '2-3', style: 'review', orientation: 'ledger', count: '40', submode: 'complement-balance', opMin: '2', opMax: '3' },
+      'sequence-mix': { mode: 'dynamic', level: 'L3', families: ['sequence', 'mixed'], band: '3-4', style: 'practice', orientation: 'vertical', count: '40', flowMode: 'ramp', submode: 'sequence-signs', opMin: '2', opMax: '4' },
     };
 
     const byId = (id) => document.getElementById(id);
@@ -391,6 +409,49 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       if (variant % 4 === 2) return Math.max(bandRange.min, bandRange.max - 1);
       return bandRange.min + rand(0, spread);
     };
+    const readOperationRange = () => {
+      const min = Number(byId('worksheet-op-min')?.value || 1);
+      const max = Number(byId('worksheet-op-max')?.value || min);
+      return { min: Math.min(min, max), max: Math.max(min, max) };
+    };
+    const operationRangeSupported = (mode, families) => mode !== 'fixed' && !families.some((family) => ['multiplication', 'division'].includes(family));
+    const familyMinOperationCount = (family) => (family === 'sequence' || family === 'anzan' ? 2 : 1);
+    const pickOperationCount = (family, variant, operationRange) => {
+      const min = Math.max(operationRange.min, familyMinOperationCount(family));
+      const max = Math.max(min, operationRange.max);
+      return min + (((variant * 3) + 1) % (max - min + 1));
+    };
+    const buildRepeatedPrompt = (family, bandRange, variant, operationCount) => {
+      let total = randomNumberForDigits(pickDigitsForVariant(bandRange, variant));
+      const parts = [String(total)];
+      for (let index = 0; index < operationCount; index += 1) {
+        if (family === 'addition') {
+          const addDigits = pickDigitsForVariant(bandRange, variant + index + 1);
+          const value = randomNumberForDigits(addDigits);
+          total += value;
+          parts.push('+', String(value));
+          continue;
+        }
+        const maxSubtractDigits = Math.min(bandRange.max, digitLength(Math.max(total - minValueForDigits(bandRange.min), 0)));
+        if (maxSubtractDigits < bandRange.min) {
+          const fallback = randomNumberForDigits(pickDigitsForVariant(bandRange, variant + index + 1));
+          total += fallback;
+          parts.push('+', String(fallback));
+          continue;
+        }
+        const subtractDigits = pickDigitsForVariant({ min: bandRange.min, max: maxSubtractDigits }, variant + index + 1);
+        const value = randomNumberForDigitsWhere(subtractDigits, (candidate) => candidate < total && total - candidate >= minValueForDigits(bandRange.min));
+        if (value === null) {
+          const fallback = randomNumberForDigits(pickDigitsForVariant(bandRange, variant + index + 1));
+          total += fallback;
+          parts.push('+', String(fallback));
+          continue;
+        }
+        total -= value;
+        parts.push('-', String(value));
+      }
+      return parts.join(' ');
+    };
     const buildAdditionPrompt = (bandRange, variant) => {
       const aDigits = pickDigitsForVariant(bandRange, variant);
       const bDigits = pickDigitsForVariant({ min: bandRange.min, max: aDigits }, variant + 1);
@@ -445,11 +506,16 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       }
       return `${genericA} - ${genericB}`;
     };
-    const buildSequencePrompt = (family, bandRange, variant) => {
+    const buildSequencePrompt = (family, bandRange, variant, operationCount = null) => {
       const patterns = family === 'anzan'
         ? [['+', '-', '+'], ['+', '+', '-'], ['-', '+', '+'], ['+', '-', '+', '+']]
         : [['+', '-'], ['-', '+'], ['+', '+', '-'], ['+', '-', '+'], ['-', '+', '+']];
-      const pattern = patterns[variant % patterns.length];
+      const pattern = operationCount
+        ? Array.from({ length: operationCount }, (_, index) => {
+            if (family === 'anzan') return index % 3 === 1 ? '-' : '+';
+            return index % 2 === 0 ? '+' : '-';
+          })
+        : patterns[variant % patterns.length];
       const startDigits = pattern.includes('-') ? bandRange.max : pickDigitsForVariant(bandRange, variant);
       const startMin = pattern.includes('-') ? Math.max(minValueForDigits(startDigits), Math.floor(maxValueForDigits(startDigits) * 0.55)) : minValueForDigits(startDigits);
       let total = rand(startMin, maxValueForDigits(startDigits));
@@ -498,6 +564,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
     const applyLevelDefaults = () => {
       const level = byId('worksheet-level').value;
+      const mode = byId('worksheet-mode').value;
       const defaults = {
         L0: ['addition', 'subtraction'],
         L1: ['addition', 'subtraction'],
@@ -509,6 +576,13 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       document.querySelectorAll('input[name="worksheet-family"]').forEach((node) => {
         node.checked = defaults[level].includes(node.value);
       });
+      const supported = operationRangeSupported(mode, defaults[level]);
+      byId('worksheet-op-min').disabled = !supported;
+      byId('worksheet-op-max').disabled = !supported;
+      if (!supported) {
+        byId('worksheet-op-min').value = '1';
+        byId('worksheet-op-max').value = '1';
+      }
       byId('worksheet-band').value = levelBands[level] || '2';
       if (['L2','L3','L5'].includes(level)) {
         byId('worksheet-orientation').value = 'vertical';
@@ -528,9 +602,18 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       byId('worksheet-count').value = preset.count;
       byId('worksheet-flow-mode').value = preset.flowMode || 'balanced';
       byId('worksheet-submode').value = preset.submode || 'auto';
+      byId('worksheet-op-min').value = preset.opMin || '1';
+      byId('worksheet-op-max').value = preset.opMax || '3';
       document.querySelectorAll('input[name="worksheet-family"]').forEach((node) => {
         node.checked = preset.families.includes(node.value);
       });
+      const supported = operationRangeSupported(preset.mode, preset.families);
+      byId('worksheet-op-min').disabled = !supported;
+      byId('worksheet-op-max').disabled = !supported;
+      if (!supported) {
+        byId('worksheet-op-min').value = '1';
+        byId('worksheet-op-max').value = '1';
+      }
       renderSheet();
     };
 
@@ -748,14 +831,19 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       return `${divisor * quotient} ÷ ${divisor}`;
     };
 
-    const makeDynamicPrompt = (level, family, band, style, variant = 0, flowBand = null, submode = 'auto') => {
+    const makeDynamicPrompt = (level, family, band, style, variant = 0, flowBand = null, submode = 'auto', operationRange = { min: 1, max: 3 }) => {
       const adjustedBand = styleAdjustBand(style, band);
       const bandRange = flowBand || parseBand(adjustedBand);
+      const operationCount = pickOperationCount(family, variant, operationRange);
 
       if (family === 'sequence' || family === 'anzan') {
-        return buildSequencePrompt(family, bandRange, variant);
+        return buildSequencePrompt(family, bandRange, variant, operationCount);
       }
       const resolvedFamily = chooseFamily(level, family, variant);
+      if (operationCount > 1 && ['addition', 'subtraction', 'mixed'].includes(family)) {
+        if (family === 'mixed') return buildSequencePrompt('sequence', bandRange, variant, operationCount);
+        return buildRepeatedPrompt(family, bandRange, variant, operationCount);
+      }
       const digits = rand(bandRange.min, bandRange.max);
       if (resolvedFamily === 'multiplication') {
         return buildMultiplicationPrompt(level, digits, variant, submode);
@@ -829,6 +917,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       const band = byId('worksheet-band').value || levelBands[level] || '2';
       const flowMode = byId('worksheet-flow-mode').value || 'balanced';
       const selectedSubmode = byId('worksheet-submode').value || 'auto';
+      const supportedOpRange = operationRangeSupported(mode, families);
+      const operationRange = supportedOpRange ? readOperationRange() : { min: 1, max: 1 };
       const adjustedBand = styleAdjustBand(style, band);
       const overallBandRange = parseBand(adjustedBand);
       const bank = fixedBanks[level] || {};
@@ -845,7 +935,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
             const needed = targetCount - prompts.length;
             const dynamicBackfill = buildUniquePrompts(
               needed,
-              (index, attempt) => makeDynamicPrompt(level, family, band, style, familyIndex * 100 + index + attempt, digitBandForProgress(overallBandRange, count, prompts.length + index, flowMode), selectedSubmode),
+              (index, attempt) => makeDynamicPrompt(level, family, band, style, familyIndex * 100 + index + attempt, digitBandForProgress(overallBandRange, count, prompts.length + index, flowMode), selectedSubmode, operationRange),
               (index) => digitBandForProgress(overallBandRange, count, prompts.length + index, flowMode),
             );
             prompts.push(...dynamicBackfill);
@@ -885,14 +975,14 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         resolvedWorksheetTarget = selectedSubmode === 'auto' ? adaptiveSubmode : selectedSubmode;
         return buildUniquePrompts(
           count,
-          (index, attempt) => makeDynamicPrompt(level, adaptiveFamily, band, style, index + attempt, digitBandForProgress(overallBandRange, count, index, flowMode), resolvedWorksheetTarget),
+          (index, attempt) => makeDynamicPrompt(level, adaptiveFamily, band, style, index + attempt, digitBandForProgress(overallBandRange, count, index, flowMode), resolvedWorksheetTarget, operationRange),
           (index) => digitBandForProgress(overallBandRange, count, index, flowMode),
         );
       }
       resolvedWorksheetTarget = selectedSubmode;
       return buildUniquePrompts(
         count,
-        (index, attempt) => makeDynamicPrompt(level, families[index % Math.max(1, families.length)] || 'addition', band, style, index + attempt, digitBandForProgress(overallBandRange, count, index, flowMode), selectedSubmode),
+        (index, attempt) => makeDynamicPrompt(level, families[index % Math.max(1, families.length)] || 'addition', band, style, index + attempt, digitBandForProgress(overallBandRange, count, index, flowMode), selectedSubmode, operationRange),
         (index) => digitBandForProgress(overallBandRange, count, index, flowMode),
       );
     };
@@ -952,6 +1042,11 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       const levelLabel = byId('worksheet-level').value;
       const bandLabel = byId('worksheet-band').value;
       const flowLabel = byId('worksheet-flow-mode').value === 'ramp' ? 'ramp up' : 'balanced variety';
+      const supportsOpRange = operationRangeSupported(byId('worksheet-mode').value, selectedFamilies());
+      byId('worksheet-op-min').disabled = !supportsOpRange;
+      byId('worksheet-op-max').disabled = !supportsOpRange;
+      const opRange = supportsOpRange ? readOperationRange() : { min: 1, max: 1 };
+      const opLabel = `${opRange.min}-${opRange.max} ops`;
       const submodeLabel = byId('worksheet-submode').value || 'auto';
       const bandGuide = byId('worksheet-band-guide');
       const bandSummary = byId('worksheet-band-summary');
@@ -967,9 +1062,13 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       const workedExample = workedExamples[focusKey] || workedExamples.auto;
       byId('worksheet-title').textContent = `${levelLabel} ${familyLabel} ${orientation === 'vertical' ? 'columns' : 'ledger'} · ${bandLabel} digits`;
       byId('worksheet-count-badge').textContent = `${prompts.length} drills`;
-      currentSetupCopy.textContent = `${levelLabel} · ${byId('worksheet-mode').value} · ${familyLabel} · ${bandLabel} digits · ${flowLabel} · ${submodeLabel} · ${orientation}`;
-      if (bandGuide) bandGuide.textContent = `Every shown operand stays within ${bandLabel} digits. ${flowLabel === 'ramp up' ? 'The sheet starts easier and finishes denser.' : 'The sheet balances several prompt shapes across the full set.'}`;
-      if (bandSummary) bandSummary.textContent = `Operand band: ${bandLabel} digits. Flow: ${flowLabel}. Families: ${familyLabel}.`;
+      currentSetupCopy.textContent = `${levelLabel} · ${byId('worksheet-mode').value} · ${familyLabel} · ${bandLabel} digits · ${supportsOpRange ? opLabel : 'fixed op count'} · ${flowLabel} · ${submodeLabel} · ${orientation}`;
+      if (bandGuide) bandGuide.textContent = supportsOpRange
+        ? `Every shown operand stays within ${bandLabel} digits. Each drill randomly uses ${opRange.min}–${opRange.max} operations. ${flowLabel === 'ramp up' ? 'The sheet starts easier and finishes denser.' : 'The sheet balances several prompt shapes across the full set.'}`
+        : `Every shown operand stays within ${bandLabel} digits. This worksheet uses the family’s fixed operation count.`;
+      if (bandSummary) bandSummary.textContent = supportsOpRange
+        ? `Operand band: ${bandLabel} digits. Operation range: ${opRange.min}–${opRange.max}. Flow: ${flowLabel}. Families: ${familyLabel}.`
+        : `Operand band: ${bandLabel} digits. Operation count follows the selected fixed family behavior. Families: ${familyLabel}.`;
       if (targetSummary) targetSummary.textContent = `Focus target: ${submodeLabel === 'auto' ? `auto -> ${resolvedWorksheetTarget}` : submodeLabel}.`;
       if (focusTitle) focusTitle.textContent = focusGuide.title;
       if (focusCopy) focusCopy.textContent = focusGuide.copy;
@@ -1166,7 +1265,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       const nextInput = inputs[inputs.indexOf(input) + 1];
       if (nextInput instanceof HTMLInputElement) nextInput.focus();
     });
-    document.querySelectorAll('#worksheet-mode, #worksheet-level, #worksheet-family, #worksheet-band, #worksheet-style, #worksheet-orientation, #worksheet-count, #worksheet-flow-mode, #worksheet-submode, #worksheet-print-mode').forEach((node) => {
+    document.querySelectorAll('#worksheet-mode, #worksheet-level, #worksheet-family, #worksheet-band, #worksheet-style, #worksheet-orientation, #worksheet-count, #worksheet-flow-mode, #worksheet-submode, #worksheet-print-mode, #worksheet-op-min, #worksheet-op-max').forEach((node) => {
       node.addEventListener('change', renderSheet);
     });
     const initialPreset = new URLSearchParams(window.location.search).get('preset');
