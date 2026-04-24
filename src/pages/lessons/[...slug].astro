@@ -175,6 +175,7 @@ const bestFor = lesson.data.skill === 'abacus-orientation'
         </div>
         <div id="lesson-complete-next" class="lesson-complete-next subtle-panel" hidden>
           <strong>Completed. Continue with the next move.</strong>
+          <p id="lesson-complete-saved" class="muted small">Saved on this device. Keep the path moving with one quiet next step.</p>
           <div class="button-row lesson-complete-actions">
             {recommendedNextLesson && <a class="button button-secondary" href={`${base}lessons/${recommendedNextLesson.slug}`}>Next lesson</a>}
             {recommendedExercise && <a class="button button-secondary" href={`${base}exercises/${recommendedExercise.slug}`}>Next exercise</a>}
@@ -268,15 +269,21 @@ const bestFor = lesson.data.skill === 'abacus-orientation'
     const syncLabel = () => {
       const current = readLessons();
       const done = current.includes(lessonId);
-      button.textContent = done ? 'Lesson completed' : 'Mark lesson complete';
+      button.textContent = done ? 'Mark lesson incomplete' : 'Mark lesson complete';
       button.setAttribute('aria-pressed', String(done));
       if (nextPanel) nextPanel.hidden = !done;
     };
     button?.addEventListener('click', () => {
       const current = readLessons();
-      const next = current.includes(lessonId) ? current.filter((entry) => entry !== lessonId) : [...current, lessonId];
+      const wasDone = current.includes(lessonId);
+      const next = wasDone ? current.filter((entry) => entry !== lessonId) : [...current, lessonId];
       localStorage.setItem(lessonKey, JSON.stringify(next));
       syncLabel();
+      if (!wasDone && nextPanel) {
+        nextPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        nextPanel.setAttribute('tabindex', '-1');
+        nextPanel.focus();
+      }
     });
     syncLabel();
   </script>

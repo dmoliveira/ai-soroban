@@ -7,10 +7,10 @@ interface Props {
   description?: string;
 }
 
-const { title, description = 'Learn Soroban online with practical lessons, printable worksheets, exercises, and calm attempt-first practice in ai-soroban.' } = Astro.props;
+const { title, description = 'Learn soroban online with calm lessons, printable worksheets, interactive practice, mini-games, and step-by-step mental abacus training at Soroban Dojo.' } = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site);
 const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
-const pageTitle = title.includes('ai-soroban') ? title : `${title} | ai-soroban`;
+const pageTitle = title.includes('Soroban Dojo') ? title : `${title} | Soroban Dojo`;
 const socialTitle = pageTitle;
 const socialDescription = description;
 const socialImage = new URL(`${base}favicon.svg`, Astro.site).toString();
@@ -23,6 +23,7 @@ const socialImage = new URL(`${base}favicon.svg`, Astro.site).toString();
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{pageTitle}</title>
     <meta name="description" content={description} />
+    <meta name="theme-color" content="#f5efe4" />
     <meta name="robots" content="index,follow,max-image-preview:large" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Soroban Dojo" />

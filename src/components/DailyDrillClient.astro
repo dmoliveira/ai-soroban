@@ -1,3 +1,7 @@
+---
+const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
+---
+
 <section class="panel daily-drill-panel">
   <div class="section-head">
     <div>
@@ -18,17 +22,20 @@
           <option value="L2">L2 Complements</option>
           <option value="L3">L3 Mixed fluency</option>
           <option value="L4">L4 Multiplication & division</option>
+          <option value="L5">L5 Mental mastery</option>
         </select>
       </label>
-      <div class="button-row">
+      <div class="button-row"> 
         <button class="button" id="generate-daily-drill">Generate pack</button>
         <button class="button button-secondary" id="print-daily-drill">Print pack</button>
+        <button class="button button-secondary" id="reveal-daily-answers">Reveal answers</button>
       </div>
     </div>
     <div class="subtle-panel">
       <p class="eyebrow">Pack identity</p>
       <div id="daily-pack-id" class="muted">Daily pack ID will appear here.</div>
       <div id="daily-drill-focus" class="muted small">Adaptive focus will appear here.</div>
+      <div id="daily-pack-archetype" class="muted small">Pack archetype will appear here.</div>
     </div>
   </div>
 
@@ -36,9 +43,9 @@
     <strong id="daily-guidance-title">Today’s route</strong>
     <p id="daily-guidance-copy" class="muted small">Finish the unfinished weekly-plan step first, then use the supporting drills below.</p>
     <div class="button-row button-row-compact">
-      <a class="button button-secondary" id="daily-link-lesson" href="/ai-soroban/lessons">Lesson step</a>
-      <a class="button button-secondary" id="daily-link-exercise" href="/ai-soroban/exercises">Exercise step</a>
-      <a class="button button-secondary" id="daily-link-worksheet" href="/ai-soroban/worksheets">Worksheet step</a>
+      <a class="button button-secondary" id="daily-link-lesson" href={`${base}lessons`}>Lesson step</a>
+      <a class="button button-secondary" id="daily-link-exercise" href={`${base}exercises`}>Exercise step</a>
+      <a class="button button-secondary" id="daily-link-worksheet" href={`${base}worksheets`}>Worksheet step</a>
     </div>
   </div>
 
@@ -46,7 +53,7 @@
 </section>
 
 <script is:inline>
-  const base = '/ai-soroban/';
+  const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
   const exerciseKey = 'soroban-dojo:exercise-states';
   const weeklyPlanKey = 'soroban-dojo:weekly-study-plan';
 
@@ -56,6 +63,23 @@
     } catch {
       return fallback;
     }
+  };
+
+  const hashSeed = (value) => Array.from(value).reduce((acc, char) => ((acc * 31) + char.charCodeAt(0)) >>> 0, 7);
+  const createRng = (seedText) => {
+    let seed = hashSeed(seedText);
+    return () => {
+      seed = (seed * 1664525 + 1013904223) >>> 0;
+      return seed / 4294967296;
+    };
+  };
+  const shuffle = (items, rng) => {
+    const copy = [...items];
+    for (let index = copy.length - 1; index > 0; index -= 1) {
+      const swapIndex = Math.floor(rng() * (index + 1));
+      [copy[index], copy[swapIndex]] = [copy[swapIndex], copy[index]];
+    }
+    return copy;
   };
 
   const planState = read(weeklyPlanKey, {});
@@ -71,105 +95,267 @@
     return acc;
   }, { arithmetic: 0, complements: 0, multiplication: 0, division: 0, mental: 0 });
 
-  const target = planState.target || ['mental', 'division', 'multiplication', 'complements', 'arithmetic'].sort((a, b) => weakness[b] - weakness[a])[0];
+  const defaultTarget = planState.target || ['mental', 'division', 'multiplication', 'complements', 'arithmetic'].sort((a, b) => weakness[b] - weakness[a])[0];
+  const targetOptionsByLevel = {
+    L0: ['arithmetic'],
+    L1: ['arithmetic'],
+    L2: ['complements'],
+    L3: ['arithmetic'],
+    L4: ['division', 'multiplication'],
+    L5: ['mental'],
+  };
 
   const packs = {
     arithmetic: {
-      title: 'Arithmetic rhythm today',
-      copy: 'Finish the arithmetic step you left open, then steady the running total with short mixed drills.',
       level: 'L3',
       lesson: `${base}lessons/l3/mixed-two-digit-fluency`,
       exercise: `${base}exercises/l3/mixed-two-digit-sequence`,
       worksheet: `${base}worksheets?preset=mixed-fluency&submode=arithmetic-rhythm`,
-      drills: [
-        () => { const a = 24; const b = 7; const c = 1; return { prompt: `${a} + ${b} + ${c}`, answer: a + b + c }; },
-        () => { const a = 38; const b = 12; return { prompt: `${a} - ${b}`, answer: a - b }; },
+      contentByLevel: {
+        L0: {
+          lesson: `${base}lessons/l0/reading-a-single-digit`,
+          exercise: `${base}exercises/l0/read-seven`,
+          worksheet: `${base}worksheets?preset=foundations-focus`,
+        },
+        L1: {
+          lesson: `${base}lessons/l1/first-addition-on-one-rod`,
+          exercise: `${base}exercises/l1/add-two-and-three`,
+          worksheet: `${base}worksheets?preset=one-rod-focus`,
+        },
+        L3: {
+          lesson: `${base}lessons/l3/mixed-two-digit-fluency`,
+          exercise: `${base}exercises/l3/mixed-two-digit-sequence`,
+          worksheet: `${base}worksheets?preset=mixed-fluency&submode=arithmetic-rhythm`,
+        },
+      },
+      archetypes: [
+        {
+          title: 'Arithmetic rhythm today',
+          archetype: 'Rhythm day',
+          copy: 'Finish the arithmetic step you left open, then steady the running total with short mixed drills.',
+          drills: [
+            () => { const a = 24; const b = 7; const c = 1; return { prompt: `${a} + ${b} + ${c}`, answer: a + b + c }; },
+            () => { const a = 38; const b = 12; return { prompt: `${a} - ${b}`, answer: a - b }; },
+            () => { const a = 46; const b = 8; const c = 12; return { prompt: `${a} - ${b} + ${c}`, answer: a - b + c }; },
+            () => { const a = 58; const b = 13; const c = 9; return { prompt: `${a} + ${b} - ${c}`, answer: a + b - c }; },
+          ],
+        },
+        {
+          title: 'Arithmetic repair today',
+          archetype: 'Recovery day',
+          copy: 'Repair the running total carefully and finish with smaller recovery drills before speed returns.',
+          drills: [
+            () => ({ prompt: 'Fix this result: 24 + 7 + 1 = 30', answer: 32 }),
+            () => ({ prompt: 'Fix this result: 46 - 8 + 12 = 49', answer: 50 }),
+            () => ({ prompt: 'Fix this result: 58 + 13 - 9 = 61', answer: 62 }),
+            () => ({ prompt: 'Fix this result: 31 + 18 - 6 = 42', answer: 43 }),
+          ],
+        },
       ],
     },
     complements: {
-      title: 'Complements today',
-      copy: 'Return to complement pairs first, then use the worksheet when the missing-part pattern is stable again.',
       level: 'L2',
       lesson: `${base}lessons/l2/complements-to-ten`,
       exercise: `${base}exercises/l2/use-complement-to-ten`,
       worksheet: `${base}worksheets?preset=complements&submode=complement-balance`,
-      drills: [
-        () => { const a = 7; return { prompt: `What completes ${a} to 10?`, answer: 10 - a }; },
-        () => { const a = 3; return { prompt: `What completes ${a} to 5?`, answer: 5 - a }; },
+      archetypes: [
+        {
+          title: 'Complements today',
+          archetype: 'Balance day',
+          copy: 'Return to complement pairs first, then use the worksheet when the missing-part pattern is stable again.',
+          drills: [
+            () => { const a = 7; return { prompt: `What completes ${a} to 10?`, answer: 10 - a }; },
+            () => { const a = 3; return { prompt: `What completes ${a} to 5?`, answer: 5 - a }; },
+            () => { const a = 8; return { prompt: `What completes ${a} to 10?`, answer: 10 - a }; },
+            () => { const a = 1; return { prompt: `What completes ${a} to 5?`, answer: 5 - a }; },
+          ],
+        },
+        {
+          title: 'Complement ladder today',
+          archetype: 'Ladder day',
+          copy: 'Climb complement pairs in a steadier order so blocked moves feel smaller and more familiar.',
+          drills: [
+            () => ({ prompt: 'Complete this ladder to 10: 2, 4, 6, ?', answer: 4 }),
+            () => ({ prompt: 'Complete this ladder to 10: 9, 8, 7, ?', answer: 3 }),
+            () => ({ prompt: 'Complete this ladder to 5: 1, 2, 3, ?', answer: 2 }),
+            () => ({ prompt: 'Complete this ladder to 5: 4, 3, 2, ?', answer: 3 }),
+          ],
+        },
       ],
     },
     multiplication: {
-      title: 'Multiplication structure today',
-      copy: 'Use the unfinished multiplication step first, then reinforce it with place-shift drills.',
       level: 'L4',
       lesson: `${base}lessons/l4/place-shifts-in-multiplication`,
       exercise: `${base}exercises/l4/twelve-times-three`,
       worksheet: `${base}worksheets?preset=multiplication-focus&submode=place-shifts`,
-      drills: [
-        () => { const a = 12; const b = 3; return { prompt: `${a} × ${b}`, answer: a * b }; },
-        () => { const a = 14; const b = 4; return { prompt: `${a} × ${b}`, answer: a * b }; },
+      archetypes: [
+        {
+          title: 'Multiplication structure today',
+          archetype: 'Table day',
+          copy: 'Use the unfinished multiplication step first, then reinforce it with place-shift drills.',
+          drills: [
+            () => { const a = 12; const b = 3; return { prompt: `${a} × ${b}`, answer: a * b }; },
+            () => { const a = 14; const b = 4; return { prompt: `${a} × ${b}`, answer: a * b }; },
+            () => { const a = 23; const b = 4; return { prompt: `${a} × ${b}`, answer: a * b }; },
+            () => { const a = 6; const b = 7; return { prompt: `${a} × ${b}`, answer: a * b }; },
+          ],
+        },
+        {
+          title: 'Multiplication place shift today',
+          archetype: 'Place-shift day',
+          copy: 'Use products that make place value visible before you widen the table family again.',
+          drills: [
+            () => ({ prompt: 'Solve 20 × 4', answer: 80 }),
+            () => ({ prompt: 'Solve 30 × 3', answer: 90 }),
+            () => ({ prompt: 'Solve 21 × 4', answer: 84 }),
+            () => ({ prompt: 'Solve 12 × 6', answer: 72 }),
+          ],
+        },
       ],
     },
     division: {
-      title: 'Division quotient today',
-      copy: 'Open the unfinished quotient step first, then use exact division facts to keep the factor search clean.',
       level: 'L4',
       lesson: `${base}lessons/l4/building-quotients-in-division`,
       exercise: `${base}exercises/l4/twenty-four-divided-by-six`,
       worksheet: `${base}worksheets?preset=division-focus&submode=quotient-building`,
-      drills: [
-        () => { const divisor = 6; const quotient = 4; return { prompt: `${divisor * quotient} ÷ ${divisor}`, answer: quotient }; },
-        () => { const divisor = 9; const quotient = 4; return { prompt: `${divisor * quotient} ÷ ${divisor}`, answer: quotient }; },
+      archetypes: [
+        {
+          title: 'Division quotient today',
+          archetype: 'Quotient day',
+          copy: 'Open the unfinished quotient step first, then use exact division facts to keep the factor search clean.',
+          drills: [
+            () => { const divisor = 6; const quotient = 4; return { prompt: `${divisor * quotient} ÷ ${divisor}`, answer: quotient }; },
+            () => { const divisor = 9; const quotient = 4; return { prompt: `${divisor * quotient} ÷ ${divisor}`, answer: quotient }; },
+            () => { const divisor = 7; const quotient = 9; return { prompt: `${divisor * quotient} ÷ ${divisor}`, answer: quotient }; },
+            () => { const divisor = 8; const quotient = 6; return { prompt: `${divisor * quotient} ÷ ${divisor}`, answer: quotient }; },
+          ],
+        },
+        {
+          title: 'Division factor search today',
+          archetype: 'Factor-search day',
+          copy: 'Look for the hidden factor first so the quotient feels built, not guessed.',
+          drills: [
+            () => ({ prompt: 'Which factor makes 24 ÷ 6 exact?', answer: 4 }),
+            () => ({ prompt: 'Which factor makes 36 ÷ 9 exact?', answer: 4 }),
+            () => ({ prompt: 'Which factor makes 63 ÷ 7 exact?', answer: 9 }),
+            () => ({ prompt: 'Which factor makes 48 ÷ 6 exact?', answer: 8 }),
+          ],
+        },
       ],
     },
     mental: {
-      title: 'Mental stability today',
-      copy: 'Finish the unfinished mental step first, then hold short totals through sign changes without rushing.',
       level: 'L5',
       lesson: `${base}lessons/l5/mental-soroban-sequences`,
       exercise: `${base}exercises/l5/three-step-anzan-sequence`,
       worksheet: `${base}worksheets?preset=anzan-focus&submode=anzan-recall`,
-      drills: [
-        () => ({ prompt: '18 + 7 - 4 + 5', answer: 26 }),
-        () => ({ prompt: '42 - 9 + 16 - 3', answer: 46 }),
+      archetypes: [
+        {
+          title: 'Mental stability today',
+          archetype: 'Recall day',
+          copy: 'Finish the unfinished mental step first, then hold short totals through sign changes without rushing.',
+          drills: [
+            () => ({ prompt: '18 + 7 - 4 + 5', answer: 26 }),
+            () => ({ prompt: '42 - 9 + 16 - 3', answer: 46 }),
+            () => ({ prompt: '63 + 14 - 8 + 11', answer: 80 }),
+            () => ({ prompt: '57 + 18 - 26 + 9', answer: 58 }),
+          ],
+        },
+        {
+          title: 'Mental rhythm today',
+          archetype: 'Rhythm day',
+          copy: 'Use shorter mental ladders and keep the total steady through each sign change.',
+          drills: [
+            () => ({ prompt: '24 + 8 - 3 + 6', answer: 35 }),
+            () => ({ prompt: '51 - 7 + 12 - 4', answer: 52 }),
+            () => ({ prompt: '33 + 9 + 8 - 10', answer: 40 }),
+            () => ({ prompt: '72 - 15 + 6 - 9', answer: 54 }),
+          ],
+        },
       ],
     },
   };
 
   const byId = (id) => document.getElementById(id);
-  const activePack = packs[target] || packs.arithmetic;
   const unfinishedStep = ['lesson', 'exercise', 'worksheet'].find((step) => !planState[step]?.done) || 'lesson';
-  const makeSeed = (level) => `${level}-${target}-${new Date().toISOString().slice(0, 10)}`;
+  const makeSeed = (level, target, archetype) => `${level}-${target}-${archetype}-${new Date().toISOString().slice(0, 10)}`;
+
+  const resolveTargetForLevel = (level) => {
+    const options = targetOptionsByLevel[level] || [defaultTarget];
+    return [...options].sort((a, b) => weakness[b] - weakness[a])[0] || options[0] || defaultTarget;
+  };
+
+  const resolvePack = () => {
+    const selectedLevel = byId('daily-level')?.value || packs[defaultTarget]?.level || 'L3';
+    const target = resolveTargetForLevel(selectedLevel);
+    const pack = packs[target] || packs.arithmetic;
+    const rng = createRng(`${selectedLevel}-${target}-${new Date().toISOString().slice(0, 10)}`);
+    const archetype = pack.archetypes[Math.floor(rng() * pack.archetypes.length)] || pack.archetypes[0];
+    const content = pack.contentByLevel?.[selectedLevel] || {
+      lesson: pack.lesson,
+      exercise: pack.exercise,
+      worksheet: pack.worksheet,
+    };
+    return {
+      selectedLevel,
+      target,
+      pack,
+      content,
+      archetype,
+      rng,
+      seed: makeSeed(selectedLevel, target, archetype.archetype),
+    };
+  };
+
+  const buildDailyItems = (archetype, rng, count = 8) => {
+    const factories = shuffle(archetype.drills, rng);
+    return Array.from({ length: count }, (_, index) => factories[index % factories.length]());
+  };
+
+  const revealAnswers = () => {
+    document.querySelectorAll('.daily-answer').forEach((node) => {
+      node.hidden = false;
+    });
+    document.querySelectorAll('.daily-reveal-answer').forEach((button) => {
+      button.hidden = true;
+    });
+  };
 
   const renderPack = () => {
-    const level = activePack.level;
-    byId('daily-level').value = level;
-    const seed = makeSeed(level);
+    const { selectedLevel, target, content, archetype, rng, seed } = resolvePack();
     byId('daily-pack-id').textContent = `Pack ${seed}`;
+    byId('daily-pack-archetype').textContent = `Archetype: ${archetype.archetype}`;
     byId('daily-drill-focus').textContent = `Adaptive focus: ${target} · First unfinished step: ${unfinishedStep}`;
-    byId('daily-guidance-title').textContent = activePack.title;
-    byId('daily-guidance-copy').textContent = activePack.copy;
-    byId('daily-link-lesson').href = activePack.lesson;
-    byId('daily-link-exercise').href = activePack.exercise;
-    byId('daily-link-worksheet').href = activePack.worksheet;
-    byId('daily-drill-copy').textContent = `This pack is centered on ${target} work and starts by pointing you back to the unfinished ${unfinishedStep} step from your weekly plan.`;
+    byId('daily-guidance-title').textContent = archetype.title;
+    byId('daily-guidance-copy').textContent = archetype.copy;
+    byId('daily-link-lesson').href = content.lesson;
+    byId('daily-link-exercise').href = content.exercise;
+    byId('daily-link-worksheet').href = content.worksheet;
+    byId('daily-drill-copy').textContent = `This pack is centered on ${target} work at ${selectedLevel} and starts by pointing you back to the unfinished ${unfinishedStep} step from your weekly plan. Try each prompt before revealing the answer.`;
     const list = byId('daily-drill-list');
     list.replaceChildren();
-    Array.from({ length: 8 }, (_, index) => {
-      const itemFactory = activePack.drills[index % activePack.drills.length];
-      const item = itemFactory();
+    buildDailyItems(archetype, rng).forEach((item, index) => {
       const li = document.createElement('li');
       const strong = document.createElement('strong');
       strong.textContent = `${index + 1}. ${item.prompt}`;
+      const reveal = document.createElement('button');
+      reveal.className = 'button button-secondary daily-reveal-answer';
+      reveal.type = 'button';
+      reveal.textContent = 'Reveal answer';
       const answer = document.createElement('div');
-      answer.className = 'muted small';
+      answer.className = 'muted small daily-answer';
       answer.textContent = `Answer: ${item.answer}`;
-      li.append(strong, answer);
+      answer.hidden = true;
+      reveal.addEventListener('click', () => {
+        answer.hidden = false;
+        reveal.hidden = true;
+      });
+      li.append(strong, reveal, answer);
       list.appendChild(li);
     });
   };
 
   byId('generate-daily-drill')?.addEventListener('click', renderPack);
+  byId('reveal-daily-answers')?.addEventListener('click', revealAnswers);
   byId('print-daily-drill')?.addEventListener('click', () => {
     if (!byId('daily-drill-list').children.length) renderPack();
     window.print();

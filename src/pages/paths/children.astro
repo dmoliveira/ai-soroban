@@ -27,4 +27,39 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       <a class="button button-secondary" href={`${base}practice`}>Try a quick exercise</a>
     </div>
   </section>
+
+  <section class="split-grid">
+    <article class="panel content-prose">
+      <p class="eyebrow">First week</p>
+      <h2>A gentle starter routine</h2>
+      <ol>
+        <li><strong>Day 1:</strong> Learn the parts of the soroban and name the beam, upper bead, and lower beads.</li>
+        <li><strong>Day 2:</strong> Read small numbers like 4, 7, and 8 before moving any beads.</li>
+        <li><strong>Day 3:</strong> Set two-rod numbers such as 24 and 31.</li>
+        <li><strong>Day 4:</strong> Practice one-rod addition with short 5-minute rounds.</li>
+        <li><strong>Day 5:</strong> Try one short worksheet or daily drill pack and stop while the energy is still good.</li>
+      </ol>
+      <p class="muted">A short happy finish is better than a long tired session.</p>
+    </article>
+
+    <article class="panel content-prose">
+      <p class="eyebrow">First win</p>
+      <h2>One simple success to aim for</h2>
+      <p>By the end of the first week, a child on this path should be able to read and set a number like <strong>31</strong> calmly as a clear first win.</p>
+      <div class="hero-actions">
+        <a class="button" href={`${base}lessons/l0/parts-of-the-soroban`}>Start first lesson</a>
+        <a class="button button-secondary" href={`${base}exercises/l0/set-thirty-one`}>Try the first win</a>
+      </div>
+    </article>
+  </section>
+
+  <section class="panel content-prose">
+    <p class="eyebrow">Best next steps</p>
+    <h2>When a session goes well</h2>
+    <div class="hero-actions">
+      <a class="button" href={`${base}daily-drills`}>Generate today’s short pack</a>
+      <a class="button button-secondary" href={`${base}boss-rounds`}>See milestone endings</a>
+      <a class="button button-secondary" href={`${base}paths/adults`}>Compare the adult path</a>
+    </div>
+  </section>
 </BaseLayout>

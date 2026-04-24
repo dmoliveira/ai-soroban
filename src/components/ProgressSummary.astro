@@ -11,6 +11,7 @@ interface Props {
 }
 
 const { lessons, exercises } = Astro.props;
+const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
 ---
 
 <section class="panel progress-panel" data-lessons={JSON.stringify(lessons)} data-exercises={JSON.stringify(exercises)}>
@@ -45,12 +46,12 @@ const { lessons, exercises } = Astro.props;
   <section class="panel ink-panel progress-links-strip">
     <strong>Quick links</strong>
     <div class="button-row button-row-compact">
-      <a class="button button-secondary" href="/ai-soroban/lessons">Lessons</a>
-      <a class="button button-secondary" href="/ai-soroban/exercises">Exercises</a>
-      <a class="button button-secondary" href="/ai-soroban/practice">Practice</a>
-      <a class="button button-secondary" href="/ai-soroban/worksheets">Worksheets</a>
-      <a class="button button-secondary" href="/ai-soroban/study-plan">Study plan</a>
-      <a class="button button-secondary" href="/ai-soroban/daily-drills">Daily drills</a>
+      <a class="button button-secondary" href={`${base}lessons`}>Lessons</a>
+      <a class="button button-secondary" href={`${base}exercises`}>Exercises</a>
+      <a class="button button-secondary" href={`${base}practice`}>Practice</a>
+      <a class="button button-secondary" href={`${base}worksheets`}>Worksheets</a>
+      <a class="button button-secondary" href={`${base}study-plan`}>Study plan</a>
+      <a class="button button-secondary" href={`${base}daily-drills`}>Daily drills</a>
     </div>
   </section>
 
@@ -112,7 +113,7 @@ const { lessons, exercises } = Astro.props;
 
 <script is:inline>
   const root = document.querySelector('.progress-panel');
-  const base = '/ai-soroban/';
+  const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
   const lessonKey = 'soroban-dojo:completed-lessons';
   const exerciseKey = 'soroban-dojo:exercise-states';
   const timerKey = 'soroban-dojo:timer-history';
@@ -196,23 +197,23 @@ const { lessons, exercises } = Astro.props;
 
   if (!lessonData.length) {
     setNextMove('Start your first lesson', 'Begin with a calm lesson, then move into one short practice session.', [
-      { href: '/ai-soroban/start-here', label: 'Start here' },
-      { href: '/ai-soroban/lessons', label: 'Browse lessons', secondary: true },
+      { href: `${base}start-here`, label: 'Start here' },
+      { href: `${base}lessons`, label: 'Browse lessons', secondary: true },
     ]);
   } else if (reviewItems.length) {
     setNextMove('Review weak areas next', 'You have items marked for review. Repairing them now is the best way to steady your progress.', [
-      { href: '/ai-soroban/practice', label: 'Open practice' },
-      { href: '/ai-soroban/worksheets', label: 'Open worksheet', secondary: true },
+      { href: `${base}practice`, label: 'Open practice' },
+      { href: `${base}worksheets`, label: 'Open worksheet', secondary: true },
     ]);
   } else if (!finishedSessions.length) {
     setNextMove('Complete a full session', 'You have started learning; now complete one focused session to build rhythm.', [
-      { href: '/ai-soroban/practice', label: 'Start practice' },
-      { href: '/ai-soroban/worksheets', label: 'Generate worksheet', secondary: true },
+      { href: `${base}practice`, label: 'Start practice' },
+      { href: `${base}worksheets`, label: 'Generate worksheet', secondary: true },
     ]);
   } else {
     setNextMove('Advance with stronger drills', 'Your recent progress is steady. Push forward with a worksheet or a fresh practice session.', [
-      { href: '/ai-soroban/worksheets', label: 'Open worksheet' },
-      { href: '/ai-soroban/practice', label: 'New practice session', secondary: true },
+      { href: `${base}worksheets`, label: 'Open worksheet' },
+      { href: `${base}practice`, label: 'New practice session', secondary: true },
     ]);
   }
 

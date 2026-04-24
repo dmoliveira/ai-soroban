@@ -12,7 +12,7 @@ const exercises = (await getCollection('exercises')).slice(0, 3);
 const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
 ---
 
-<BaseLayout title="Learn Soroban Online | Soroban Dojo" description="Learn Soroban online with calm lessons, printable abacus worksheets, attempt-first practice, and beginner-to-advanced drills in ai-soroban.">
+<BaseLayout title="Learn Soroban Online | Soroban Dojo" description="Learn soroban online with calm lessons, printable abacus worksheets, attempt-first practice, mini-games, and beginner-to-advanced mental math training.">
   <Hero
     eyebrow="GitHub Pages-ready Soroban dojo"
     title="Learn with calm structure. Practice with steady discipline."
@@ -34,7 +34,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   <div class="hero-quick-links panel">
     <strong>Best starting paths</strong>
     <div class="button-row button-row-compact">
-      <a class="button button-secondary" href={`${base}start-here`}>Start here</a>
+      <a class="button" href={`${base}start-here`}>Start here</a>
       <a class="button button-secondary" href={`${base}curriculum`}>Full curriculum</a>
       <a class="button button-secondary" href={`${base}lessons/l4/first-multiplication-patterns`}>Start multiplication</a>
       <a class="button button-secondary" href={`${base}paths/children`}>Children path</a>
@@ -61,7 +61,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       <h2>Start with one clear step</h2>
       <p>Pick a path, learn one concept, then try one exercise before checking the answer.</p>
       <div class="hero-actions">
-        <a class="button" href={`${base}curriculum`}>Follow curriculum</a>
+        <a class="button" href={`${base}start-here`}>Take the best next step</a>
+        <a class="button button-secondary" href={`${base}curriculum`}>Follow curriculum</a>
         <a class="button button-secondary" href={`${base}practice`}>Practice now</a>
         <a class="button button-secondary" href={`${base}lessons/l0/parts-of-the-soroban`}>Start at L0</a>
         <a class="button button-secondary" href={`${base}support`}>Support the dojo</a>

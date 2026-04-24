@@ -12,6 +12,16 @@ const exercises = (await getCollection('exercises')).map((exercise) => ({
 }));
 ---
 
-<BaseLayout title="Interactive Soroban Practice | Soroban Dojo" description="Practice Soroban online with guided one-by-one drills, worksheet mode, adaptive review, and mental abacus exercises in ai-soroban.">
+<BaseLayout title="Interactive Soroban Practice | Soroban Dojo" description="Practice soroban online with guided drills, adaptive review, worksheet-style sessions, visual beginner play, and mental abacus exercises.">
+  <section class="panel content-prose">
+    <p class="eyebrow">Practice</p>
+    <h1>Pick one setup and start</h1>
+    <p>The best default here is one short session. Change the setup only when you already know why.</p>
+    <div class="hero-actions">
+      <a class="button" href="#practice-client">Start one short session</a>
+      <a class="button button-secondary" href={`${import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`}daily-drills`}>Use a daily pack</a>
+      <a class="button button-secondary" href={`${import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`}worksheets`}>Open worksheets</a>
+    </div>
+  </section>
   <PracticeClient exercises={exercises} />
 </BaseLayout>

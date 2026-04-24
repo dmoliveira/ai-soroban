@@ -3,7 +3,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
 ---
 
-<BaseLayout title="Printable Soroban Worksheets | Soroban Dojo" description="Generate printable Soroban and abacus worksheets by level, digit band, and skill pattern with student-sheet and answer-key modes in ai-soroban.">
+<BaseLayout title="Printable Soroban Worksheets | Soroban Dojo" description="Generate printable soroban worksheets by level, digit band, and skill pattern with student sheets, answer keys, and focused practice modes.">
   <section class="panel content-prose no-print">
     <p class="eyebrow">Soroban sheets · 印刷</p>
     <h1>Ledger-style drill sheets</h1>
@@ -682,14 +682,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       writeWorksheetSessions(sessions);
     };
 
-    const styleAdjustBand = (style, band) => {
-      if (style === 'speed') {
-        if (band === '4-6') return '3-4';
-        if (band === '3-4') return '2-3';
-      }
-      if (style === 'exam' && band === '2') return '2-3';
-      return band;
-    };
+    const styleAdjustBand = (_style, band) => band;
 
     const digitBandForProgress = (bandRange, count, index, flowMode) => {
       if (flowMode !== 'ramp' || bandRange.min === bandRange.max) return bandRange;

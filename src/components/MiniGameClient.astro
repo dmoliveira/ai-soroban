@@ -1,4 +1,4 @@
-<section class="panel mini-games-panel">
+<section id="mini-games-panel" class="panel mini-games-panel">
   <div class="section-head">
     <div>
       <p class="eyebrow">Mini games</p>
@@ -15,7 +15,7 @@
       <p>Answer missing-to-5 and missing-to-10 prompts quickly without losing accuracy.</p>
       <div class="button-row button-row-compact">
         <button class="button button-secondary minigame-select" data-game="complement-dash">Use game</button>
-        <button class="button button-secondary minigame-start" data-game="complement-dash">Start now</button>
+        <button class="button minigame-start" data-game="complement-dash">Start now</button>
       </div>
     </article>
     <article class="choice-card">
@@ -24,7 +24,7 @@
       <p>Climb one multiplication family floor by floor and try to keep the streak alive.</p>
       <div class="button-row button-row-compact">
         <button class="button button-secondary minigame-select" data-game="table-tower">Use game</button>
-        <button class="button button-secondary minigame-start" data-game="table-tower">Start now</button>
+        <button class="button minigame-start" data-game="table-tower">Start now</button>
       </div>
     </article>
     <article class="choice-card">
@@ -33,7 +33,7 @@
       <p>Read short mental sequences, hold the total, and finish before the timer drains.</p>
       <div class="button-row button-row-compact">
         <button class="button button-secondary minigame-select" data-game="anzan-flash">Use game</button>
-        <button class="button button-secondary minigame-start" data-game="anzan-flash">Start now</button>
+        <button class="button minigame-start" data-game="anzan-flash">Start now</button>
       </div>
     </article>
     <article class="choice-card">
@@ -42,7 +42,7 @@
       <p>Spot a wrong result and type the corrected answer before your streak disappears.</p>
       <div class="button-row button-row-compact">
         <button class="button button-secondary minigame-select" data-game="error-fix">Use game</button>
-        <button class="button button-secondary minigame-start" data-game="error-fix">Start now</button>
+        <button class="button minigame-start" data-game="error-fix">Start now</button>
       </div>
     </article>
   </div>
@@ -53,6 +53,7 @@
     <div id="mini-game-best" class="muted small">Best score: 0</div>
     <div id="mini-game-tier" class="muted small">Tier: starter</div>
     <div id="mini-game-medal" class="muted small">Medal targets will appear here.</div>
+    <div id="mini-game-modifier" class="muted small">Modifier: standard round.</div>
     <div class="button-row button-row-compact">
       <label class="stack-sm mini-tier-picker">
         <span>Difficulty tier</span>
@@ -91,6 +92,80 @@
   const scoreKey = 'soroban-dojo:minigame-scores';
   const medalKey = 'soroban-dojo:minigame-medals';
   const byId = (id) => document.getElementById(id);
+  const modifierCycle = {
+    'complement-dash': [
+      { label: 'Standard round', transform: ({ prompt, answer }) => ({ prompt, answer }) },
+      { label: 'To ten only', transform: ({ answer }) => ({ prompt: `What completes ${10 - answer} to 10?`, answer }) },
+      { label: 'To five only', transform: (_, round) => { const given = (round % 4) + 1; return { prompt: `What completes ${given} to 5?`, answer: 5 - given }; } },
+    ],
+    'table-tower': [
+      { label: 'Standard round', transform: ({ prompt, answer }) => ({ prompt, answer }) },
+      { label: 'Odd table climb', transform: (_, round) => { const table = [3, 5, 7][round % 3]; const factor = (round % 6) + 2; return { prompt: `${table} × ${factor}`, answer: table * factor }; } },
+      { label: 'Even table climb', transform: (_, round) => { const table = [4, 6, 8][round % 3]; const factor = (round % 6) + 2; return { prompt: `${table} × ${factor}`, answer: table * factor }; } },
+    ],
+    'anzan-flash': [
+      { label: 'Standard round', transform: ({ prompt, answer }) => ({ prompt, answer }) },
+      { label: 'Silent hold', transform: ({ prompt, answer }) => ({ prompt: `Hold this total silently: ${prompt}`, answer }) },
+      { label: 'Recovery finish', transform: ({ prompt, answer }) => ({ prompt: `${prompt} · Check the final total after one calm breath.`, answer }) },
+    ],
+    'error-fix': [
+      { label: 'Standard round', transform: ({ prompt, answer }) => ({ prompt, answer }) },
+      { label: 'First mistake only', transform: ({ prompt, answer }) => ({ prompt: `${prompt} Fix only the first wrong total.`, answer }) },
+      { label: 'No-streak panic', transform: ({ prompt, answer }) => ({ prompt: `${prompt} Repair it before the round slips away.`, answer }) },
+    ],
+  };
+  const anzanPools = {
+    starter: [
+      { prompt: '18 + 7 - 4 + 5', answer: 26 },
+      { prompt: '42 - 9 + 16 - 3', answer: 46 },
+      { prompt: '24 + 8 - 3 + 6', answer: 35 },
+      { prompt: '31 + 5 - 2 + 4', answer: 38 },
+    ],
+    bronze: [
+      { prompt: '57 + 18 - 26 + 9', answer: 58 },
+      { prompt: '63 + 14 - 8 + 11', answer: 80 },
+      { prompt: '51 - 7 + 12 - 4', answer: 52 },
+      { prompt: '74 + 8 - 3 + 12', answer: 91 },
+    ],
+    silver: [
+      { prompt: '86 - 14 + 19 - 7', answer: 84 },
+      { prompt: '74 + 8 - 3 + 12', answer: 91 },
+      { prompt: '93 - 18 + 24 - 9', answer: 90 },
+      { prompt: '67 + 26 - 15 + 8', answer: 86 },
+    ],
+    gold: [
+      { prompt: '128 + 37 - 46 + 19', answer: 138 },
+      { prompt: '214 - 58 + 36 - 17', answer: 175 },
+      { prompt: '186 + 45 - 29 + 18', answer: 220 },
+      { prompt: '247 - 63 + 28 - 19', answer: 193 },
+    ],
+  };
+  const errorFixPools = {
+    starter: [
+      { prompt: 'Fix this result: 2 + 3 = 4', answer: 5 },
+      { prompt: 'Fix this result: 8 - 2 = 7', answer: 6 },
+      { prompt: 'Fix this result: 4 + 4 = 7', answer: 8 },
+      { prompt: 'Fix this result: 9 - 3 = 5', answer: 6 },
+    ],
+    bronze: [
+      { prompt: 'Fix this result: 24 + 7 + 1 = 31', answer: 32 },
+      { prompt: 'Fix this result: 36 - 12 = 25', answer: 24 },
+      { prompt: 'Fix this result: 46 - 8 + 12 = 49', answer: 50 },
+      { prompt: 'Fix this result: 58 + 13 - 9 = 61', answer: 62 },
+    ],
+    silver: [
+      { prompt: 'Fix this result: 12 × 3 = 34', answer: 36 },
+      { prompt: 'Fix this result: 24 ÷ 6 = 5', answer: 4 },
+      { prompt: 'Fix this result: 14 × 4 = 52', answer: 56 },
+      { prompt: 'Fix this result: 36 ÷ 9 = 3', answer: 4 },
+    ],
+    gold: [
+      { prompt: 'Fix this result: 57 + 18 - 26 + 9 = 60', answer: 58 },
+      { prompt: 'Fix this result: 23 × 4 = 96', answer: 92 },
+      { prompt: 'Fix this result: 63 + 14 - 8 + 11 = 79', answer: 80 },
+      { prompt: 'Fix this result: 48 ÷ 6 = 7', answer: 8 },
+    ],
+  };
   const games = {
     'complement-dash': {
       title: 'Complement dash',
@@ -118,25 +193,7 @@
       copy: 'Target skill: short mental sequence recall with sign changes.',
       thresholds: { bronze: 30, silver: 60, gold: 100 },
       make: (round, tier) => {
-        const packs = {
-          starter: [
-            { prompt: '18 + 7 - 4 + 5', answer: 26 },
-            { prompt: '42 - 9 + 16 - 3', answer: 46 },
-          ],
-          bronze: [
-            { prompt: '57 + 18 - 26 + 9', answer: 58 },
-            { prompt: '63 + 14 - 8 + 11', answer: 80 },
-          ],
-          silver: [
-            { prompt: '86 - 14 + 19 - 7', answer: 84 },
-            { prompt: '74 + 8 - 3 + 12', answer: 91 },
-          ],
-          gold: [
-            { prompt: '128 + 37 - 46 + 19', answer: 138 },
-            { prompt: '214 - 58 + 36 - 17', answer: 175 },
-          ],
-        };
-        return packs[tier][round % packs[tier].length];
+        return anzanPools[tier][round % anzanPools[tier].length];
       },
     },
     'error-fix': {
@@ -144,25 +201,7 @@
       copy: 'Target skill: detect the wrong result quickly, then repair it before the streak resets.',
       thresholds: { bronze: 20, silver: 45, gold: 75 },
       make: (round, tier) => {
-        const sets = {
-          starter: [
-            { prompt: 'Fix this result: 2 + 3 = 4', answer: 5 },
-            { prompt: 'Fix this result: 8 - 2 = 7', answer: 6 },
-          ],
-          bronze: [
-            { prompt: 'Fix this result: 24 + 7 + 1 = 31', answer: 32 },
-            { prompt: 'Fix this result: 36 - 12 = 25', answer: 24 },
-          ],
-          silver: [
-            { prompt: 'Fix this result: 12 × 3 = 34', answer: 36 },
-            { prompt: 'Fix this result: 24 ÷ 6 = 5', answer: 4 },
-          ],
-          gold: [
-            { prompt: 'Fix this result: 57 + 18 - 26 + 9 = 60', answer: 58 },
-            { prompt: 'Fix this result: 23 × 4 = 96', answer: 92 },
-          ],
-        };
-        return sets[tier][round % sets[tier].length];
+        return errorFixPools[tier][round % errorFixPools[tier].length];
       },
     },
   };
@@ -173,6 +212,7 @@
   let streak = 0;
   let round = 0;
   let currentTier = 'starter';
+  let currentModifier = modifierCycle[currentGame][0];
 
   const readScores = () => {
     try { return JSON.parse(localStorage.getItem(scoreKey) || '{}'); } catch { return {}; }
@@ -210,6 +250,7 @@
     byId('mini-game-best').textContent = `Best score: ${best}`;
     byId('mini-game-tier').textContent = `Tier: ${medal}`;
     byId('mini-game-medal').textContent = `Medal targets: bronze ${game.thresholds.bronze}, silver ${game.thresholds.silver}, gold ${game.thresholds.gold}`;
+    byId('mini-game-modifier').textContent = `Modifier: ${currentModifier?.label || 'Standard round'}`;
     syncTierPicker(medal);
   };
   const syncStats = () => {
@@ -217,12 +258,22 @@
     byId('mini-game-streak').textContent = String(streak);
     byId('mini-game-round').textContent = String(round);
   };
+  const pickModifier = () => {
+    const options = modifierCycle[currentGame] || modifierCycle['complement-dash'];
+    currentModifier = options[(Math.max(round, 1) - 1) % options.length];
+    byId('mini-game-modifier').textContent = `Modifier: ${currentModifier.label}`;
+  };
+  const makeRound = () => {
+    const baseRound = games[currentGame].make(round, currentTier);
+    return currentModifier?.transform ? currentModifier.transform(baseRound, round, currentTier) : baseRound;
+  };
   const startRound = () => {
     round += 1;
-    currentRound = games[currentGame].make(round, currentTier);
+    pickModifier();
+    currentRound = makeRound();
     byId('mini-game-prompt').textContent = currentRound.prompt;
     byId('mini-game-answer').value = '';
-    byId('mini-game-feedback').textContent = 'Solve it, then check your answer.';
+    byId('mini-game-feedback').textContent = `Solve it, then check your answer. ${currentModifier?.label || 'Standard round'}.`;
     syncStats();
   };
   const checkRound = () => {
@@ -254,14 +305,16 @@
 
   document.querySelectorAll('.minigame-select').forEach((button) => button.addEventListener('click', () => {
     currentGame = button.dataset.game;
-    score = 0; streak = 0; round = 0; currentRound = null;
+    score = 0; streak = 0; round = 0; currentRound = null; currentModifier = modifierCycle[currentGame][0];
     syncGameMeta();
     syncStats();
     byId('mini-game-prompt').textContent = 'Generate a round to start.';
+    byId('mini-game-answer').value = '';
+    byId('mini-game-feedback').textContent = 'Correct answers raise your score and streak.';
   }));
   document.querySelectorAll('.minigame-start').forEach((button) => button.addEventListener('click', () => {
     currentGame = button.dataset.game;
-    score = 0; streak = 0; round = 0;
+    score = 0; streak = 0; round = 0; currentModifier = modifierCycle[currentGame][0];
     syncGameMeta();
     startRound();
   }));
@@ -269,9 +322,12 @@
   byId('mini-game-check')?.addEventListener('click', checkRound);
   byId('mini-game-difficulty')?.addEventListener('change', (event) => {
     currentTier = event.target.value;
-    score = 0; streak = 0; round = 0; currentRound = null;
+    score = 0; streak = 0; round = 0; currentRound = null; currentModifier = modifierCycle[currentGame][0];
     syncStats();
+    syncGameMeta();
     byId('mini-game-prompt').textContent = 'Generate a round to start.';
+    byId('mini-game-answer').value = '';
+    byId('mini-game-feedback').textContent = 'Correct answers raise your score and streak.';
   });
   byId('mini-game-answer')?.addEventListener('keydown', (event) => {
     if (event.key !== 'Enter') return;

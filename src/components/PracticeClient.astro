@@ -15,7 +15,7 @@ const { exercises } = Astro.props;
 const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
 ---
 
-<section class="practice-stack" data-library={JSON.stringify(exercises)} data-base={base}>
+<section id="practice-client" class="practice-stack" data-library={JSON.stringify(exercises)} data-base={base}>
   <section class="panel practice-options">
     <div class="section-head">
       <div>
@@ -89,6 +89,24 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       </article>
     </div>
     <div class="option-grid option-grid-compact practice-challenge-grid">
+      <article class="choice-card">
+        <p class="eyebrow">Challenge</p>
+        <h3>Bead match</h3>
+        <p>Short L0 visual rounds that ask you to read the rod calmly before you answer.</p>
+        <div class="button-row button-row-compact">
+          <button class="button button-secondary practice-challenge-button" data-challenge="bead-match">Use challenge</button>
+          <button class="button button-secondary practice-challenge-start" data-challenge="bead-match">Start now</button>
+        </div>
+      </article>
+      <article class="choice-card">
+        <p class="eyebrow">Challenge</p>
+        <h3>Clean five</h3>
+        <p>Short L1 visual rounds that help the clean five shape become easy to spot.</p>
+        <div class="button-row button-row-compact">
+          <button class="button button-secondary practice-challenge-button" data-challenge="clean-five">Use challenge</button>
+          <button class="button button-secondary practice-challenge-start" data-challenge="clean-five">Start now</button>
+        </div>
+      </article>
       <article class="choice-card">
         <p class="eyebrow">Challenge</p>
         <h3>Streak sprint</h3>
@@ -249,6 +267,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
           <select id="question-style" class="select">
             <option value="mixed">Mixed</option>
             <option value="visual">Visual first</option>
+            <option value="visual-read">Visual bead read</option>
+            <option value="visual-five">Clean five read</option>
             <option value="mental">Mental prompt</option>
             <option value="adaptive">Adaptive weak-area</option>
           </select>
@@ -285,6 +305,10 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     <div class="subtle-panel practice-purpose-strip">
       <strong>Best for</strong>
       <span id="practice-purpose-copy" class="muted small">short guided repetitions</span>
+    </div>
+    <div class="subtle-panel practice-journey-mode">
+      <strong id="journey-mode-title">Journey mode</strong>
+      <p id="journey-mode-copy" class="muted small">Pick a journey to switch from generic presets into a more distinct practice format.</p>
     </div>
     <div class="practice-quick-paths">
       <button class="button button-secondary practice-preset" data-preset="warmup">Quick warm-up</button>
@@ -337,7 +361,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         <div class="practice-next-strip">
           <strong>Quick path</strong>
           <div class="button-row button-row-compact">
-            <button class="button button-secondary practice-preset" data-preset="practice">Start focused practice</button>
+            <button class="button button-secondary practice-preset" data-preset="practice">Use focused practice preset</button>
             <button class="button button-secondary practice-preset" data-preset="review">Review weak areas</button>
             <button class="button button-secondary practice-preset" data-preset="mental">Mental mode</button>
           </div>
@@ -378,6 +402,16 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
       <div id="feedback-panel" class="reveal-panel" hidden role="status" aria-live="polite"></div>
       <div id="steps-panel" class="reveal-panel" hidden aria-live="polite"></div>
+      <div id="recovery-panel" class="subtle-panel practice-recovery-panel" hidden>
+        <p class="eyebrow">Recovery mode</p>
+        <strong id="recovery-title">Repair the pattern calmly</strong>
+        <p id="recovery-copy" class="muted small">If the first answer misses, switch to one quieter repair prompt before moving on.</p>
+        <div class="button-row button-row-compact">
+          <button class="button button-secondary" id="use-recovery-prompt">Use repair prompt</button>
+          <button class="button button-secondary" id="leave-recovery-prompt" hidden>Return to original prompt</button>
+          <button class="button button-secondary" id="reveal-recovery-method">Reveal method</button>
+        </div>
+      </div>
       <details class="practice-help-block">
         <summary>How to use this session</summary>
         <div class="review-chip-row">
@@ -442,6 +476,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   const TIMER_KEY = 'soroban-dojo:timer-history';
   const EXERCISE_STATE_KEY = 'soroban-dojo:exercise-states';
   let currentSession = null;
+  let selectedJourneyKey = null;
   let timerInterval = null;
   let questionStartedAt = null;
   let activeTimerKey = null;
@@ -659,6 +694,19 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     const effectiveStyle = resolveAdaptiveStyle(level, questionStyle);
     const terms = resolveTermCount(level, termCount);
     if (level === 'L0') {
+      if (effectiveStyle === 'visual-read') {
+        const shown = Math.floor(rng() * 9) + 1;
+        return {
+          id: `g-${level}-${index}`,
+          progressKey: `generated-${simpleSlug(`${level}-read-${shown}`)}`,
+          title: `Visual bead read ${index + 1}`,
+          prompt: 'Read the rod that is shown. What value do you see?',
+          answer: shown,
+          visualValue: shown,
+          promptLines: ['Look at the beads touching the beam.', 'Read the displayed rod only.', 'Say the value before you type it.'],
+          steps: [`Read the active beads.`, `The rod shows ${shown}.`],
+        };
+      }
       const a = Math.floor(rng() * 4) + 1;
       const b = Math.floor(rng() * (5 - a)) + 1;
       const answer = a + b;
@@ -666,13 +714,27 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         id: `g-${level}-${index}`,
         progressKey: `generated-${simpleSlug(`${level}-${answer}`)}`,
         title: `Generated starter sum ${index + 1}`,
-        prompt: effectiveStyle === 'visual' ? `On one rod, start from ${a}. Add ${b}. What final value do you read?` : `Start from ${a}. Add ${b}. What is the final value?`,
+        prompt: effectiveStyle === 'visual' ? `After starting from ${a} and adding ${b}, the rod below shows the result. What final value do you read?` : `Start from ${a}. Add ${b}. What is the final value?`,
         answer,
         visualValue: answer,
+        promptLines: effectiveStyle === 'visual' ? [`Look at the rod.`, `Start from ${a}.`, `Add ${b}.`, `Read the final bead pattern.`] : undefined,
         steps: [`Start at ${a}.`, `Add ${b}.`, `${a} + ${b} = ${answer}.`],
       };
     }
     if (level === 'L1') {
+      if (effectiveStyle === 'visual-five') {
+        const shown = [5, 6, 7, 8][index % 4];
+        return {
+          id: `g-${level}-${index}`,
+          progressKey: `generated-${simpleSlug(`${level}-five-${shown}`)}`,
+          title: `Clean five read ${index + 1}`,
+          prompt: 'Read the rod with the upper bead active. What value do you see?',
+          answer: shown,
+          visualValue: shown,
+          promptLines: ['Notice the upper bead touching the beam.', 'Count the lower beads that stay active.', 'Read the full clean-five shape.'],
+          steps: ['The upper bead gives 5.', `Add the lower beads to read ${shown}.`],
+        };
+      }
       const a = Math.floor(rng() * 8) + 1;
       const b = Math.floor(rng() * (9 - a)) + 1;
       const subtract = effectiveStyle === 'mental' ? false : rng() > 0.5;
@@ -682,9 +744,10 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
           id: `g-${level}-${index}`,
           progressKey: `generated-${simpleSlug(`${level}-${start}-${b}-${a}`)}`,
           title: `Generated subtraction ${index + 1}`,
-          prompt: `Start from ${start}. Subtract ${b}. What is the final value?`,
+          prompt: effectiveStyle === 'visual' ? `After starting from ${start} and subtracting ${b}, the rod below shows the result. What final value do you read?` : `Start from ${start}. Subtract ${b}. What is the final value?`,
           answer: a,
           visualValue: a,
+          promptLines: effectiveStyle === 'visual' ? [`Set ${start} first.`, `Move ${b} away.`, `Watch for the cleaner rod shape.`, `Read the final value.`] : undefined,
           steps: [`Start at ${start}.`, `Subtract ${b}.`, `${start} - ${b} = ${a}.`],
         };
       }
@@ -692,9 +755,10 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         id: `g-${level}-${index}`,
         progressKey: `generated-${simpleSlug(`${level}-${a}-${b}-${a + b}`)}`,
         title: `Generated addition ${index + 1}`,
-        prompt: `Start from ${a}. Add ${b}. What is the final value?`,
+        prompt: effectiveStyle === 'visual' ? `After starting from ${a} and adding ${b}, the rod below shows the result. What final value do you read?` : `Start from ${a}. Add ${b}. What is the final value?`,
         answer: a + b,
         visualValue: a + b,
+        promptLines: effectiveStyle === 'visual' ? [`Set ${a}.`, `Add ${b}.`, `Watch whether the clean five shape appears.`, `Read the final rod.`] : undefined,
         steps: [`Start at ${a}.`, `Add ${b}.`, `${a} + ${b} = ${a + b}.`],
       };
     }
@@ -722,6 +786,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
           id: `g-${level}-${index}`,
           progressKey: `generated-${simpleSlug(`${level}-${multiplicand}-${multiplier}-${answer}`)}`,
           title: `Generated multiplication drill ${index + 1}`,
+          skill: 'multiplication',
           prompt: `Solve ${multiplicand} × ${multiplier}.`,
           answer,
           visualValue: answer,
@@ -735,6 +800,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         id: `g-${level}-${index}`,
         progressKey: `generated-${simpleSlug(`${level}-${dividend}-${divisor}-${quotient}`)}`,
         title: `Generated division drill ${index + 1}`,
+        skill: 'division',
         prompt: `Solve ${dividend} ÷ ${divisor}.`,
         answer: quotient,
         visualValue: quotient,
@@ -782,6 +848,82 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     return Array.from({ length }, (_, index) => buildGeneratedQuestion(level, index, rng, questionStyle, termCount));
   };
 
+  const buildJourneyQuestions = (journeyKey, length, sessionId) => {
+    const rng = createRng(`${sessionId}-${journeyKey}`);
+    const foundationValues = [3, 4, 5, 7, 8, 12, 24, 31, 42, 50];
+    const fluencySets = [
+      { prompt: '24 + 7 + 1', answer: 32, steps: ['Start at 24.', 'Add 7 to reach 31.', 'Add 1 to reach 32.'] },
+      { prompt: '46 - 8 + 12', answer: 50, steps: ['Start at 46.', 'Subtract 8 to reach 38.', 'Add 12 to reach 50.'] },
+      { prompt: '58 + 13 - 9', answer: 62, steps: ['Start at 58.', 'Add 13 to reach 71.', 'Subtract 9 to reach 62.'] },
+    ];
+    const mulDivSets = [
+      { prompt: '12 × 3', answer: 36, skill: 'multiplication', steps: ['Use the 12 table fact.', '3 groups of 12 make 36.'] },
+      { prompt: '24 ÷ 6', answer: 4, skill: 'division', steps: ['Ask which factor with 6 makes 24.', 'That factor is 4.'] },
+      { prompt: '14 × 4', answer: 56, skill: 'multiplication', steps: ['Break 14 into 10 and 4.', '40 + 16 = 56.'] },
+      { prompt: '36 ÷ 9', answer: 4, skill: 'division', steps: ['9 fits into 36 exactly 4 times.'] },
+    ];
+    const masterySets = [
+      { prompt: '18 + 7 - 4 + 5', answer: 26, steps: ['18 + 7 = 25.', '25 - 4 = 21.', '21 + 5 = 26.'] },
+      { prompt: '42 - 9 + 16 - 3', answer: 46, steps: ['42 - 9 = 33.', '33 + 16 = 49.', '49 - 3 = 46.'] },
+      { prompt: '63 + 14 - 8 + 11', answer: 80, steps: ['63 + 14 = 77.', '77 - 8 = 69.', '69 + 11 = 80.'] },
+    ];
+
+    return Array.from({ length }, (_, index) => {
+      if (journeyKey === 'foundations') {
+        const value = pick(rng, foundationValues);
+        return {
+          id: `${sessionId}-j-${index}`,
+          progressKey: `journey-foundations-${value}-${index}`,
+          title: `Foundation visual ${index + 1}`,
+          prompt: 'Read this soroban value before you type the answer.',
+          answer: value,
+          visualValue: value,
+          steps: [`Look at the active beads rod by rod.`, `Read the full value as ${value}.`],
+        };
+      }
+      if (journeyKey === 'complements') {
+        const base = index % 2 === 0 ? 10 : 5;
+        const given = Math.max(1, Math.min(base - 1, Math.floor(rng() * (base - 1)) + 1));
+        return {
+          id: `${sessionId}-j-${index}`,
+          progressKey: `journey-complements-${base}-${given}-${index}`,
+          title: `Complement chain ${index + 1}`,
+          prompt: `What completes ${given} to ${base}?`,
+          answer: base - given,
+          visualValue: base,
+          steps: [`Ask what ${given} needs to become ${base}.`, `The missing part is ${base - given}.`],
+        };
+      }
+      if (journeyKey === 'fluency') {
+        const source = fluencySets[index % fluencySets.length];
+        return {
+          id: `${sessionId}-j-${index}`,
+          progressKey: `journey-fluency-${index}`,
+          title: `Fluency relay ${index + 1}`,
+          ...source,
+        };
+      }
+      if (journeyKey === 'muldiv') {
+        const source = mulDivSets[index % mulDivSets.length];
+        return {
+          id: `${sessionId}-j-${index}`,
+          progressKey: `journey-muldiv-${index}`,
+          title: `Table and quotient ${index + 1}`,
+          skill: source.skill,
+          ...source,
+        };
+      }
+      const source = masterySets[index % masterySets.length];
+      return {
+        id: `${sessionId}-j-${index}`,
+        progressKey: `journey-mastery-${index}`,
+        title: `Mental ladder ${index + 1}`,
+        visualValue: null,
+        ...source,
+      };
+    });
+  };
+
   const presets = {
     warmup: { format: 'single', type: 'curated', level: 'L0', length: '5', checkMode: 'final', timerMode: 'off', questionStyle: 'visual', termCount: '2' },
     practice: { format: 'single', type: 'generated', level: 'L2', length: '10', checkMode: 'verify', timerMode: 'off', questionStyle: 'mixed', termCount: '3' },
@@ -791,14 +933,16 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   };
 
   const journeys = {
-    foundations: { format: 'single', type: 'curated', level: 'L0', length: '5', checkMode: 'final', timerMode: 'off', questionStyle: 'visual', termCount: '2' },
-    complements: { format: 'single', type: 'generated', level: 'L2', length: '10', checkMode: 'steps', timerMode: 'off', questionStyle: 'mixed', termCount: '3' },
-    fluency: { format: 'sheet', type: 'generated', level: 'L3', length: '10', checkMode: 'verify', timerMode: 'off', questionStyle: 'mixed', termCount: '3' },
-    muldiv: { format: 'sheet', type: 'generated', level: 'L4', length: '15', checkMode: 'verify', timerMode: 'off', questionStyle: 'mixed', termCount: '3' },
-    mastery: { format: 'single', type: 'generated', level: 'L5', length: '10', checkMode: 'steps', timerMode: 'off', questionStyle: 'mental', termCount: '4' },
+    foundations: { title: 'Build foundations', modeCopy: 'Visual reading chain with bead-first prompts and short calm wins.', format: 'single', type: 'generated', level: 'L0', length: '5', checkMode: 'final', timerMode: 'off', questionStyle: 'visual', termCount: '2' },
+    complements: { title: 'Strengthen complements', modeCopy: 'Missing-part chain that stays inside five and ten complements.', format: 'single', type: 'generated', level: 'L2', length: '10', checkMode: 'steps', timerMode: 'off', questionStyle: 'mixed', termCount: '3' },
+    fluency: { title: 'Mixed fluency', modeCopy: 'Running-total relay with short mixed sequences instead of generic question picks.', format: 'single', type: 'generated', level: 'L3', length: '10', checkMode: 'verify', timerMode: 'off', questionStyle: 'mixed', termCount: '3' },
+    muldiv: { title: 'Multiply and divide', modeCopy: 'Alternating product-and-quotient ladder to keep fact families connected.', format: 'single', type: 'generated', level: 'L4', length: '10', checkMode: 'verify', timerMode: 'off', questionStyle: 'mixed', termCount: '3' },
+    mastery: { title: 'Mental mastery', modeCopy: 'Mental ladder with fixed anzan-style sequences and recovery rhythm.', format: 'single', type: 'generated', level: 'L5', length: '10', checkMode: 'steps', timerMode: 'off', questionStyle: 'mental', termCount: '4' },
   };
 
   const challenges = {
+    'bead-match': { format: 'single', type: 'generated', level: 'L0', length: '10', checkMode: 'final', timerMode: 'off', questionStyle: 'visual-read', termCount: '2' },
+    'clean-five': { format: 'single', type: 'generated', level: 'L1', length: '10', checkMode: 'final', timerMode: 'off', questionStyle: 'visual-five', termCount: '2' },
     'streak-sprint': { format: 'single', type: 'generated', level: 'L3', length: '15', checkMode: 'verify', timerMode: 'on', questionStyle: 'mixed', termCount: '3' },
     'sign-switch-relay': { format: 'sheet', type: 'generated', level: 'L3', length: '10', checkMode: 'verify', timerMode: 'off', questionStyle: 'mixed', termCount: '4' },
     'table-ladder': { format: 'sheet', type: 'generated', level: 'L4', length: '15', checkMode: 'verify', timerMode: 'off', questionStyle: 'mixed', termCount: '3' },
@@ -811,6 +955,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     const guideTitle = byId('practice-guide-title');
     const guideCopy = byId('practice-guide-copy');
     const purposeCopy = byId('practice-purpose-copy');
+    const journeyModeTitle = byId('journey-mode-title');
+    const journeyModeCopy = byId('journey-mode-copy');
     const adaptiveTitle = byId('adaptive-next-title');
     const adaptiveCopy = byId('adaptive-next-copy');
     const adaptiveLesson = byId('adaptive-next-lesson');
@@ -839,6 +985,11 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       guideCopy.textContent = 'Use this configuration to keep rhythm while building fluency across several related drill types.';
       purposeCopy.textContent = 'steady fluency, review, and progression';
     }
+    if (journeyModeTitle && journeyModeCopy) {
+      const journey = selectedJourneyKey ? journeys[selectedJourneyKey] : null;
+      journeyModeTitle.textContent = journey ? `Journey mode · ${journey.title}` : 'Journey mode';
+      journeyModeCopy.textContent = journey ? journey.modeCopy : 'Pick a journey to switch from generic presets into a more distinct practice format.';
+    }
     const adaptiveTarget = resolveAdaptiveTarget();
     const recommendation = adaptiveRecommendations[adaptiveTarget];
     if (adaptiveTitle && adaptiveCopy && adaptiveLesson && adaptiveExercise && adaptiveWorksheet) {
@@ -851,6 +1002,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   };
 
   const applyPreset = (key) => {
+    selectedJourneyKey = null;
     const preset = presets[key];
     if (!preset) return;
     byId('session-format').value = preset.format;
@@ -867,6 +1019,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   const applyJourney = (key) => {
     const journey = journeys[key];
     if (!journey) return;
+    selectedJourneyKey = key;
     byId('session-format').value = journey.format;
     byId('session-type').value = journey.type;
     byId('session-level').value = journey.level;
@@ -889,6 +1042,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   };
 
   const applyChallenge = (key) => {
+    selectedJourneyKey = null;
     const challenge = challenges[key];
     if (!challenge) return;
     byId('session-format').value = challenge.format;
@@ -902,24 +1056,40 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     syncPracticeSetupCopy();
   };
 
+  const syncControlsFromSession = (session) => {
+    if (!session) return;
+    selectedJourneyKey = session.journeyKey || null;
+    byId('session-format').value = session.format;
+    byId('session-type').value = session.type;
+    byId('session-level').value = session.level;
+    byId('session-length').value = String(session.length);
+    byId('check-mode').value = session.checkMode;
+    byId('timer-mode').value = session.timerEnabled ? 'on' : 'off';
+    byId('question-style').value = session.questionStyle;
+    byId('term-count').value = session.termCount;
+    syncPracticeSetupCopy();
+  };
+
   const startFromChallenge = (key) => {
     applyChallenge(key);
     byId('start-session')?.click();
   };
 
-  const createSession = ({ type, level, length, checkMode, timerEnabled, format, questionStyle, termCount }) => {
+  const createSession = ({ type, level, length, checkMode, timerEnabled, format, questionStyle, termCount, journeyKey }) => {
     const sessionId = makeId();
     const worksheetProfile = createWorksheetProfile({
       digitRange: byId('worksheet-digit-range')?.value,
       operationRange: byId('worksheet-operation-range')?.value,
       operatorMode: byId('worksheet-operator-mode')?.value,
     });
-    const questions = type === 'curated'
-      ? buildCuratedQuestions(level, length, sessionId)
-      : level === 'L3'
-        ? buildGeneratedWorksheetQuestions({ level, length, sessionId, profile: worksheetProfile }).map((question) => ({
-        ...question,
-        progressKey: `generated-${simpleSlug(`${question.answer}-${question.id}`)}`,
+    const questions = journeyKey
+      ? buildJourneyQuestions(journeyKey, length, sessionId)
+      : type === 'curated'
+        ? buildCuratedQuestions(level, length, sessionId)
+        : level === 'L3' && format === 'sheet'
+          ? buildGeneratedWorksheetQuestions({ level, length, sessionId, profile: worksheetProfile }).map((question) => ({
+          ...question,
+          progressKey: `generated-${simpleSlug(`${question.answer}-${question.id}`)}`,
       }))
         : buildGeneratedQuestions(level, length, sessionId, questionStyle, termCount);
     return {
@@ -933,6 +1103,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       format,
       questionStyle,
       termCount,
+      journeyKey: journeyKey || null,
+      journeyTitle: journeyKey ? journeys[journeyKey]?.title || null : null,
       createdAt: new Date().toISOString(),
       currentIndex: 0,
       completed: false,
@@ -975,6 +1147,10 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     verified: false,
     correct: false,
     seconds: 0,
+    recoveryPrompt: '',
+    recoveryAnswer: null,
+    recoveryMode: false,
+    recoveryUsed: false,
   };
 
   const computeQuestionScore = (response) => {
@@ -1012,21 +1188,48 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       status: response.correct ? 'got-it' : 'needs-review',
       sessionId: currentSession.id,
       level: currentSession.level,
-      skill: currentSession.level === 'L4'
+      skill: question.skill || (currentSession.level === 'L4'
         ? 'multiplication'
         : currentSession.level === 'L5'
           ? 'anzan'
           : currentSession.level === 'L2'
             ? 'complements'
-            : 'arithmetic',
+            : 'arithmetic'),
       updatedAt: new Date().toISOString(),
     };
     writeExerciseStates(existing);
   };
 
+  const buildRecoveryPrompt = (question, level, wrongValue) => {
+    const guess = String(wrongValue || 'that result');
+    if (level === 'L2') {
+      return {
+        prompt: `Recovery prompt: the missing part was not ${guess}. What number really completes this pattern?`,
+        answer: question.answer,
+      };
+    }
+    if (level === 'L4') {
+      return {
+        prompt: `Repair this result: ${question.prompt} = ${guess}. What should the correct value be?`,
+        answer: question.answer,
+      };
+    }
+    if (level === 'L3' || level === 'L5') {
+      return {
+        prompt: `Repair the running total calmly. If the result is not ${guess}, what should the final value be?`,
+        answer: question.answer,
+      };
+    }
+    return {
+      prompt: `Repair the rod reading. If it is not ${guess}, what number should it show instead?`,
+      answer: question.answer,
+    };
+  };
+
   const verifyCurrentAnswer = () => {
     if (!currentSession || currentSession.completed) return false;
     const question = currentSession.questions[currentSession.currentIndex];
+    const currentResponse = responseForCurrent();
     const input = byId('answer-input').value.trim();
     const feedback = byId('feedback-panel');
     if (!input) {
@@ -1035,17 +1238,34 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       return false;
     }
     const numericInput = Number(input);
-    const correct = input !== '' && !Number.isNaN(numericInput) && numericInput === question.answer;
-    updateCurrentResponse({ input, verified: true, correct });
+    const answerTarget = currentResponse.recoveryMode && currentResponse.recoveryAnswer !== null
+      ? currentResponse.recoveryAnswer
+      : question.answer;
+    const correct = input !== '' && !Number.isNaN(numericInput) && numericInput === answerTarget;
+    updateCurrentResponse({ input, verified: true, correct, recoveryUsed: currentResponse.recoveryUsed || currentResponse.recoveryMode, recoveryMode: correct ? false : currentResponse.recoveryMode });
     feedback.hidden = false;
     playTone(correct ? 'success' : 'error');
-    feedback.textContent = correct ? 'Correct. Your response matches the answer. You may continue or reveal the method to study it.' : 'Not correct yet. Revise your response, or reveal the answer or the method.';
+    if (correct && currentResponse.recoveryMode) {
+      feedback.textContent = 'Recovered. Your repair answer is correct. Continue when you are ready.';
+    } else if (correct) {
+      feedback.textContent = 'Correct. Your response matches the answer. You may continue or reveal the method to study it.';
+    } else {
+      const recovery = currentResponse.recoveryPrompt ? currentResponse : buildRecoveryPrompt(question, currentSession.level, input);
+      updateCurrentResponse({
+        recoveryPrompt: recovery.recoveryPrompt || recovery.prompt,
+        recoveryAnswer: recovery.recoveryAnswer ?? recovery.answer,
+        recoveryMode: currentResponse.recoveryMode,
+      });
+      feedback.textContent = currentResponse.recoveryMode
+        ? 'Not correct yet. Stay with the repair prompt, revise your response, and verify again.'
+        : 'Not correct yet. Revise your response, or switch into recovery mode for one calmer repair prompt.';
+    }
 
-    if (currentSession.checkMode === 'final' || currentSession.checkMode === 'steps') {
+    if (correct && (currentSession.checkMode === 'final' || currentSession.checkMode === 'steps')) {
       updateCurrentResponse({ revealedFinal: true });
       feedback.textContent += ` Answer: ${question.answer}.`;
     }
-    if (currentSession.checkMode === 'steps') {
+    if (correct && currentSession.checkMode === 'steps') {
       updateCurrentResponse({ revealedSteps: true });
     }
     renderSession();
@@ -1100,7 +1320,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       const card = document.createElement('article');
       card.className = 'session-card';
       const title = document.createElement('strong');
-      title.textContent = `${session.type === 'curated' ? 'Curated' : 'Generated'} · ${session.level}`;
+      title.textContent = session.journeyTitle ? `Journey · ${session.journeyTitle}` : `${session.type === 'curated' ? 'Curated' : 'Generated'} · ${session.level}`;
       const meta = document.createElement('p');
       meta.className = 'muted small';
       meta.textContent = `${session.id} · ${session.completed ? session.questions.length : session.currentIndex}/${session.questions.length} complete`;
@@ -1109,13 +1329,13 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       score.textContent = session.completed ? `${session.finalScore}/100` : 'In progress';
       const profile = document.createElement('p');
       profile.className = 'muted small';
-      profile.textContent = session.worksheetProfile ? buildWorksheetProfileLabel(session.worksheetProfile) : 'Lesson-aligned profile';
+      profile.textContent = session.journeyTitle ? `${session.journeyTitle} mode` : session.worksheetProfile ? buildWorksheetProfileLabel(session.worksheetProfile) : 'Lesson-aligned profile';
       const actions = document.createElement('div');
       actions.className = 'button-row';
       const resume = document.createElement('button');
       resume.className = 'button button-secondary';
       resume.textContent = 'Resume';
-      resume.addEventListener('click', () => { stopTimer(); currentSession = session; renderSession(); });
+      resume.addEventListener('click', () => { stopTimer(); currentSession = session; syncControlsFromSession(session); renderSession(); });
       const replay = document.createElement('button');
       replay.className = 'button button-secondary';
       replay.textContent = 'Replay list';
@@ -1131,6 +1351,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
           finalScore: null,
         };
         currentSession = copy;
+        syncControlsFromSession(copy);
         persistCurrent();
         renderHistory();
         renderSession();
@@ -1155,6 +1376,10 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     const answerInput = byId('answer-input');
     const feedback = byId('feedback-panel');
     const stepsPanel = byId('steps-panel');
+    const recoveryPanel = byId('recovery-panel');
+    const recoveryTitle = byId('recovery-title');
+    const recoveryCopy = byId('recovery-copy');
+    const leaveRecovery = byId('leave-recovery-prompt');
     const singleView = byId('single-session-view');
     const sheetView = byId('sheet-session-view');
     const sheetList = byId('sheet-list');
@@ -1162,6 +1387,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     const controls = ['answer-input', 'verify-answer', 'reveal-final', 'reveal-steps', 'next-question'];
     feedback.hidden = true;
     stepsPanel.hidden = true;
+    if (recoveryPanel) recoveryPanel.hidden = true;
 
     if (!currentSession) {
       title.textContent = 'No session selected yet';
@@ -1187,17 +1413,23 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
     const question = currentSession.questions[currentSession.currentIndex];
     const response = responseForCurrent();
-    title.textContent = `${currentSession.type === 'curated' ? 'Curated' : 'Generated'} ${currentSession.level} session`;
+    title.textContent = currentSession.journeyTitle ? `${currentSession.journeyTitle} journey` : `${currentSession.type === 'curated' ? 'Curated' : 'Generated'} ${currentSession.level} session`;
     sessionIdLabel.textContent = currentSession.id;
     progress.textContent = `Question ${currentSession.currentIndex + 1} / ${currentSession.questions.length}`;
     score.textContent = `Score ${(currentSession.completed ? currentSession.finalScore : computeSessionScore(currentSession)) || 0}/100`;
     timer.textContent = currentSession.timerEnabled ? 'Timer on' : 'Timer off';
-    adaptiveNote.textContent = currentSession.questionStyle === 'adaptive' ? describeAdaptivePractice(currentSession.level) : 'Standard session';
-    profile.textContent = `Profile ${currentSession.worksheetProfile ? buildWorksheetProfileLabel(currentSession.worksheetProfile) : 'Lesson-aligned'}`;
-    questionTitle.textContent = currentSession.completed ? 'Session completed' : question.title;
+    adaptiveNote.textContent = currentSession.journeyTitle ? `${currentSession.journeyTitle} path` : currentSession.questionStyle === 'adaptive' ? describeAdaptivePractice(currentSession.level) : 'Standard session';
+    profile.textContent = currentSession.journeyTitle ? `Profile ${currentSession.journeyTitle} mode` : `Profile ${currentSession.worksheetProfile ? buildWorksheetProfileLabel(currentSession.worksheetProfile) : 'Lesson-aligned'}`;
+    questionTitle.textContent = currentSession.completed
+      ? 'Session completed'
+      : response.recoveryMode && response.recoveryPrompt
+        ? 'Recovery prompt'
+        : question.title;
     questionPrompt.textContent = currentSession.completed
       ? 'Review your score, replay the same list, or start a fresh session with a new ID.'
-      : question.prompt;
+      : response.recoveryMode && response.recoveryPrompt
+        ? response.recoveryPrompt
+        : question.prompt;
     questionLedger.hidden = !question.promptLines?.length || currentSession.completed;
     questionLedger.textContent = question.promptLines?.join('\n') || '';
     answerInput.value = response.input || '';
@@ -1206,7 +1438,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     sheetView.hidden = !isSheetMode;
     emptyNote.hidden = currentSession !== null;
     controls.forEach((id) => { const node = byId(id); if (node) node.disabled = currentSession.completed; });
-    renderVisual(question.visualValue);
+    const showVisual = !isSheetMode && String(currentSession.questionStyle || '').includes('visual');
+    renderVisual(showVisual ? question.visualValue : null);
 
     if (isSheetMode) {
       sheetList.replaceChildren();
@@ -1279,6 +1512,14 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       });
       stepsPanel.appendChild(list);
     }
+    if (!currentSession.completed && response.recoveryPrompt && (response.recoveryMode || (response.verified && !response.correct)) && recoveryPanel && recoveryTitle && recoveryCopy && leaveRecovery) {
+      recoveryPanel.hidden = false;
+      recoveryTitle.textContent = response.recoveryMode ? 'Repair prompt active' : 'Repair the pattern calmly';
+      recoveryCopy.textContent = response.recoveryMode
+        ? `${response.recoveryPrompt} Use the same answer box, then verify again.`
+        : `Misses are part of the craft. Switch to this calmer repair prompt: ${response.recoveryPrompt}`;
+      leaveRecovery.hidden = !response.recoveryMode;
+    }
     persistCurrent();
     renderHistory();
   };
@@ -1303,6 +1544,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         format: byId('session-format').value,
         questionStyle: byId('question-style').value,
         termCount: byId('term-count').value,
+        journeyKey: selectedJourneyKey,
       });
     persistCurrent();
     renderSession();
@@ -1313,6 +1555,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     const latest = readSessions()[0];
     if (!latest) return;
     currentSession = latest;
+    syncControlsFromSession(latest);
     renderSession();
   });
 
@@ -1330,8 +1573,9 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       feedback.hidden = false;
       feedback.textContent = 'No saved session matched that ID on this device.';
       return;
-    }
+    } 
     currentSession = match;
+    syncControlsFromSession(match);
     renderSession();
   });
 
@@ -1355,6 +1599,21 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     if (!currentSession || currentSession.completed) return;
     updateCurrentResponse({ revealedSteps: true, revealedFinal: true, verified: true, correct: responseForCurrent().correct || false, input: byId('answer-input').value.trim() });
     renderSession();
+  });
+  byId('use-recovery-prompt')?.addEventListener('click', () => {
+    const response = responseForCurrent();
+    if (!response.recoveryPrompt) return;
+    updateCurrentResponse({ recoveryMode: true, verified: false, correct: false, input: '' });
+    renderSession();
+    byId('answer-input')?.focus();
+  });
+  byId('leave-recovery-prompt')?.addEventListener('click', () => {
+    updateCurrentResponse({ recoveryMode: false, verified: false, input: '' });
+    renderSession();
+    byId('answer-input')?.focus();
+  });
+  byId('reveal-recovery-method')?.addEventListener('click', () => {
+    byId('reveal-steps')?.click();
   });
 
   byId('next-question')?.addEventListener('click', () => {
@@ -1383,6 +1642,13 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     feedback.textContent = `Session complete. Final score: ${currentSession.finalScore}/100. You can replay the same list from the history panel or start a fresh session.`;
     renderHistory();
   });
+  byId('session-replay-current')?.addEventListener('click', () => {
+    if (!currentSession) return;
+    replaySession(currentSession);
+  });
+  byId('session-start-fresh')?.addEventListener('click', () => {
+    byId('start-session')?.click();
+  });
 
   byId('check-sheet')?.addEventListener('click', () => {
     if (!currentSession || currentSession.completed) return;
@@ -1399,6 +1665,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       if (correct) correctCount += 1;
     });
     currentSession.finalScore = Math.round((correctCount / currentSession.questions.length) * 100);
+    currentSession.completed = true;
     playTone(correctCount === currentSession.questions.length ? 'success' : 'error');
     persistCurrent();
     const feedback = byId('feedback-panel');
@@ -1456,8 +1723,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   });
 
   renderHistory();
-  syncPracticeSetupCopy();
   applyPracticeLevelDefaults(byId('session-level')?.value || 'L0');
+  syncPracticeSetupCopy();
   renderSession();
 </script>
 

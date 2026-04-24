@@ -11,6 +11,11 @@ const rounds = [
     lesson: `${base}lessons/l0/parts-of-the-soroban`,
     exercise: `${base}exercises/l0/set-thirty-one`,
     worksheet: `${base}worksheets?preset=foundations-focus`,
+    phases: [
+      { title: 'Warm-up', prompt: 'How many lower beads touch the beam to show 4?', answer: '4', tip: 'Count only the lower beads pushed to the beam.' },
+      { title: 'Core challenge', prompt: 'Write the value shown when one upper bead and two lower beads are active on one rod.', answer: '7', tip: 'Upper bead is 5, then add the lower beads.' },
+      { title: 'Calm finisher', prompt: 'What two-digit number uses 3 tens and 1 one?', answer: '31', tip: 'Read the left rod as tens and the right rod as ones.' },
+    ],
   },
   {
     level: 'L1',
@@ -19,6 +24,11 @@ const rounds = [
     lesson: `${base}lessons/l1/first-addition-on-one-rod`,
     exercise: `${base}exercises/l1/add-four-and-four`,
     worksheet: `${base}worksheets?preset=one-rod-focus`,
+    phases: [
+      { title: 'Warm-up', prompt: 'Start from 3 and add 4 on one rod.', answer: '7', tip: 'Use a direct move because the lower beads fit.' },
+      { title: 'Core challenge', prompt: 'Start from 8 and subtract 3 on one rod.', answer: '5', tip: 'Move the lower beads away without changing rods.' },
+      { title: 'Calm finisher', prompt: 'Solve 4 + 4.', answer: '8', tip: 'Keep the movement direct and steady.' },
+    ],
   },
   {
     level: 'L2',
@@ -27,6 +37,11 @@ const rounds = [
     lesson: `${base}lessons/l2/complements-to-ten`,
     exercise: `${base}exercises/l2/use-complement-to-ten`,
     worksheet: `${base}worksheets?preset=complements&submode=complement-balance`,
+    phases: [
+      { title: 'Warm-up', prompt: 'What completes 7 to 10?', answer: '3', tip: 'Think in complement pairs to ten.' },
+      { title: 'Core challenge', prompt: 'Solve 8 + 7 using complements.', answer: '15', tip: 'Add 2 to make 10, then add the remaining 5.' },
+      { title: 'Calm finisher', prompt: 'What completes 3 to 5?', answer: '2', tip: 'Use the small complement pair to five.' },
+    ],
   },
   {
     level: 'L3',
@@ -35,6 +50,11 @@ const rounds = [
     lesson: `${base}lessons/l3/mixed-two-digit-fluency`,
     exercise: `${base}exercises/l3/sign-switch-relay`,
     worksheet: `${base}worksheets?preset=mixed-fluency&submode=sequence-signs`,
+    phases: [
+      { title: 'Warm-up', prompt: 'Solve 24 + 7 + 1.', answer: '32', tip: 'Hold one running total instead of separate pieces.' },
+      { title: 'Core challenge', prompt: 'Solve 46 - 8 + 12.', answer: '50', tip: 'Let the borrow settle before the next add.' },
+      { title: 'Calm finisher', prompt: 'Solve 58 + 13 - 9.', answer: '62', tip: 'Keep the sign changes in order and do not rush.' },
+    ],
   },
   {
     level: 'L4',
@@ -43,6 +63,11 @@ const rounds = [
     lesson: `${base}lessons/l4/building-quotients-in-division`,
     exercise: `${base}exercises/l4/twenty-three-times-four`,
     worksheet: `${base}worksheets?preset=division-focus&submode=quotient-building`,
+    phases: [
+      { title: 'Warm-up', prompt: 'Solve 12 × 3.', answer: '36', tip: 'Use the table fact first, then place value.' },
+      { title: 'Core challenge', prompt: 'Solve 24 ÷ 6.', answer: '4', tip: 'Ask which factor with 6 makes 24.' },
+      { title: 'Calm finisher', prompt: 'Solve 23 × 4.', answer: '92', tip: 'Break the product cleanly and keep the place shift stable.' },
+    ],
   },
   {
     level: 'L5',
@@ -51,6 +76,11 @@ const rounds = [
     lesson: `${base}lessons/l5/speed-rhythm-and-error-checking`,
     exercise: `${base}exercises/l5/mental-ladder-finish`,
     worksheet: `${base}worksheets?preset=anzan-focus&submode=anzan-recall`,
+    phases: [
+      { title: 'Warm-up', prompt: 'Solve 18 + 7 - 4 + 5.', answer: '26', tip: 'Keep the total in mind after each move.' },
+      { title: 'Core challenge', prompt: 'Solve 42 - 9 + 16 - 3.', answer: '46', tip: 'Do not restart the count; repair the total in place.' },
+      { title: 'Calm finisher', prompt: 'Solve 63 + 14 - 8 + 11.', answer: '80', tip: 'Hold rhythm through the sign changes.' },
+    ],
   },
 ];
 ---
@@ -59,7 +89,18 @@ const rounds = [
   <section class="panel content-prose">
     <p class="eyebrow">Boss rounds</p>
     <h1>Level endings that feel like milestones</h1>
-    <p>Each boss round combines one lesson, one exercise, and one focused worksheet so the end of a level feels earned instead of abrupt.</p>
+    <p>Each boss round now includes a playable three-phase session: a warm-up, a core challenge, and a calm finisher. Clear all three to earn the boss badge and unlock the certificate.</p>
+  </section>
+
+  <section class="panel content-prose boss-session-explainer">
+    <p class="eyebrow">Boss format</p>
+    <h2>Three steps, one earned clear</h2>
+    <div class="boss-phase-strip">
+      <div class="milestone-chip active">1 · Warm-up</div>
+      <div class="milestone-chip active">2 · Core challenge</div>
+      <div class="milestone-chip active">3 · Calm finisher</div>
+    </div>
+    <p class="muted">Use the linked lesson, exercise, and worksheet if you want support, then clear the built-in boss session when you are ready.</p>
   </section>
 
   <section class="panel boss-progress-panel">
@@ -93,21 +134,91 @@ const rounds = [
         <p class="eyebrow">{round.level}</p>
         <h2>{round.title}</h2>
         <p>{round.challenge}</p>
+        <div class="boss-phase-list">
+          {round.phases.map((phase, index) => (
+            <div class="subtle-panel boss-phase-item">
+              <strong>{index + 1}. {phase.title}</strong>
+              <p class="muted small">{phase.prompt}</p>
+            </div>
+          ))}
+        </div>
         <div class="button-row button-row-compact">
           <a class="button button-secondary" href={round.lesson}>Lesson</a>
           <a class="button button-secondary" href={round.exercise}>Exercise</a>
           <a class="button button-secondary" href={round.worksheet}>Worksheet</a>
-          <button class="button button-secondary boss-round-toggle" type="button">Mark boss done</button>
+        </div>
+        <div class="button-row button-row-compact">
+          <button class="button boss-session-start" type="button">Play boss session</button>
+          <button class="button button-secondary boss-round-toggle" type="button">Mark cleared manually</button>
         </div>
         <p class="muted small boss-round-status">Not completed yet.</p>
+        <div class="milestone-row boss-session-progress" aria-label={`${round.level} boss phase progress`}></div>
+        <div class="subtle-panel boss-session-panel" data-phases={JSON.stringify(round.phases)}>
+          <p class="eyebrow boss-session-phase-label">Boss session</p>
+          <h3 class="boss-session-title">Press play to begin</h3>
+          <p class="muted small boss-session-prompt">Start the session to reveal the first boss prompt.</p>
+          <label class="stack-sm">
+            <span>Your answer</span>
+            <input class="input boss-session-answer" type="text" inputmode="numeric" placeholder="Write your answer" />
+          </label>
+          <div class="button-row button-row-compact">
+            <button class="button button-secondary boss-session-check" type="button">Check phase</button>
+            <button class="button button-secondary boss-session-reset" type="button">Reset boss</button>
+          </div>
+          <p class="muted small boss-session-tip">Tip will appear when you start the session.</p>
+          <p class="muted small boss-session-feedback" aria-live="polite">Clear all three phases to earn the boss badge.</p>
+        </div>
       </article>
     ))}
   </section>
 
+  <style>
+    .boss-session-explainer,
+    .boss-session-panel,
+    .boss-phase-item {
+      margin-top: 1rem;
+    }
+
+    .boss-phase-strip,
+    .boss-phase-list {
+      display: grid;
+      gap: 0.75rem;
+    }
+
+    .boss-phase-list {
+      margin: 1rem 0;
+    }
+
+    .boss-phase-item p,
+    .boss-session-panel p {
+      margin-bottom: 0;
+    }
+
+    .boss-session-progress {
+      margin: 0.75rem 0;
+    }
+
+    .boss-session-panel {
+      border: 1px solid rgba(148, 163, 184, 0.35);
+    }
+
+    .boss-session-feedback.is-success {
+      color: var(--accent-strong, #166534);
+      font-weight: 600;
+    }
+  </style>
+
   <script is:inline>
     const key = 'soroban-dojo:boss-rounds';
+    const sessionKey = 'soroban-dojo:boss-session-progress';
     const read = () => { try { return JSON.parse(localStorage.getItem(key) || '{}'); } catch { return {}; } };
-    const write = (state) => localStorage.setItem(key, JSON.stringify(state));
+    const write = (state) => {
+      try { localStorage.setItem(key, JSON.stringify(state)); return true; } catch { return false; }
+    };
+    const readSessions = () => { try { return JSON.parse(localStorage.getItem(sessionKey) || '{}'); } catch { return {}; } };
+    const writeSessions = (state) => {
+      try { localStorage.setItem(sessionKey, JSON.stringify(state)); return true; } catch { return false; }
+    };
     const strip = document.getElementById('boss-progress-strip');
     const certificateName = document.getElementById('certificate-name');
     const certificateLevel = document.getElementById('certificate-level');
@@ -115,9 +226,27 @@ const rounds = [
     const certificateCopy = document.getElementById('certificate-copy');
     const printCertificate = document.getElementById('print-certificate');
     const copyCertificate = document.getElementById('copy-certificate');
+    const certificatePreview = document.getElementById('boss-certificate-preview');
     const certificateKey = 'soroban-dojo:boss-certificates';
     const readCertificates = () => { try { return JSON.parse(localStorage.getItem(certificateKey) || '{}'); } catch { return {}; } };
-    const writeCertificates = (state) => localStorage.setItem(certificateKey, JSON.stringify(state));
+    const writeCertificates = (state) => {
+      try { localStorage.setItem(certificateKey, JSON.stringify(state)); return true; } catch { return false; }
+    };
+    const ensureCertificate = (level) => {
+      const certificates = readCertificates();
+      if (!certificates[level]) {
+        certificates[level] = {
+          name: certificateName.value.trim() || 'Dojo learner',
+          date: new Date().toLocaleDateString(),
+        };
+      }
+      writeCertificates(certificates);
+    };
+    const revokeCertificate = (level) => {
+      const certificates = readCertificates();
+      delete certificates[level];
+      writeCertificates(certificates);
+    };
     const syncCertificatePreview = () => {
       const level = certificateLevel.value;
       const certificates = readCertificates();
@@ -126,43 +255,202 @@ const rounds = [
       certificateCopy.textContent = earned
         ? `${earned.name} cleared the ${level} boss round on ${earned.date}.`
         : `Finish the ${level} boss round, then print a certificate for that milestone.`;
+      printCertificate.disabled = !earned;
+      copyCertificate.disabled = !earned;
+    };
+    const celebrateCertificateUnlock = (level) => {
+      certificateLevel.value = level;
+      syncCertificatePreview();
+      certificatePreview?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      certificatePreview?.setAttribute('tabindex', '-1');
+      certificatePreview?.focus();
     };
     const buildCertificateText = () => {
       const level = certificateLevel.value;
+      const state = read();
       const certificates = readCertificates();
       const earned = certificates[level];
-      if (!earned) return null;
+      if (!earned || !state[level]) return null;
       return `Soroban Dojo Certificate\n${earned.name} cleared the ${level} boss round on ${earned.date}.`;
+    };
+    const renderBossSession = (card, state, sessionState) => {
+      const level = card.dataset.level;
+      const panel = card.querySelector('.boss-session-panel');
+      const progress = card.querySelector('.boss-session-progress');
+      const title = card.querySelector('.boss-session-title');
+      const prompt = card.querySelector('.boss-session-prompt');
+      const tip = card.querySelector('.boss-session-tip');
+      const feedback = card.querySelector('.boss-session-feedback');
+      const toggle = card.querySelector('.boss-round-toggle');
+      const status = card.querySelector('.boss-round-status');
+      const phases = JSON.parse(panel.dataset.phases || '[]');
+      const progressState = sessionState[level] || { index: 0, started: false, completed: false, replaying: false, message: '', tone: 'neutral' };
+      const current = phases[Math.min(progressState.index, phases.length - 1)] || null;
+      const done = !!state[level] && !progressState.replaying;
+
+      progress.replaceChildren();
+      phases.forEach((phase, index) => {
+        const chip = document.createElement('div');
+        chip.className = `milestone-chip ${index < progressState.index || done ? 'active' : ''}`;
+        chip.textContent = phase.title;
+        progress.appendChild(chip);
+      });
+
+      if (done) {
+        title.textContent = `${level} boss cleared`;
+        prompt.textContent = 'This boss is complete. Replay it any time for a cleaner clear.';
+        tip.textContent = current?.tip || 'Certificate unlocked.';
+        feedback.textContent = progressState.message || 'Strong work. The boss badge is earned and the certificate is ready.';
+        feedback.classList.toggle('is-success', progressState.tone === 'success');
+        status.textContent = 'Completed through the playable boss session.';
+        toggle.textContent = 'Mark boss pending';
+        return;
+      }
+
+      feedback.classList.remove('is-success');
+      if (!progressState.started || !current) {
+        title.textContent = 'Press play to begin';
+        prompt.textContent = 'Start the session to reveal the first boss prompt.';
+        tip.textContent = 'Work through warm-up, core challenge, then calm finisher.';
+        feedback.textContent = progressState.message || 'Clear all three phases to earn the boss badge.';
+        status.textContent = 'Not completed yet.';
+        toggle.textContent = 'Mark cleared manually';
+        feedback.classList.toggle('is-success', progressState.tone === 'success');
+        return;
+      }
+
+      title.textContent = `${progressState.index + 1}. ${current.title}`;
+      prompt.textContent = current.prompt;
+      tip.textContent = current.tip;
+      feedback.textContent = progressState.message || `Phase ${progressState.index + 1} of ${phases.length}. Solve it, then check your answer.`;
+      status.textContent = `Boss in progress · ${current.title}`;
+      toggle.textContent = 'Mark cleared manually';
+      feedback.classList.toggle('is-success', progressState.tone === 'success');
     };
     const sync = () => {
       const state = read();
+      const sessionState = readSessions();
       strip.replaceChildren();
       document.querySelectorAll('.boss-round-card').forEach((card) => {
         const level = card.dataset.level;
         const done = !!state[level];
-        card.querySelector('.boss-round-status').textContent = done ? 'Completed for this level.' : 'Not completed yet.';
-        card.querySelector('.boss-round-toggle').textContent = done ? 'Mark boss pending' : 'Mark boss done';
         const chip = document.createElement('div');
         chip.className = `milestone-chip ${done ? 'active' : ''}`;
         chip.textContent = `${level} boss`;
         strip.appendChild(chip);
+        renderBossSession(card, state, sessionState);
       });
       syncCertificatePreview();
     };
-    document.querySelectorAll('.boss-round-toggle').forEach((button) => button.addEventListener('click', () => {
+    document.querySelectorAll('.boss-session-start').forEach((button) => button.addEventListener('click', () => {
+      const sessions = readSessions();
+      const card = button.closest('.boss-round-card');
+      const level = card?.dataset.level;
+      if (!level) return;
+      const alreadyCleared = !!read()[level];
+      sessions[level] = {
+        index: 0,
+        started: true,
+        completed: false,
+        replaying: alreadyCleared,
+        message: alreadyCleared ? 'Replay started. Clear the three phases again for a cleaner finish.' : 'Boss session started. Clear the warm-up first.',
+        tone: 'neutral',
+      };
+      writeSessions(sessions);
+      sync();
+      const answer = card.querySelector('.boss-session-answer');
+      if (answer) {
+        answer.value = '';
+        answer.focus();
+      }
+    }));
+    document.querySelectorAll('.boss-session-reset').forEach((button) => button.addEventListener('click', () => {
+      const sessions = readSessions();
       const state = read();
       const card = button.closest('.boss-round-card');
       const level = card?.dataset.level;
       if (!level) return;
+      sessions[level] = { index: 0, started: false, completed: false, replaying: false, message: '', tone: 'neutral' };
+      delete state[level];
+      revokeCertificate(level);
+      writeSessions(sessions);
+      write(state);
+      sync();
+    }));
+    document.querySelectorAll('.boss-session-check').forEach((button) => button.addEventListener('click', () => {
+      const sessions = readSessions();
+      const state = read();
+      const card = button.closest('.boss-round-card');
+      const level = card?.dataset.level;
+      if (!level) return;
+      const panel = card.querySelector('.boss-session-panel');
+      const phases = JSON.parse(panel?.dataset.phases || '[]');
+      const answer = card.querySelector('.boss-session-answer');
+      const feedback = card.querySelector('.boss-session-feedback');
+      const current = sessions[level] || { index: 0, started: true, completed: false, replaying: false, message: '', tone: 'neutral' };
+      const phase = phases[current.index];
+      if (!phase) return;
+      const submitted = answer.value.trim();
+      if (submitted !== String(phase.answer)) {
+        feedback.textContent = `Not yet. Review the tip and try phase ${current.index + 1} again.`;
+        feedback.classList.remove('is-success');
+        answer.focus();
+        return;
+      }
+      if (current.index >= phases.length - 1) {
+        current.completed = true;
+        current.started = true;
+        current.index = phases.length;
+        current.replaying = false;
+        current.message = state[level]
+          ? 'Replay clear complete. Your original boss badge and certificate remain earned.'
+          : 'Boss cleared. Your certificate preview has been updated.';
+        current.tone = 'success';
+        state[level] = true;
+        sessions[level] = current;
+        write(state);
+        writeSessions(sessions);
+        ensureCertificate(level);
+        celebrateCertificateUnlock(level);
+        sync();
+        return;
+      }
+      current.index += 1;
+      current.started = true;
+      current.message = `Phase cleared. Move into ${phases[current.index].title}.`;
+      current.tone = 'success';
+      sessions[level] = current;
+      writeSessions(sessions);
+      sync();
+      answer.value = '';
+      answer.focus();
+    }));
+    document.querySelectorAll('.boss-round-toggle').forEach((button) => button.addEventListener('click', () => {
+      const state = read();
+      const sessions = readSessions();
+      const card = button.closest('.boss-round-card');
+      const level = card?.dataset.level;
+      if (!level) return;
+      const panel = card.querySelector('.boss-session-panel');
+      const phases = JSON.parse(panel?.dataset.phases || '[]');
       state[level] = !state[level];
       write(state);
       if (state[level]) {
-        const certificates = readCertificates();
-        certificates[level] = {
-          name: certificateName.value.trim() || 'Dojo learner',
-          date: new Date().toLocaleDateString(),
+        sessions[level] = {
+          index: phases.length,
+          started: true,
+          completed: true,
+          replaying: false,
+          message: 'Boss cleared manually. Certificate unlocked for this level.',
+          tone: 'success',
         };
-        writeCertificates(certificates);
+        writeSessions(sessions);
+        ensureCertificate(level);
+        celebrateCertificateUnlock(level);
+      } else {
+        sessions[level] = { index: 0, started: false, completed: false, replaying: false, message: '', tone: 'neutral' };
+        writeSessions(sessions);
+        revokeCertificate(level);
       }
       sync();
     }));

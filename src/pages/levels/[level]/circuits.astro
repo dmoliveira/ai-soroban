@@ -1,0 +1,87 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { LEVELS } from '../../../lib/constants';
+
+export async function getStaticPaths() {
+  return LEVELS.map((level) => ({ params: { level: level.id.toLowerCase() }, props: { level } }));
+}
+
+const { level } = Astro.props;
+const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
+const lessons = (await getCollection('lessons')).filter((entry) => entry.data.level === level.id).sort((a, b) => a.data.id.localeCompare(b.data.id));
+const exercises = (await getCollection('exercises')).filter((entry) => entry.data.level === level.id).sort((a, b) => a.data.id.localeCompare(b.data.id));
+
+const worksheetByLevel = {
+  L0: `${base}worksheets?preset=foundations-focus`,
+  L1: `${base}worksheets?preset=one-rod-focus`,
+  L2: `${base}worksheets?preset=complements&submode=complement-balance`,
+  L3: `${base}worksheets?preset=mixed-fluency&submode=sequence-signs`,
+  L4: `${base}worksheets?preset=division-focus&submode=quotient-building`,
+  L5: `${base}worksheets?preset=anzan-focus&submode=anzan-recall`,
+};
+
+const miniGameByLevel = {
+  L0: `${base}mini-games`,
+  L1: `${base}mini-games`,
+  L2: `${base}mini-games`,
+  L3: `${base}mini-games`,
+  L4: `${base}mini-games`,
+  L5: `${base}mini-games`,
+};
+const worksheetHref = worksheetByLevel[level.id as keyof typeof worksheetByLevel] || `${base}worksheets`;
+const miniGameHref = miniGameByLevel[level.id as keyof typeof miniGameByLevel] || `${base}mini-games`;
+
+const circuits = [
+  {
+    title: '10-minute calm circuit',
+    copy: 'Read one idea, solve one exercise, then finish with one short playful check.',
+    lesson: lessons[0],
+    exercise: exercises[0],
+    gameHref: miniGameHref,
+    worksheetHref,
+  },
+  {
+    title: 'Repair and replay circuit',
+    copy: 'Review one lesson, retry one exercise, then use a worksheet or game to settle the pattern.',
+    lesson: lessons[1] || lessons[0],
+    exercise: exercises[1] || exercises[0],
+    gameHref: `${base}practice`,
+    worksheetHref,
+  },
+];
+---
+
+<BaseLayout title={`${level.id} dojo circuits | Soroban Dojo`}>
+  <section class="panel content-prose">
+    <p class="eyebrow">Dojo circuits</p>
+    <h1>{level.id} mixed-mode circuits</h1>
+    <p>Use one circuit when you want a short guided session that mixes lesson study, one exercise, and one more interactive finish.</p>
+    <div class="hero-actions">
+      <a class="button" href={`${base}levels/${level.id.toLowerCase()}`}>Back to level</a>
+      <a class="button button-secondary" href={`${base}study-plan`}>Open study plan</a>
+      <a class="button button-secondary" href={`${base}daily-drills`}>Use daily drills instead</a>
+    </div>
+  </section>
+
+  <section class="card-grid">
+    {circuits.map((circuit) => (
+      <article class="panel content-prose">
+        <p class="eyebrow">Circuit</p>
+        <h2>{circuit.title}</h2>
+        <p>{circuit.copy}</p>
+        <ol>
+          <li>Read <strong>{circuit.lesson?.data.title || 'the level lesson'}</strong>.</li>
+          <li>Try <strong>{circuit.exercise?.data.title || 'one matching exercise'}</strong> before revealing.</li>
+          <li>Finish with either a mini-game or worksheet while the idea is still fresh.</li>
+        </ol>
+        <div class="button-row button-row-compact">
+          <a class="button" href={circuit.lesson ? `${base}lessons/${circuit.lesson.slug}` : `${base}lessons`}>Lesson step</a>
+          <a class="button button-secondary" href={circuit.exercise ? `${base}exercises/${circuit.exercise.slug}` : `${base}exercises`}>Exercise step</a>
+          <a class="button button-secondary" href={circuit.gameHref}>Interactive finish</a>
+          <a class="button button-secondary" href={circuit.worksheetHref}>Worksheet finish</a>
+        </div>
+      </article>
+    ))}
+  </section>
+</BaseLayout>

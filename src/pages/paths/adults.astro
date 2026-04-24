@@ -19,4 +19,41 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       <a class="button button-secondary" href={`${base}practice`}>Go to practice</a>
     </div>
   </section>
+
+  <section class="split-grid">
+    <article class="panel content-prose">
+      <p class="eyebrow">First week</p>
+      <h2>A practical starter rhythm</h2>
+      <ol>
+        <li><strong>Day 1:</strong> Learn parts and place value without rushing into arithmetic.</li>
+        <li><strong>Day 2:</strong> Read and set two-rod numbers until the layout feels predictable.</li>
+        <li><strong>Day 3:</strong> Add and subtract on one rod in one focused practice session.</li>
+        <li><strong>Day 4:</strong> Use one worksheet or daily drill pack to test recall under light pressure.</li>
+        <li><strong>Day 5:</strong> Review weak points in practice mode instead of pushing to a new topic too early.</li>
+      </ol>
+      <p class="muted">Consistency matters more than length. Ten honest minutes count.</p>
+    </article>
+
+    <article class="panel content-prose">
+      <p class="eyebrow">First win</p>
+      <h2>A clean confidence check</h2>
+      <p>By the end of the first week, this path aims for one clean reading-and-calculation loop: understand place value, read a two-rod number, and complete one short one-rod problem without guessing.</p>
+      <div class="hero-actions">
+        <a class="button" href={`${base}lessons/l0/parts-of-the-soroban`}>Start the week</a>
+        <a class="button button-secondary" href={`${base}lessons/l0/reading-two-rod-numbers`}>Read the first win</a>
+        <a class="button button-secondary" href={`${base}exercises/l1/add-four-and-four`}>Solve the first win</a>
+      </div>
+    </article>
+  </section>
+
+  <section class="panel content-prose">
+    <p class="eyebrow">Best next steps</p>
+    <h2>After the basics feel stable</h2>
+    <div class="hero-actions">
+      <a class="button" href={`${base}study-plan`}>Open study plan</a>
+      <a class="button button-secondary" href={`${base}daily-drills`}>Generate a daily drill pack</a>
+      <a class="button button-secondary" href={`${base}practice`}>Open structured practice</a>
+      <a class="button button-secondary" href={`${base}paths/children`}>Compare the children path</a>
+    </div>
+  </section>
 </BaseLayout>

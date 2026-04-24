@@ -1,8 +1,19 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import MiniGameClient from '../components/MiniGameClient.astro';
+const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
 ---
 
-<BaseLayout title="Mini Games | Soroban Dojo">
+<BaseLayout title="Soroban Mini Games" description="Play fast soroban mini-games for complements, tables, anzan, and error recovery with calm replay-friendly rounds.">
+  <section class="panel content-prose">
+    <p class="eyebrow">Mini games</p>
+    <h1>Choose one fast game and begin</h1>
+    <p>These modes work best when you pick a single game, play a short round, and then stop or replay with purpose.</p>
+    <div class="hero-actions">
+      <a class="button" href="#mini-games-panel">Start with one game</a>
+      <a class="button button-secondary" href={`${base}practice`}>Open structured practice</a>
+      <a class="button button-secondary" href={`${base}daily-drills`}>Use daily drills instead</a>
+    </div>
+  </section>
   <MiniGameClient />
 </BaseLayout>

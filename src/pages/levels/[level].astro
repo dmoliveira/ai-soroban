@@ -24,6 +24,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     <h1>{level.name}</h1>
     <p>{level.focus}</p>
     <div class="button-row button-row-compact">
+      <a class="button" href={`${base}levels/${level.id.toLowerCase()}/circuits`}>Open dojo circuits</a>
       <a class="button button-secondary" href={`${base}boss-rounds`}>Open boss rounds</a>
       <a class="button button-secondary" href={`${base}mini-games`}>Open mini games</a>
     </div>
