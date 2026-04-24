@@ -698,6 +698,11 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     };
 
     const buildMultiplicationPrompt = (level, digits, variant, submode) => {
+      if (digits >= 3) {
+        const a = randomNumberForDigits(digits);
+        const b = randomNumberForDigits(pickDigitsForVariant({ min: digits, max: digits }, variant + 1));
+        return `${a} × ${b}`;
+      }
       const factorDigits = Math.min(level === 'L5' ? 3 : 2, pickDigitsForVariant({ min: 1, max: digits }, variant));
       if (submode === 'table-family') {
         const table = [3, 4, 5, 6, 7, 8, 9][variant % 7];
@@ -717,6 +722,17 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     };
 
     const buildDivisionPrompt = (level, digits, variant, submode) => {
+      if (digits >= 3) {
+        for (let attempt = 0; attempt < 80; attempt += 1) {
+          const divisor = randomNumberForDigits(digits);
+          const maxQuotient = Math.min(9, Math.floor(maxValueForDigits(digits) / divisor));
+          if (maxQuotient < 2) continue;
+          const quotient = rand(2, maxQuotient);
+          const dividend = divisor * quotient;
+          if (digitLength(dividend) !== digits) continue;
+          return `${dividend} ÷ ${divisor}`;
+        }
+      }
       if (submode === 'division-facts') {
         const divisor = [3, 4, 5, 6, 7, 8, 9][variant % 7];
         const quotient = rand(2, level === 'L5' ? 12 : 9);
@@ -762,7 +778,15 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       return parts.join('|');
     };
 
-    const buildUniquePrompts = (count, createPrompt) => {
+    const promptFitsBand = (prompt, bandRange) => prompt
+      .split(' ')
+      .filter((token) => /^\d+$/.test(token))
+      .every((token) => {
+        const digits = String(token).length;
+        return digits >= bandRange.min && digits <= bandRange.max;
+      });
+
+    const buildUniquePrompts = (count, createPrompt, resolveExpectedBand) => {
       const prompts = [];
       const seen = new Set();
       const structureCounts = new Map();
@@ -773,6 +797,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       while (prompts.length < count && attempts < maxAttempts) {
         const prompt = createPrompt(prompts.length, attempts);
         attempts += 1;
+        const expectedBand = resolveExpectedBand(prompts.length);
+        if (!promptFitsBand(prompt, expectedBand)) continue;
         if (seen.has(prompt)) continue;
         const structureSignature = promptStructureSignature(prompt);
         const structureCount = structureCounts.get(structureSignature) || 0;
@@ -785,6 +811,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       while (prompts.length < count && attempts < maxAttempts * 2) {
         const prompt = createPrompt(prompts.length, attempts);
         attempts += 1;
+        const expectedBand = resolveExpectedBand(prompts.length);
+        if (!promptFitsBand(prompt, expectedBand)) continue;
         if (seen.has(prompt)) continue;
         seen.add(prompt);
         prompts.push(prompt);
@@ -835,10 +863,18 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
                 ? 'complement-balance'
                 : 'arithmetic-rhythm';
         resolvedWorksheetTarget = selectedSubmode === 'auto' ? adaptiveSubmode : selectedSubmode;
-        return buildUniquePrompts(count, (index, attempt) => makeDynamicPrompt(level, adaptiveFamily, band, style, index + attempt, digitBandForProgress(overallBandRange, count, index, flowMode), resolvedWorksheetTarget));
+        return buildUniquePrompts(
+          count,
+          (index, attempt) => makeDynamicPrompt(level, adaptiveFamily, band, style, index + attempt, digitBandForProgress(overallBandRange, count, index, flowMode), resolvedWorksheetTarget),
+          (index) => digitBandForProgress(overallBandRange, count, index, flowMode),
+        );
       }
       resolvedWorksheetTarget = selectedSubmode;
-      return buildUniquePrompts(count, (index, attempt) => makeDynamicPrompt(level, families[index % Math.max(1, families.length)] || 'addition', band, style, index + attempt, digitBandForProgress(overallBandRange, count, index, flowMode), selectedSubmode));
+      return buildUniquePrompts(
+        count,
+        (index, attempt) => makeDynamicPrompt(level, families[index % Math.max(1, families.length)] || 'addition', band, style, index + attempt, digitBandForProgress(overallBandRange, count, index, flowMode), selectedSubmode),
+        (index) => digitBandForProgress(overallBandRange, count, index, flowMode),
+      );
     };
 
     const renderSheet = () => {
