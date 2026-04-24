@@ -91,7 +91,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       </label>
       </div>
       <details class="worksheet-advanced-block">
-        <summary>Advanced options</summary>
+        <summary id="worksheet-advanced-summary">Advanced options · 40 drills · balanced variety</summary>
         <div class="worksheet-controls-grid worksheet-controls-grid-advanced">
           <label class="stack-sm">
             <span>Sheet type</span>
@@ -159,7 +159,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     </div>
     <div class="worksheet-current-setup subtle-panel">
       <strong>Current setup</strong>
-      <div id="worksheet-current-setup-copy" class="muted small">L0 · fixed · addition/subtraction · 1 digit · ledger</div>
+      <div id="worksheet-current-setup-copy" class="muted small">L0 · Fixed sheet · Addition + subtraction · 1-digit band · Ledger rows</div>
       <div id="worksheet-band-summary" class="muted small">Each shown operand stays in the selected digit band.</div>
       <div id="worksheet-target-summary" class="muted small">Focus target: auto</div>
     </div>
@@ -658,6 +658,45 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         return [];
       }
     };
+    const modeLabels = {
+      fixed: 'Fixed sheet',
+      dynamic: 'Dynamic ledger',
+      adaptive: 'Adaptive ledger',
+    };
+    const orientationLabels = {
+      ledger: 'Ledger rows',
+      vertical: 'Vertical columns',
+    };
+    const flowLabels = {
+      balanced: 'Balanced variety',
+      ramp: 'Ramp up',
+    };
+    const familyLabels = {
+      addition: 'Addition',
+      subtraction: 'Subtraction',
+      mixed: 'Mixed arithmetic',
+      sequence: 'Sequence',
+      multiplication: 'Multiplication',
+      division: 'Division',
+      anzan: 'Mental / anzan',
+    };
+    const submodeLabels = {
+      auto: 'Auto focus',
+      'arithmetic-rhythm': 'Arithmetic rhythm',
+      'complement-balance': 'Complement balance',
+      'sequence-signs': 'Sequence sign changes',
+      'table-family': 'Multiplication table family',
+      'place-shifts': 'Multiplication place shifts',
+      'division-facts': 'Division fact families',
+      'quotient-building': 'Division quotient building',
+      'anzan-recall': 'Mental recall',
+    };
+    const formatBandLabel = (band) => band.includes('-') ? `${band} digit band` : `${band}-digit band`;
+    const formatFamilySummary = (families) => {
+      const labels = families.map((family) => familyLabels[family] || family);
+      if (labels.length <= 2) return labels.join(' + ');
+      return `${labels[0]} + ${labels[1]} + ${labels.length - 2} more`;
+    };
 
     const writeWorksheetSessions = (sessions) => localStorage.setItem(worksheetSessionKey, JSON.stringify(sessions.slice(0, 40)));
 
@@ -948,14 +987,23 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
           table.appendChild(row);
         });
       }
-      const familyLabel = selectedFamilies().join(', ') || 'addition';
-      const levelLabel = byId('worksheet-level').value;
+      const selectedFamilyKeys = selectedFamilies();
+      const familyLabel = formatFamilySummary(selectedFamilyKeys.length ? selectedFamilyKeys : ['addition']);
+      const levelSelect = byId('worksheet-level');
+      const levelLabel = levelSelect?.selectedOptions?.[0]?.textContent?.trim() || byId('worksheet-level').value;
       const bandLabel = byId('worksheet-band').value;
-      const flowLabel = byId('worksheet-flow-mode').value === 'ramp' ? 'ramp up' : 'balanced variety';
+      const styleLabel = byId('worksheet-style')?.selectedOptions?.[0]?.textContent?.trim() || 'Practice';
+      const flowKey = byId('worksheet-flow-mode').value;
+      const flowLabel = flowLabels[flowKey] || 'Balanced variety';
       const submodeLabel = byId('worksheet-submode').value || 'auto';
+      const modeLabel = modeLabels[byId('worksheet-mode').value] || byId('worksheet-mode').value;
+      const orientationLabel = orientationLabels[orientation] || orientation;
+      const timerLabel = byId('worksheet-timer-mode')?.value === 'on' ? 'Timer on' : 'Timer off';
+      const printLabel = byId('worksheet-print-mode')?.value === 'answer-key' ? 'Answer key' : 'Student sheet';
       const bandGuide = byId('worksheet-band-guide');
       const bandSummary = byId('worksheet-band-summary');
       const targetSummary = byId('worksheet-target-summary');
+      const advancedSummary = byId('worksheet-advanced-summary');
       const focusTitle = byId('worksheet-focus-title');
       const focusCopy = byId('worksheet-focus-copy');
       const focusExample = byId('worksheet-focus-example');
@@ -965,12 +1013,15 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       const focusKey = submodeLabel === 'auto' ? resolvedWorksheetTarget : submodeLabel;
       const focusGuide = focusGuideCopy[focusKey] || focusGuideCopy.auto;
       const workedExample = workedExamples[focusKey] || workedExamples.auto;
-      byId('worksheet-title').textContent = `${levelLabel} ${familyLabel} ${orientation === 'vertical' ? 'columns' : 'ledger'} · ${bandLabel} digits`;
+      byId('worksheet-title').textContent = `${levelLabel} ${familyLabel} · ${orientationLabel} · ${formatBandLabel(bandLabel)}`;
       byId('worksheet-count-badge').textContent = `${prompts.length} drills`;
-      currentSetupCopy.textContent = `${levelLabel} · ${byId('worksheet-mode').value} · ${familyLabel} · ${bandLabel} digits · ${flowLabel} · ${submodeLabel} · ${orientation}`;
-      if (bandGuide) bandGuide.textContent = `Every shown operand stays within ${bandLabel} digits. ${flowLabel === 'ramp up' ? 'The sheet starts easier and finishes denser.' : 'The sheet balances several prompt shapes across the full set.'}`;
-      if (bandSummary) bandSummary.textContent = `Operand band: ${bandLabel} digits. Flow: ${flowLabel}. Families: ${familyLabel}.`;
-      if (targetSummary) targetSummary.textContent = `Focus target: ${submodeLabel === 'auto' ? `auto -> ${resolvedWorksheetTarget}` : submodeLabel}.`;
+      currentSetupCopy.textContent = `${levelLabel} · ${modeLabel} · ${familyLabel} · ${formatBandLabel(bandLabel)} · ${orientationLabel}`;
+      if (bandGuide) bandGuide.textContent = bandLabel.includes('-')
+        ? `Every number shown in each drill stays inside the ${formatBandLabel(bandLabel)}. Expect a mix across that span rather than the same width on every row.`
+        : `Every number shown in each drill stays inside the ${formatBandLabel(bandLabel)}.`;
+      if (bandSummary) bandSummary.textContent = `Flow: ${flowLabel}. Families: ${familyLabel}. ${bandLabel.includes('-') ? 'Ranges intentionally mix easier and denser rows.' : 'Every row keeps the same operand width.'}`;
+      if (targetSummary) targetSummary.textContent = `Focus: ${submodeLabels[submodeLabel] || submodeLabel}${submodeLabel === 'auto' ? ` → ${submodeLabels[resolvedWorksheetTarget] || resolvedWorksheetTarget}` : ''}.`;
+      if (advancedSummary) advancedSummary.textContent = `Advanced options · ${styleLabel} · ${prompts.length} drills · ${orientationLabel} · ${flowLabel} · ${timerLabel} · ${printLabel}`;
       if (focusTitle) focusTitle.textContent = focusGuide.title;
       if (focusCopy) focusCopy.textContent = focusGuide.copy;
       if (focusExample) focusExample.textContent = focusGuide.example;
