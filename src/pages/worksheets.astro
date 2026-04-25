@@ -74,8 +74,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
           <option value="anzan-recall">Mental recall</option>
         </select>
       </label>
-      <label class="stack-sm">
-        <span>Digit band</span>
+      <fieldset class="stack-sm worksheet-range-group">
+        <legend>Digit band</legend>
         <select id="worksheet-band" class="select">
           <option value="1">1 digit</option>
           <option value="2">2 digits</option>
@@ -88,25 +88,29 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
           <option value="4-6">4–6 digits</option>
         </select>
         <small id="worksheet-band-guide" class="muted small">Every displayed operand will stay inside this digit band.</small>
-      </label>
-      <label class="stack-sm">
-        <span>Operations per drill · min</span>
-        <select id="worksheet-op-min" class="select">
+      </fieldset>
+      <fieldset class="stack-sm worksheet-range-group worksheet-op-range-group">
+        <legend>Worksheet complexity</legend>
+        <label class="stack-sm" for="worksheet-op-min">
+          <span>Operations per drill · min</span>
+          <select id="worksheet-op-min" class="select">
           <option value="1" selected>1</option>
           <option value="2">2</option>
           <option value="3">3</option>
           <option value="4">4</option>
         </select>
-      </label>
-      <label class="stack-sm">
-        <span>Operations per drill · max</span>
-        <select id="worksheet-op-max" class="select">
+        </label>
+        <label class="stack-sm" for="worksheet-op-max">
+          <span>Operations per drill · max</span>
+          <select id="worksheet-op-max" class="select">
           <option value="1">1</option>
           <option value="2">2</option>
           <option value="3" selected>3</option>
           <option value="4">4</option>
         </select>
-      </label>
+        </label>
+        <small id="worksheet-op-guide" class="muted small">Available for arithmetic, sequence, and anzan sheets. If you change it while on Fixed sheet, the page will switch to Dynamic ledger.</small>
+      </fieldset>
       </div>
       <details class="worksheet-advanced-block">
         <summary id="worksheet-advanced-summary">Advanced options · Practice · 40 drills · Ledger rows</summary>
@@ -314,6 +318,24 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       gap: 0.5rem;
       flex-wrap: wrap;
     }
+
+    .worksheet-range-group {
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      border-radius: 1rem;
+      padding: 0.9rem 1rem;
+      background: rgba(255, 255, 255, 0.6);
+      min-width: 0;
+    }
+
+    .worksheet-range-group legend {
+      font-weight: 600;
+      padding: 0 0.25rem;
+    }
+
+    .worksheet-op-range-group {
+      display: grid;
+      gap: 0.75rem;
+    }
   </style>
 
   <script is:inline>
@@ -491,7 +513,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       const max = Number(byId('worksheet-op-max')?.value || min);
       return { min: Math.min(min, max), max: Math.max(min, max) };
     };
-    const operationRangeSupported = (mode, families) => mode !== 'fixed' && !families.some((family) => ['multiplication', 'division'].includes(family));
+    const operationRangeEligible = (families) => !families.some((family) => ['multiplication', 'division'].includes(family));
+    const operationRangeActive = (mode, families) => mode !== 'fixed' && operationRangeEligible(families);
     const familyMinOperationCount = (family) => (family === 'sequence' || family === 'anzan' ? 2 : 1);
     const pickOperationCount = (family, variant, operationRange) => {
       const min = Math.max(operationRange.min, familyMinOperationCount(family));
@@ -653,12 +676,18 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       document.querySelectorAll('input[name="worksheet-family"]').forEach((node) => {
         node.checked = defaults[level].includes(node.value);
       });
-      const supported = operationRangeSupported(mode, defaults[level]);
+      const supported = operationRangeEligible(defaults[level]);
       byId('worksheet-op-min').disabled = !supported;
       byId('worksheet-op-max').disabled = !supported;
+      const opGuide = byId('worksheet-op-guide');
       if (!supported) {
         byId('worksheet-op-min').value = '1';
         byId('worksheet-op-max').value = '1';
+        if (opGuide) opGuide.textContent = 'Operation range is available for arithmetic, sequence, and anzan sheets. It is disabled for multiplication and division.';
+      } else if (opGuide) {
+        opGuide.textContent = byId('worksheet-mode').value === 'fixed'
+          ? 'Available for arithmetic, sequence, and anzan sheets. If you change it while on Fixed sheet, the page will switch to Dynamic ledger.'
+          : 'Each drill can randomly use any operation count inside the selected range.';
       }
       byId('worksheet-band').value = levelBands[level] || '2';
       if (['L2','L3','L5'].includes(level)) {
@@ -684,12 +713,18 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       document.querySelectorAll('input[name="worksheet-family"]').forEach((node) => {
         node.checked = preset.families.includes(node.value);
       });
-      const supported = operationRangeSupported(preset.mode, preset.families);
+      const supported = operationRangeEligible(preset.families);
       byId('worksheet-op-min').disabled = !supported;
       byId('worksheet-op-max').disabled = !supported;
+      const opGuide = byId('worksheet-op-guide');
       if (!supported) {
         byId('worksheet-op-min').value = '1';
         byId('worksheet-op-max').value = '1';
+        if (opGuide) opGuide.textContent = 'Operation range is available for arithmetic, sequence, and anzan sheets. It is disabled for multiplication and division.';
+      } else if (opGuide) {
+        opGuide.textContent = preset.mode === 'fixed'
+          ? 'Available for arithmetic, sequence, and anzan sheets. If you change it while on Fixed sheet, the page will switch to Dynamic ledger.'
+          : 'Each drill can randomly use any operation count inside the selected range.';
       }
       renderSheet();
     };
@@ -818,41 +853,6 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         return [];
       }
     };
-<<<<<<< HEAD
-    const modeLabels = {
-      fixed: 'Fixed sheet',
-      dynamic: 'Dynamic ledger',
-      adaptive: 'Adaptive ledger',
-    };
-    const orientationLabels = {
-      ledger: 'Ledger rows',
-      vertical: 'Vertical columns',
-    };
-    const flowLabels = {
-      balanced: 'Balanced variety',
-      ramp: 'Ramp up',
-    };
-    const familyLabels = {
-      addition: 'Addition',
-      subtraction: 'Subtraction',
-      mixed: 'Mixed arithmetic',
-      sequence: 'Sequence',
-      multiplication: 'Multiplication',
-      division: 'Division',
-      anzan: 'Mental / anzan',
-    };
-    const submodeLabels = {
-      auto: 'Auto focus',
-      'arithmetic-rhythm': 'Arithmetic rhythm',
-      'complement-balance': 'Complement balance',
-      'sequence-signs': 'Sequence sign changes',
-      'table-family': 'Multiplication table family',
-      'place-shifts': 'Multiplication place shifts',
-      'division-facts': 'Division fact families',
-      'quotient-building': 'Division quotient building',
-      'anzan-recall': 'Mental recall',
-||||||| parent of 57d521c (Fix worksheet control clickability and polish layout)
-=======
     const modeLabels = { fixed: 'Fixed sheet', dynamic: 'Dynamic ledger', adaptive: 'Adaptive ledger' };
     const orientationLabels = { ledger: 'Ledger rows', vertical: 'Vertical columns' };
     const flowLabels = { balanced: 'Balanced variety', ramp: 'Ramp up' };
@@ -861,7 +861,6 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     };
     const submodeLabels = {
       auto: 'Auto focus', 'arithmetic-rhythm': 'Arithmetic rhythm', 'complement-balance': 'Complement balance', 'sequence-signs': 'Sequence sign changes', 'table-family': 'Multiplication table family', 'place-shifts': 'Multiplication place shifts', 'division-facts': 'Division fact families', 'quotient-building': 'Division quotient building', 'anzan-recall': 'Mental recall',
->>>>>>> 57d521c (Fix worksheet control clickability and polish layout)
     };
     const formatBandLabel = (band) => band.includes('-') ? `${band} digit band` : `${band}-digit band`;
     const formatFamilySummary = (families) => {
@@ -1045,7 +1044,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       const band = byId('worksheet-band').value || levelBands[level] || '2';
       const flowMode = byId('worksheet-flow-mode').value || 'balanced';
       const selectedSubmode = byId('worksheet-submode').value || 'auto';
-      const supportedOpRange = operationRangeSupported(mode, families);
+      const supportedOpRange = operationRangeActive(mode, families);
       const operationRange = supportedOpRange ? readOperationRange() : { min: 1, max: 1 };
       const adjustedBand = styleAdjustBand(style, band);
       const overallBandRange = parseBand(adjustedBand);
@@ -1174,17 +1173,18 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       const styleLabel = byId('worksheet-style')?.selectedOptions?.[0]?.textContent?.trim() || 'Practice';
       const flowKey = byId('worksheet-flow-mode').value;
       const flowLabel = flowLabels[flowKey] || 'Balanced variety';
-      const supportsOpRange = operationRangeSupported(byId('worksheet-mode').value, selectedFamilies());
-      byId('worksheet-op-min').disabled = !supportsOpRange;
-      byId('worksheet-op-max').disabled = !supportsOpRange;
+      const opEligible = operationRangeEligible(selectedFamilies());
+      const supportsOpRange = operationRangeActive(byId('worksheet-mode').value, selectedFamilies());
+      byId('worksheet-op-min').disabled = !opEligible;
+      byId('worksheet-op-max').disabled = !opEligible;
       const opRange = supportsOpRange ? readOperationRange() : { min: 1, max: 1 };
       const opLabel = `${opRange.min}-${opRange.max} ops`;
       const submodeLabel = byId('worksheet-submode').value || 'auto';
       const modeLabel = modeLabels[byId('worksheet-mode').value] || byId('worksheet-mode').value;
       const orientationLabel = orientationLabels[orientation] || orientation;
-      const styleLabel = byId('worksheet-style')?.selectedOptions?.[0]?.textContent?.trim() || 'Practice';
       const timerLabel = byId('worksheet-timer-mode')?.value === 'on' ? 'Timer on' : 'Timer off';
       const printLabel = byId('worksheet-print-mode')?.value === 'answer-key' ? 'Answer key' : 'Student sheet';
+      const opGuide = byId('worksheet-op-guide');
       const bandGuide = byId('worksheet-band-guide');
       const bandSummary = byId('worksheet-band-summary');
       const targetSummary = byId('worksheet-target-summary');
@@ -1201,6 +1201,11 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       byId('worksheet-title').textContent = `${levelLabel} ${familyLabel} · ${orientationLabel} · ${formatBandLabel(bandLabel)}`;
       byId('worksheet-count-badge').textContent = `${prompts.length} drills`;
       currentSetupCopy.textContent = `${levelLabel} · ${modeLabel} · ${familyLabel} · ${formatBandLabel(bandLabel)} · ${supportsOpRange ? opLabel : 'fixed op count'} · ${orientationLabel}`;
+      if (opGuide) opGuide.textContent = !opEligible
+        ? 'Operation range is available for arithmetic, sequence, and anzan sheets. It is disabled for multiplication and division.'
+        : byId('worksheet-mode').value === 'fixed'
+          ? 'Available for arithmetic, sequence, and anzan sheets. If you change it while on Fixed sheet, the page will switch to Dynamic ledger.'
+          : 'Each drill can randomly use any operation count inside the selected range.';
       if (bandGuide) bandGuide.textContent = supportsOpRange
         ? (bandLabel.includes('-')
           ? `Every number shown in each drill stays inside the ${formatBandLabel(bandLabel)}. Each drill randomly uses ${opRange.min}–${opRange.max} operations, so expect a mix across that span rather than the same width on every row.`
@@ -1410,6 +1415,14 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     });
     document.querySelectorAll('#worksheet-mode, #worksheet-band, #worksheet-style, #worksheet-orientation, #worksheet-count, #worksheet-flow-mode, #worksheet-submode, #worksheet-print-mode, #worksheet-op-min, #worksheet-op-max').forEach((node) => {
       node.addEventListener('change', renderSheet);
+    });
+    ['worksheet-op-min', 'worksheet-op-max'].forEach((id) => {
+      byId(id)?.addEventListener('change', () => {
+        if (byId('worksheet-mode').value === 'fixed') {
+          byId('worksheet-mode').value = 'dynamic';
+        }
+        renderSheet();
+      });
     });
     const initialPreset = new URLSearchParams(window.location.search).get('preset');
     if (initialPreset && presets[initialPreset]) {
