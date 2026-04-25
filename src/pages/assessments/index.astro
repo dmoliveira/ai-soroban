@@ -1,13 +1,29 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PlacementClient from '../../components/PlacementClient.astro';
+const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
 ---
 
 <BaseLayout title="Assessments | Soroban Dojo">
-  <section class="panel content-prose">
-    <p class="eyebrow">Assessments</p>
-    <h1>Milestones and self-checks</h1>
-    <p>Use the placement self-check to find a respectful starting level, then return later for milestone reviews.</p>
+  <section class="assessment-studio-hero panel" style={`--assessment-mist:url('${base}graphics/worksheet-mist.svg')`}>
+    <div class="assessment-studio-brand">
+      <div class="assessment-studio-mark" aria-hidden="true"><img src={`${base}graphics/sakura-mark.svg`} alt="" /></div>
+      <div class="content-prose">
+        <p class="eyebrow">Assessments · 見取り</p>
+        <h1>Find a respectful starting level</h1>
+        <p>Use this short self-check to estimate your starting point, then continue into a worksheet, lesson, or study plan that matches your current confidence.</p>
+      </div>
+    </div>
+    <div class="assessment-studio-stats">
+      <article class="subtle-panel assessment-studio-stat"><span>Time</span><strong>About 3 minutes</strong></article>
+      <article class="subtle-panel assessment-studio-stat"><span>Outcome</span><strong>Suggested level + next step</strong></article>
+      <article class="subtle-panel assessment-studio-stat"><span>Follow-up</span><strong>Worksheet or study plan</strong></article>
+    </div>
   </section>
   <PlacementClient />
+
+  <style>
+    .assessment-studio-hero{display:grid;gap:1rem;border:1px solid rgba(244,194,194,.55);box-shadow:0 18px 48px rgba(201,114,114,.08);background-image:linear-gradient(135deg, rgba(255,250,248,.95), rgba(255,244,246,.98)), var(--assessment-mist);background-size:cover;background-position:center bottom}
+    .assessment-studio-brand{display:flex;gap:1rem;align-items:flex-start}.assessment-studio-mark{width:4.5rem;height:4.5rem;border-radius:1.5rem;background:rgba(255,255,255,.8);display:grid;place-items:center;box-shadow:0 12px 32px rgba(201,114,114,.12);flex:0 0 auto}.assessment-studio-mark img{width:3.25rem;height:3.25rem}.assessment-studio-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.85rem}.assessment-studio-stat{display:grid;gap:.35rem}.assessment-studio-stat span{font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:#9a6c6c}@media (max-width:900px){.assessment-studio-stats{grid-template-columns:1fr}}
+  </style>
 </BaseLayout>

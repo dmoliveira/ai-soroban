@@ -4,9 +4,30 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 ---
 
 <BaseLayout title="Adult Path | Soroban Dojo">
+  <section class="path-studio-hero panel" style={`--path-mist:url('${base}graphics/worksheet-mist.svg')`}>
+    <div class="path-studio-brand">
+      <div class="path-studio-mark" aria-hidden="true"><img src={`${base}graphics/sakura-mark.svg`} alt="" /></div>
+      <div class="content-prose">
+        <p class="eyebrow">Adult path · おとな</p>
+        <h1>Structured self-study with practical rhythm</h1>
+        <p>This path keeps explanations direct, practice disciplined, and progress easy to continue across short study sessions.</p>
+      </div>
+    </div>
+    <div class="path-studio-stats">
+      <article class="subtle-panel path-studio-stat"><span>Best worksheet</span><strong>One-rod or mixed focus</strong></article>
+      <article class="subtle-panel path-studio-stat"><span>Session length</span><strong>10–20 minutes</strong></article>
+      <article class="subtle-panel path-studio-stat"><span>Best next tool</span><strong>Study plan</strong></article>
+    </div>
+    <div class="hero-actions">
+      <a class="button" href={`${base}worksheets?preset=one-rod-focus`}>Start with a worksheet</a>
+      <a class="button button-secondary" href={`${base}levels/l0`}>Start at Foundations</a>
+      <a class="button button-secondary" href={`${base}study-plan`}>Open study plan</a>
+    </div>
+  </section>
+
   <section class="panel content-prose">
     <p class="eyebrow">Adult path</p>
-    <h1>Structured self-study with practical rhythm</h1>
+    <h2>How this path feels</h2>
     <p>This path keeps explanations direct, practice disciplined, and progress easy to continue across short study sessions.</p>
     <ul>
       <li>10–20 minute sessions</li>
@@ -14,11 +35,16 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       <li>Review recommendations for weak points</li>
     </ul>
     <div class="hero-actions">
-      <a class="button" href={`${base}levels/l0`}>Start at Foundations</a>
+      <a class="button" href={`${base}worksheets?preset=one-rod-focus`}>Start worksheet</a>
       <a class="button button-secondary" href={`${base}curriculum`}>View full curriculum</a>
       <a class="button button-secondary" href={`${base}practice`}>Go to practice</a>
     </div>
   </section>
+
+  <style>
+    .path-studio-hero{display:grid;gap:1rem;border:1px solid rgba(244,194,194,.55);box-shadow:0 18px 48px rgba(201,114,114,.08);background-image:linear-gradient(135deg, rgba(255,250,248,.95), rgba(255,244,246,.98)), var(--path-mist);background-size:cover;background-position:center bottom}
+    .path-studio-brand{display:flex;gap:1rem;align-items:flex-start}.path-studio-mark{width:4.5rem;height:4.5rem;border-radius:1.5rem;background:rgba(255,255,255,.8);display:grid;place-items:center;box-shadow:0 12px 32px rgba(201,114,114,.12);flex:0 0 auto}.path-studio-mark img{width:3.25rem;height:3.25rem}.path-studio-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.85rem}.path-studio-stat{display:grid;gap:.35rem}.path-studio-stat span{font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:#9a6c6c}@media (max-width:900px){.path-studio-stats{grid-template-columns:1fr}}
+  </style>
 
   <section class="split-grid">
     <article class="panel content-prose">

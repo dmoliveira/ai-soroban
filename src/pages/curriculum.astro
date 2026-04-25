@@ -100,15 +100,25 @@ const stages = [
 ---
 
 <BaseLayout title="Curriculum Map | Soroban Dojo" description="A full end-to-end soroban curriculum from first device orientation through multiplication, division, worksheets, and mental practice.">
-  <section class="panel content-prose">
-    <p class="eyebrow">Curriculum</p>
-    <h1>Learn soroban end to end</h1>
-    <p>This map connects theory, worked examples, practical drills, worksheets, and review so each skill builds into the next one instead of feeling isolated.</p>
+  <section class="curriculum-studio-hero panel" style={`--curriculum-mist:url('${base}graphics/worksheet-mist.svg')`}>
+    <div class="curriculum-studio-brand">
+      <div class="curriculum-studio-mark" aria-hidden="true"><img src={`${base}graphics/sakura-mark.svg`} alt="" /></div>
+      <div class="content-prose">
+        <p class="eyebrow">Curriculum</p>
+        <h1>Learn soroban end to end</h1>
+        <p>This map connects theory, worked examples, practical drills, worksheets, and review so each skill builds into the next one instead of feeling isolated.</p>
+      </div>
+    </div>
+    <div class="curriculum-studio-stats">
+      <article class="subtle-panel curriculum-studio-stat"><span>Best first move</span><strong>Start here</strong></article>
+      <article class="subtle-panel curriculum-studio-stat"><span>Best companion</span><strong>Worksheets</strong></article>
+      <article class="subtle-panel curriculum-studio-stat"><span>Structure</span><strong>5 stages from L0 to L5</strong></article>
+    </div>
     <div class="button-row">
       <a class="button" href={`${base}start-here`}>Start here</a>
-      <a class="button button-secondary" href={`${base}lessons`}>Browse lessons</a>
-      <a class="button button-secondary" href={`${base}study-plan`}>Weekly study plan</a>
       <a class="button button-secondary" href={`${base}worksheets`}>Open worksheets</a>
+      <a class="button button-secondary" href={`${base}study-plan`}>Weekly study plan</a>
+      <a class="button button-secondary" href={`${base}lessons`}>Browse lessons</a>
     </div>
   </section>
 
@@ -118,11 +128,11 @@ const stages = [
         <p class="eyebrow">{stage.eyebrow}</p>
         <h2>{stage.title}</h2>
         <p>{stage.summary}</p>
-        <p><strong>Theory</strong></p>
+        <p><strong>What this stage unlocks</strong></p>
         <ul>
           {stage.theory.map((item) => <li>{item}</li>)}
         </ul>
-        <p><strong>Practical work</strong></p>
+        <p><strong>Best practice</strong></p>
         <ul>
           {stage.practice.map((item) => <li>{item}</li>)}
         </ul>
@@ -133,10 +143,15 @@ const stages = [
           ))}
         </ul>
         <div class="button-row">
+          <a class="button" href={stage.worksheet.href}>{stage.worksheet.label}</a>
           <a class="button button-secondary" href={stage.action.href}>{stage.action.label}</a>
-          <a class="button button-secondary" href={stage.worksheet.href}>{stage.worksheet.label}</a>
         </div>
       </article>
     ))}
   </section>
+
+  <style>
+    .curriculum-studio-hero{display:grid;gap:1rem;border:1px solid rgba(244,194,194,.55);box-shadow:0 18px 48px rgba(201,114,114,.08);background-image:linear-gradient(135deg, rgba(255,250,248,.95), rgba(255,244,246,.98)), var(--curriculum-mist);background-size:cover;background-position:center bottom}
+    .curriculum-studio-brand{display:flex;gap:1rem;align-items:flex-start}.curriculum-studio-mark{width:4.5rem;height:4.5rem;border-radius:1.5rem;background:rgba(255,255,255,.8);display:grid;place-items:center;box-shadow:0 12px 32px rgba(201,114,114,.12);flex:0 0 auto}.curriculum-studio-mark img{width:3.25rem;height:3.25rem}.curriculum-studio-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.85rem}.curriculum-studio-stat{display:grid;gap:.35rem}.curriculum-studio-stat span{font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:#9a6c6c}@media (max-width:900px){.curriculum-studio-stats{grid-template-columns:1fr}}
+  </style>
 </BaseLayout>

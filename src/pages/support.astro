@@ -1,15 +1,48 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
 ---
 
 <BaseLayout title="Support | Soroban Dojo">
-  <section class="panel content-prose support-card">
-    <p class="eyebrow">Support the dojo</p>
-    <h1>Help keep practical Soroban lessons free</h1>
-    <p>Your support helps fund more lessons, more exercises, better explanations, and calmer study tools for children and adults.</p>
+  <section class="support-studio-hero panel" style={`--support-mist:url('${base}graphics/worksheet-mist.svg')`}>
+    <div class="support-studio-brand">
+      <div class="support-studio-mark" aria-hidden="true"><img src={`${base}graphics/sakura-mark.svg`} alt="" /></div>
+      <div class="content-prose">
+        <p class="eyebrow">Support the dojo</p>
+        <h1>Help keep practical soroban lessons free</h1>
+        <p>Your support funds more lessons, more exercises, stronger worksheet tooling, and calmer study tools for children and adults.</p>
+      </div>
+    </div>
+    <div class="support-studio-stats">
+      <article class="subtle-panel support-studio-stat"><span>What stays free</span><strong>Lessons, exercises, worksheets</strong></article>
+      <article class="subtle-panel support-studio-stat"><span>What support funds</span><strong>New content + better tools</strong></article>
+      <article class="subtle-panel support-studio-stat"><span>Other help</span><strong>Share or send feedback</strong></article>
+    </div>
     <div class="hero-actions">
       <a class="button" href="https://buy.stripe.com/8x200i8bSgVe3Vl3g8bfO00" target="_blank" rel="noreferrer">Donate via Stripe</a>
+      <a class="button button-secondary" href={`${base}releases`}>See recent updates</a>
     </div>
-    <p class="muted">Once the repository URL is published, add it here so contributors can open issues and pull requests directly from the support page.</p>
   </section>
+
+  <section class="split-grid">
+    <article class="panel content-prose">
+      <p class="eyebrow">What support makes possible</p>
+      <h2>More calm tools, not more noise</h2>
+      <ul>
+        <li>New worksheets, drills, and attempt-first practice modes</li>
+        <li>More refined explanations for children and adults</li>
+        <li>Better browser-first tools that stay privacy-friendly</li>
+      </ul>
+    </article>
+    <article class="panel content-prose">
+      <p class="eyebrow">Non-monetary support</p>
+      <h2>You can help in other ways too</h2>
+      <p>Share the dojo, send feedback on confusing spots, and keep pointing out where the learning flow can become clearer and calmer.</p>
+    </article>
+  </section>
+
+  <style>
+    .support-studio-hero{display:grid;gap:1rem;border:1px solid rgba(244,194,194,.55);box-shadow:0 18px 48px rgba(201,114,114,.08);background-image:linear-gradient(135deg, rgba(255,250,248,.95), rgba(255,244,246,.98)), var(--support-mist);background-size:cover;background-position:center bottom}
+    .support-studio-brand{display:flex;gap:1rem;align-items:flex-start}.support-studio-mark{width:4.5rem;height:4.5rem;border-radius:1.5rem;background:rgba(255,255,255,.8);display:grid;place-items:center;box-shadow:0 12px 32px rgba(201,114,114,.12);flex:0 0 auto}.support-studio-mark img{width:3.25rem;height:3.25rem}.support-studio-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.85rem}.support-studio-stat{display:grid;gap:.35rem}.support-studio-stat span{font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:#9a6c6c}@media (max-width:900px){.support-studio-stats{grid-template-columns:1fr}}
+  </style>
 </BaseLayout>

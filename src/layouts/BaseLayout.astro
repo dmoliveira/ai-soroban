@@ -14,6 +14,27 @@ const pageTitle = title.includes('Soroban Dojo') ? title : `${title} | Soroban D
 const socialTitle = pageTitle;
 const socialDescription = description;
 const socialImage = new URL(`${base}favicon.svg`, Astro.site).toString();
+const currentPath = Astro.url.pathname;
+const primaryNav = [
+  { href: `${base}start-here`, english: 'Start', japanese: 'はじめ' },
+  { href: `${base}curriculum`, english: 'Curriculum', japanese: '道筋' },
+  { href: `${base}practice`, english: 'Practice', japanese: '修練' },
+  { href: `${base}worksheets`, english: 'Worksheets', japanese: '印刷' },
+  { href: `${base}progress`, english: 'Progress', japanese: '歩み' },
+  { href: `${base}support`, english: 'Support', japanese: '支援' },
+];
+const secondaryNav = [
+  { href: `${base}paths/children`, english: 'Children', japanese: 'こども' },
+  { href: `${base}paths/adults`, english: 'Adults', japanese: 'おとな' },
+  { href: `${base}levels`, english: 'Levels', japanese: '段階' },
+  { href: `${base}lessons`, english: 'Lessons', japanese: '稽古' },
+  { href: `${base}exercises`, english: 'Exercises', japanese: '練習' },
+  { href: `${base}mini-games`, english: 'Mini Games', japanese: '遊び' },
+  { href: `${base}boss-rounds`, english: 'Boss Rounds', japanese: '試練' },
+  { href: `${base}daily-drills`, english: 'Daily Drills', japanese: '日々' },
+  { href: `${base}releases`, english: 'Releases', japanese: '更新' },
+];
+const isActive = (href: string) => currentPath === href || (href !== base && currentPath.startsWith(href));
 ---
 
 <!doctype html>
@@ -37,6 +58,12 @@ const socialImage = new URL(`${base}favicon.svg`, Astro.site).toString();
     <meta name="twitter:image" content={socialImage} />
     <link rel="canonical" href={canonical.toString()} />
     <link rel="icon" href={`${base}favicon.svg`} />
+    <style is:inline>
+      .nav-stack{display:grid;gap:.4rem;width:100%}
+      .nav-row.nav-primary a{font-weight:600}
+      .nav-row.nav-secondary{opacity:.9}
+      .nav a.nav-active{color:#d94f73;border-bottom:2px solid rgba(240,98,131,.45)}
+    </style>
   </head>
   <body>
     <a class="skip-link" href="#main-content">Skip to content</a>
@@ -52,23 +79,22 @@ const socialImage = new URL(`${base}favicon.svg`, Astro.site).toString();
             </span>
           </a>
         </div>
-        <nav class="nav nav-row">
-          <a href={`${base}start-here`}><JapaneseLabel english="Start" japanese="はじめ" /></a>
-          <a href={`${base}curriculum`}><JapaneseLabel english="Curriculum" japanese="道筋" /></a>
-          <a href={`${base}paths/children`}><JapaneseLabel english="Children" japanese="こども" /></a>
-          <a href={`${base}paths/adults`}><JapaneseLabel english="Adults" japanese="おとな" /></a>
-          <a href={`${base}levels`}><JapaneseLabel english="Levels" japanese="段階" /></a>
-          <a href={`${base}lessons`}><JapaneseLabel english="Lessons" japanese="稽古" /></a>
-          <a href={`${base}exercises`}><JapaneseLabel english="Exercises" japanese="練習" /></a>
-          <a href={`${base}practice`}><JapaneseLabel english="Practice" japanese="修練" /></a>
-          <a href={`${base}mini-games`}><JapaneseLabel english="Mini Games" japanese="遊び" /></a>
-          <a href={`${base}boss-rounds`}><JapaneseLabel english="Boss Rounds" japanese="試練" /></a>
-          <a href={`${base}daily-drills`}><JapaneseLabel english="Daily Drills" japanese="日々" /></a>
-          <a href={`${base}worksheets`}><JapaneseLabel english="Worksheets" japanese="印刷" /></a>
-          <a href={`${base}releases`}><JapaneseLabel english="Releases" japanese="更新" /></a>
-          <a href={`${base}progress`}><JapaneseLabel english="Progress" japanese="歩み" /></a>
-          <a href={`${base}support`}><JapaneseLabel english="Support" japanese="支援" /></a>
-        </nav>
+        <div class="nav-stack">
+          <nav class="nav nav-row nav-primary">
+            {primaryNav.map((item) => (
+              <a href={item.href} class:list={{ 'nav-active': isActive(item.href) }}>
+                <JapaneseLabel english={item.english} japanese={item.japanese} />
+              </a>
+            ))}
+          </nav>
+          <nav class="nav nav-row nav-secondary">
+            {secondaryNav.map((item) => (
+              <a href={item.href} class:list={{ 'nav-active': isActive(item.href) }}>
+                <JapaneseLabel english={item.english} japanese={item.japanese} />
+              </a>
+            ))}
+          </nav>
+        </div>
       </div>
     </header>
     <main id="main-content" class="shell page-shell">
