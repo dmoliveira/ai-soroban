@@ -282,7 +282,7 @@ const rounds = [
       certificateTitle.textContent = `Soroban Dojo · ${level} certificate`;
       certificateCopy.textContent = earned
         ? `${earned.name} cleared the ${level} boss round on ${earned.date}.`
-        : `Finish the ${level} boss round, then print a certificate for that milestone.`;
+        : `Clear the ${level} boss round, then print a certificate for that earned milestone.`;
       printCertificate.disabled = !earned;
       copyCertificate.disabled = !earned;
     };
