@@ -58,12 +58,6 @@ const isActive = (href: string) => currentPath === href || (href !== base && cur
     <meta name="twitter:image" content={socialImage} />
     <link rel="canonical" href={canonical.toString()} />
     <link rel="icon" href={`${base}favicon.svg`} />
-    <style is:inline>
-      .nav-stack{display:grid;gap:.4rem;width:100%}
-      .nav-row.nav-primary a{font-weight:600}
-      .nav-row.nav-secondary{opacity:.9}
-      .nav a.nav-active{color:#d94f73;border-bottom:2px solid rgba(240,98,131,.45)}
-    </style>
   </head>
   <body>
     <a class="skip-link" href="#main-content">Skip to content</a>
