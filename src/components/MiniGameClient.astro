@@ -2,7 +2,7 @@
   <div class="section-head">
     <div>
       <p class="eyebrow">Mini games</p>
-      <h1>Play short games that still build real skill</h1>
+      <h2>Play short games that still build real skill</h2>
       <p class="muted">Each mode is intentionally small: fast enough to feel playful, structured enough to strengthen one skill at a time.</p>
     </div>
     <span class="badge">Score, streak, improve</span>
@@ -14,8 +14,8 @@
       <h3>Complement dash</h3>
       <p>Answer missing-to-5 and missing-to-10 prompts quickly without losing accuracy.</p>
       <div class="button-row button-row-compact">
-        <button class="button button-secondary minigame-select" data-game="complement-dash">Use game</button>
-        <button class="button minigame-start" data-game="complement-dash">Start now</button>
+        <button class="button minigame-start" data-game="complement-dash">Start round</button>
+        <button class="button button-secondary minigame-select" data-game="complement-dash">Preview details</button>
       </div>
     </article>
     <article class="choice-card">
@@ -23,8 +23,8 @@
       <h3>Table tower</h3>
       <p>Climb one multiplication family floor by floor and try to keep the streak alive.</p>
       <div class="button-row button-row-compact">
-        <button class="button button-secondary minigame-select" data-game="table-tower">Use game</button>
-        <button class="button minigame-start" data-game="table-tower">Start now</button>
+        <button class="button minigame-start" data-game="table-tower">Start round</button>
+        <button class="button button-secondary minigame-select" data-game="table-tower">Preview details</button>
       </div>
     </article>
     <article class="choice-card">
@@ -32,8 +32,8 @@
       <h3>Anzan flash</h3>
       <p>Read short mental sequences, hold the total, and finish before the timer drains.</p>
       <div class="button-row button-row-compact">
-        <button class="button button-secondary minigame-select" data-game="anzan-flash">Use game</button>
-        <button class="button minigame-start" data-game="anzan-flash">Start now</button>
+        <button class="button minigame-start" data-game="anzan-flash">Start round</button>
+        <button class="button button-secondary minigame-select" data-game="anzan-flash">Preview details</button>
       </div>
     </article>
     <article class="choice-card">
@@ -41,8 +41,8 @@
       <h3>Error fix</h3>
       <p>Spot a wrong result and type the corrected answer before your streak disappears.</p>
       <div class="button-row button-row-compact">
-        <button class="button button-secondary minigame-select" data-game="error-fix">Use game</button>
-        <button class="button minigame-start" data-game="error-fix">Start now</button>
+        <button class="button minigame-start" data-game="error-fix">Start round</button>
+        <button class="button button-secondary minigame-select" data-game="error-fix">Preview details</button>
       </div>
     </article>
   </div>
@@ -55,6 +55,7 @@
     <div id="mini-game-medal" class="muted small">Medal targets will appear here.</div>
     <div id="mini-game-modifier" class="muted small">Modifier: standard round.</div>
     <div class="button-row button-row-compact">
+      <button class="button" id="mini-game-start-selected">Start selected game</button>
       <label class="stack-sm mini-tier-picker">
         <span>Difficulty tier</span>
         <select id="mini-game-difficulty" class="select">
@@ -69,7 +70,7 @@
 
   <div class="subtle-panel mini-game-playfield">
     <div class="button-row button-row-compact mini-game-controls">
-      <button class="button" id="mini-game-generate">Generate round</button>
+      <button class="button" id="mini-game-generate">Next round</button>
       <button class="button button-secondary" id="mini-game-check">Check answer</button>
     </div>
     <div class="stats-grid">
@@ -79,7 +80,7 @@
     </div>
     <div class="subtle-panel">
       <strong id="mini-game-prompt-title">Prompt</strong>
-      <p id="mini-game-prompt" class="muted small">Generate a round to start.</p>
+      <p id="mini-game-prompt" class="muted small">Start the selected game to begin the first round.</p>
       <div class="button-row button-row-compact">
         <input id="mini-game-answer" class="input" type="text" inputmode="numeric" placeholder="Write your answer" />
       </div>
@@ -308,7 +309,7 @@
     score = 0; streak = 0; round = 0; currentRound = null; currentModifier = modifierCycle[currentGame][0];
     syncGameMeta();
     syncStats();
-    byId('mini-game-prompt').textContent = 'Generate a round to start.';
+    byId('mini-game-prompt').textContent = 'Start the selected game to begin the first round.';
     byId('mini-game-answer').value = '';
     byId('mini-game-feedback').textContent = 'Correct answers raise your score and streak.';
   }));
@@ -318,6 +319,11 @@
     syncGameMeta();
     startRound();
   }));
+  byId('mini-game-start-selected')?.addEventListener('click', () => {
+    score = 0; streak = 0; round = 0; currentModifier = modifierCycle[currentGame][0];
+    syncGameMeta();
+    startRound();
+  });
   byId('mini-game-generate')?.addEventListener('click', startRound);
   byId('mini-game-check')?.addEventListener('click', checkRound);
   byId('mini-game-difficulty')?.addEventListener('change', (event) => {
@@ -325,7 +331,7 @@
     score = 0; streak = 0; round = 0; currentRound = null; currentModifier = modifierCycle[currentGame][0];
     syncStats();
     syncGameMeta();
-    byId('mini-game-prompt').textContent = 'Generate a round to start.';
+    byId('mini-game-prompt').textContent = 'Start the selected game to begin the first round.';
     byId('mini-game-answer').value = '';
     byId('mini-game-feedback').textContent = 'Correct answers raise your score and streak.';
   });

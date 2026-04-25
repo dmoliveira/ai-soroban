@@ -5,10 +5,22 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 ---
 
 <BaseLayout title="Soroban Mini Games" description="Play fast soroban mini-games for complements, tables, anzan, and error recovery with calm replay-friendly rounds.">
-  <section class="panel content-prose">
-    <p class="eyebrow">Mini games</p>
-    <h1>Choose one fast game and begin</h1>
-    <p>These modes work best when you pick a single game, play a short round, and then stop or replay with purpose.</p>
+  <section class="mini-games-studio-hero panel" style={`--mini-mist:url('${base}graphics/worksheet-mist.svg')`}>
+    <div class="mini-games-studio-brand">
+      <div class="mini-games-studio-mark" aria-hidden="true">
+        <img src={`${base}graphics/sakura-mark.svg`} alt="" />
+      </div>
+      <div class="content-prose">
+        <p class="eyebrow">Mini games · 遊び</p>
+        <h1>Choose one fast game and begin with purpose</h1>
+        <p>These modes work best when you pick a single game, play one short round, and either replay with intent or return to deeper practice.</p>
+      </div>
+    </div>
+    <div class="mini-games-studio-stats">
+      <article class="subtle-panel mini-games-studio-stat"><span>Best use</span><strong>One short playful round</strong></article>
+      <article class="subtle-panel mini-games-studio-stat"><span>Tracks</span><strong>Score · streak · medals</strong></article>
+      <article class="subtle-panel mini-games-studio-stat"><span>Fallbacks</span><strong>Practice or daily drills</strong></article>
+    </div>
     <div class="hero-actions">
       <a class="button" href="#mini-games-panel">Start with one game</a>
       <a class="button button-secondary" href={`${base}practice`}>Open structured practice</a>
@@ -16,4 +28,23 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     </div>
   </section>
   <MiniGameClient />
+
+  <style>
+    .mini-games-studio-hero {
+      display: grid;
+      gap: 1rem;
+      border: 1px solid rgba(244, 194, 194, 0.55);
+      box-shadow: 0 18px 48px rgba(201, 114, 114, 0.08);
+      background-image: linear-gradient(135deg, rgba(255,250,248,0.95), rgba(255,244,246,0.98)), var(--mini-mist);
+      background-size: cover;
+      background-position: center bottom;
+    }
+    .mini-games-studio-brand { display:flex; gap:1rem; align-items:flex-start; }
+    .mini-games-studio-mark { width:4.5rem; height:4.5rem; border-radius:1.5rem; background:rgba(255,255,255,0.8); display:grid; place-items:center; box-shadow:0 12px 32px rgba(201,114,114,0.12); flex:0 0 auto; }
+    .mini-games-studio-mark img { width:3.25rem; height:3.25rem; }
+    .mini-games-studio-stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:0.85rem; }
+    .mini-games-studio-stat { display:grid; gap:0.35rem; }
+    .mini-games-studio-stat span { font-size:0.75rem; text-transform:uppercase; letter-spacing:0.06em; color:#9a6c6c; }
+    @media (max-width: 900px) { .mini-games-studio-stats { grid-template-columns:1fr; } }
+  </style>
 </BaseLayout>

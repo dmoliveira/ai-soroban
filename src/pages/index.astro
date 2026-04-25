@@ -1,6 +1,5 @@
 ---
 import { getCollection } from 'astro:content';
-import Hero from '../components/Hero.astro';
 import PathCards from '../components/PathCards.astro';
 import LevelGrid from '../components/LevelGrid.astro';
 import BossBadgeSummary from '../components/BossBadgeSummary.astro';
@@ -13,32 +12,38 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 ---
 
 <BaseLayout title="Learn Soroban Online | Soroban Dojo" description="Learn soroban online with calm lessons, printable abacus worksheets, attempt-first practice, mini-games, and beginner-to-advanced mental math training.">
-  <Hero
-    eyebrow="GitHub Pages-ready Soroban dojo"
-    title="Learn with calm structure. Practice with steady discipline."
-    summary="A local-first Soroban learning site for children and adults: lessons, attempt-first exercises, timed practice, progress that stays in your browser, and a quiet Japanese dojo atmosphere."
-  />
+  <section class="home-studio-hero panel" style={`--home-mist:url('${base}graphics/worksheet-mist.svg')`}>
+    <div class="home-studio-brand">
+      <div class="home-studio-mark" aria-hidden="true">
+        <img src={`${base}graphics/sakura-mark.svg`} alt="" />
+      </div>
+      <div class="content-prose">
+        <p class="eyebrow">Soroban Dojo · calm learning</p>
+        <h1>Choose one clear route and keep your hands steady</h1>
+        <p>A local-first soroban learning studio for children and adults: lessons, attempt-first exercises, worksheets, mini-games, and progress that stays in your browser.</p>
+      </div>
+    </div>
+    <div class="home-studio-stats">
+      <article class="subtle-panel home-studio-stat"><span>Best first step</span><strong>Start here</strong></article>
+      <article class="subtle-panel home-studio-stat"><span>Practice modes</span><strong>Worksheets · Practice · Games</strong></article>
+      <article class="subtle-panel home-studio-stat"><span>Privacy</span><strong>Progress stays local</strong></article>
+    </div>
+    <div class="hero-actions">
+      <a class="button" href={`${base}start-here`}>Start here</a>
+      <a class="button button-secondary" href={`${base}practice`}>Open practice</a>
+      <a class="button button-secondary" href={`${base}worksheets`}>Open worksheets</a>
+    </div>
+  </section>
 
-  <div class="hero-quick-links panel">
-    <strong>Quick links</strong>
+  <div class="home-route-strip panel">
+    <strong>Quick routes</strong>
     <div class="button-row button-row-compact">
       <a class="button button-secondary" href={`${base}lessons`}>Lessons</a>
-      <a class="button button-secondary" href={`${base}practice`}>Practice</a>
       <a class="button button-secondary" href={`${base}mini-games`}>Mini games</a>
       <a class="button button-secondary" href={`${base}boss-rounds`}>Boss rounds</a>
-      <a class="button button-secondary" href={`${base}worksheets`}>Worksheets</a>
+      <a class="button button-secondary" href={`${base}daily-drills`}>Daily drills</a>
       <a class="button button-secondary" href={`${base}progress`}>Progress</a>
-    </div>
-  </div>
-
-  <div class="hero-quick-links panel">
-    <strong>Best starting paths</strong>
-    <div class="button-row button-row-compact">
-      <a class="button" href={`${base}start-here`}>Start here</a>
-      <a class="button button-secondary" href={`${base}curriculum`}>Full curriculum</a>
-      <a class="button button-secondary" href={`${base}lessons/l4/first-multiplication-patterns`}>Start multiplication</a>
-      <a class="button button-secondary" href={`${base}paths/children`}>Children path</a>
-      <a class="button button-secondary" href={`${base}paths/adults`}>Adult path</a>
+      <a class="button button-secondary" href={`${base}curriculum`}>Curriculum</a>
     </div>
   </div>
 
@@ -133,4 +138,24 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       </ul>
     </article>
   </section>
+
+  <style>
+    .home-studio-hero {
+      display: grid;
+      gap: 1rem;
+      border: 1px solid rgba(244, 194, 194, 0.55);
+      box-shadow: 0 18px 48px rgba(201, 114, 114, 0.08);
+      background-image: linear-gradient(135deg, rgba(255,250,248,0.95), rgba(255,244,246,0.98)), var(--home-mist);
+      background-size: cover;
+      background-position: center bottom;
+    }
+    .home-studio-brand { display:flex; gap:1rem; align-items:flex-start; }
+    .home-studio-mark { width:4.5rem; height:4.5rem; border-radius:1.5rem; background:rgba(255,255,255,0.8); display:grid; place-items:center; box-shadow:0 12px 32px rgba(201,114,114,0.12); flex:0 0 auto; }
+    .home-studio-mark img { width:3.25rem; height:3.25rem; }
+    .home-studio-stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:0.85rem; }
+    .home-studio-stat { display:grid; gap:0.35rem; }
+    .home-studio-stat span { font-size:0.75rem; text-transform:uppercase; letter-spacing:0.06em; color:#9a6c6c; }
+    .home-route-strip { margin-top: 1rem; }
+    @media (max-width: 900px) { .home-studio-stats { grid-template-columns:1fr; } }
+  </style>
 </BaseLayout>
