@@ -66,7 +66,7 @@ test('practice journey can launch multiplication and division training', async (
   await page.locator('.practice-journey-start[data-journey="muldiv"]').click();
 
   await expect(page.locator('#session-title')).toContainText('Multiply and divide journey');
-  await expect(page.locator('#session-progress')).toContainText('Question 1 / 15');
+  await expect(page.locator('#session-progress')).toContainText('Question 1 / 10');
   await expect(page.locator('#session-profile')).toContainText('Profile');
 });
 

@@ -16,6 +16,8 @@ test('daily drills adapt to unfinished weekly plan step and weak area', async ({
   });
 
   await page.goto('daily-drills');
+  await page.selectOption('#daily-level', 'L4');
+  await page.getByRole('button', { name: 'Generate pack' }).click();
 
   await expect(page.locator('#daily-drill-focus')).toContainText('division');
   await expect(page.locator('#daily-drill-focus')).toContainText('exercise');
