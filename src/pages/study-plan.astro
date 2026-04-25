@@ -5,8 +5,35 @@ import WeeklyStudyPlan from '../components/WeeklyStudyPlan.astro';
 
 const lessons = (await getCollection('lessons')).map((entry) => ({ id: entry.data.id, title: entry.data.title, slug: entry.slug, skill: entry.data.skill, level: entry.data.level }));
 const exercises = (await getCollection('exercises')).map((entry) => ({ id: entry.data.id, title: entry.data.title, slug: entry.slug, skill: entry.data.skill, level: entry.data.level }));
+const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
 ---
 
 <BaseLayout title="Study Plan | Soroban Dojo">
+  <section class="study-plan-hero panel" style={`--study-mist:url('${base}graphics/worksheet-mist.svg')`}>
+    <div class="study-plan-brand">
+      <div class="study-plan-mark" aria-hidden="true"><img src={`${base}graphics/sakura-mark.svg`} alt="" /></div>
+      <div class="content-prose">
+        <p class="eyebrow">Study plan · 学びの道</p>
+        <h1>See why this week was chosen</h1>
+        <p>Your plan uses recent weak areas, current level signals, and one calm next step from lessons, exercises, and worksheets.</p>
+      </div>
+    </div>
+    <div class="study-plan-stats">
+      <article class="subtle-panel study-plan-stat"><span>Chosen from</span><strong>Recent weak areas</strong></article>
+      <article class="subtle-panel study-plan-stat"><span>Built from</span><strong>One lesson · one exercise · one worksheet</strong></article>
+      <article class="subtle-panel study-plan-stat"><span>Best use</span><strong>Follow the week in order</strong></article>
+    </div>
+  </section>
   <WeeklyStudyPlan lessons={lessons} exercises={exercises} />
+
+  <style>
+    .study-plan-hero { display:grid; gap:1rem; border:1px solid rgba(244,194,194,.55); box-shadow:0 18px 48px rgba(201,114,114,.08); background-image:linear-gradient(135deg, rgba(255,250,248,.95), rgba(255,244,246,.98)), var(--study-mist); background-size:cover; background-position:center bottom; }
+    .study-plan-brand { display:flex; gap:1rem; align-items:flex-start; }
+    .study-plan-mark { width:4.5rem; height:4.5rem; border-radius:1.5rem; background:rgba(255,255,255,.8); display:grid; place-items:center; box-shadow:0 12px 32px rgba(201,114,114,.12); flex:0 0 auto; }
+    .study-plan-mark img { width:3.25rem; height:3.25rem; }
+    .study-plan-stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.85rem; }
+    .study-plan-stat { display:grid; gap:.35rem; }
+    .study-plan-stat span { font-size:.75rem; text-transform:uppercase; letter-spacing:.06em; color:#9a6c6c; }
+    @media (max-width:900px){ .study-plan-stats{ grid-template-columns:1fr; } }
+  </style>
 </BaseLayout>

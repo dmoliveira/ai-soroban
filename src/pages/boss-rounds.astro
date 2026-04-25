@@ -86,7 +86,7 @@ const rounds = [
 ---
 
 <BaseLayout title="Boss Rounds | Soroban Dojo">
-  <section class="panel content-prose">
+  <section class="panel content-prose boss-rounds-hero">
     <p class="eyebrow">Boss rounds</p>
     <h1>Level endings that feel like milestones</h1>
     <p>Each boss round now includes a playable three-phase session: a warm-up, a core challenge, and a calm finisher. Clear all three to earn the boss badge and unlock the certificate.</p>
@@ -142,7 +142,7 @@ const rounds = [
             </div>
           ))}
         </div>
-        <div class="button-row button-row-compact">
+        <div class="button-row button-row-compact boss-support-links">
           <a class="button button-secondary" href={round.lesson}>Lesson</a>
           <a class="button button-secondary" href={round.exercise}>Exercise</a>
           <a class="button button-secondary" href={round.worksheet}>Worksheet</a>
@@ -205,6 +205,34 @@ const rounds = [
     .boss-session-feedback.is-success {
       color: var(--accent-strong, #166534);
       font-weight: 600;
+    }
+
+    .boss-rounds-hero,
+    .boss-progress-panel,
+    .boss-certificate-panel,
+    .boss-round-card {
+      border: 1px solid rgba(244, 194, 194, 0.4);
+      box-shadow: 0 18px 48px rgba(201, 114, 114, 0.08);
+      background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,251,249,0.96));
+    }
+
+    .boss-support-links .button-secondary {
+      opacity: 0.92;
+    }
+
+    .boss-session-title {
+      font-size: 1.15rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .boss-session-prompt {
+      font-size: 1rem;
+      color: #3b2d2d;
+    }
+
+    .boss-round-status,
+    .boss-session-tip {
+      opacity: 0.82;
     }
   </style>
 
