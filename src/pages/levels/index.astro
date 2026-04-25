@@ -1,13 +1,61 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import LevelGrid from '../../components/LevelGrid.astro';
+const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
 ---
 
 <BaseLayout title="Levels | Soroban Dojo">
-  <section class="panel">
+  <section class="levels-studio-hero panel" style={`--levels-mist:url('${base}graphics/worksheet-mist.svg')`}>
+    <div class="levels-studio-brand">
+      <div class="levels-studio-mark" aria-hidden="true">
+        <img src={`${base}graphics/sakura-mark.svg`} alt="" />
+      </div>
+      <div class="content-prose">
+        <p class="eyebrow">Levels · 段階</p>
+        <h1>Choose the level your hands are ready for</h1>
+        <p>Begin honestly. The fastest progress comes from starting where your hands and mind feel stable, then moving up with clean repetition.</p>
+      </div>
+    </div>
+    <div class="levels-studio-stats">
+      <article class="subtle-panel levels-studio-stat"><span>If the basics feel easy</span><strong>Move one level higher</strong></article>
+      <article class="subtle-panel levels-studio-stat"><span>If your pace feels shaky</span><strong>Stay one level lower</strong></article>
+      <article class="subtle-panel levels-studio-stat"><span>If unsure</span><strong>Start with L0 or L1</strong></article>
+    </div>
+  </section>
+
+  <section class="panel levels-chooser-panel">
     <p class="eyebrow">Levels</p>
-    <h1>Choose your current level</h1>
-    <p class="muted">Begin honestly. The fastest progress comes from starting where your hands and mind are ready.</p>
+    <h2>Choose your current level</h2>
+    <p class="muted">Pick the level that feels stable today, then move upward after one clean session.</p>
+    <div class="levels-chooser-strip">
+      <article class="subtle-panel">
+        <strong>What feels stable?</strong>
+        <p class="muted small">Pick the highest level where you can still read, set, and solve calmly.</p>
+      </article>
+      <article class="subtle-panel">
+        <strong>What still feels slow?</strong>
+        <p class="muted small">If carrying, complements, or sign changes still wobble, start below that pressure point.</p>
+      </article>
+      <article class="subtle-panel">
+        <strong>Where to start if unsure?</strong>
+        <p class="muted small">Use L0 Foundations or L1 Beginner, then move up after one clean session.</p>
+      </article>
+    </div>
     <LevelGrid />
   </section>
+
+  <style>
+    .levels-studio-hero {
+      display:grid; gap:1rem; border:1px solid rgba(244,194,194,.55); box-shadow:0 18px 48px rgba(201,114,114,.08);
+      background-image:linear-gradient(135deg, rgba(255,250,248,.95), rgba(255,244,246,.98)), var(--levels-mist); background-size:cover; background-position:center bottom;
+    }
+    .levels-studio-brand { display:flex; gap:1rem; align-items:flex-start; }
+    .levels-studio-mark { width:4.5rem; height:4.5rem; border-radius:1.5rem; background:rgba(255,255,255,.8); display:grid; place-items:center; box-shadow:0 12px 32px rgba(201,114,114,.12); flex:0 0 auto; }
+    .levels-studio-mark img { width:3.25rem; height:3.25rem; }
+    .levels-studio-stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.85rem; }
+    .levels-studio-stat { display:grid; gap:.35rem; }
+    .levels-studio-stat span { font-size:.75rem; text-transform:uppercase; letter-spacing:.06em; color:#9a6c6c; }
+    .levels-chooser-strip { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1rem; margin:1rem 0 1.5rem; }
+    @media (max-width:900px){ .levels-studio-stats,.levels-chooser-strip{ grid-template-columns:1fr; } }
+  </style>
 </BaseLayout>
