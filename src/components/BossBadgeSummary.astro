@@ -3,7 +3,7 @@
     <div>
       <p class="eyebrow">Boss badges</p>
       <h2>Earned level milestones</h2>
-      <p class="muted">Complete boss rounds to earn visible badges that mark each level as conquered.</p>
+      <p class="muted">Complete boss rounds to earn visible badges that mark each cleared level.</p>
     </div>
   </div>
   <div id="boss-badge-strip" class="milestone-row"></div>
@@ -23,10 +23,10 @@
     const done = !!state[level];
     if (done) earned += 1;
     chip.className = `milestone-chip ${done ? 'active' : ''}`;
-    chip.textContent = done ? `${level} badge` : `${level} locked`;
+    chip.textContent = done ? `${level} badge` : `${level} available later`;
     strip.appendChild(chip);
   });
   copy.textContent = earned
-    ? `You have earned ${earned} boss badge${earned === 1 ? '' : 's'}. Keep clearing levels to complete the full row.`
-    : 'No boss badges earned yet. Finish one boss round to start your badge row.';
+    ? `You have earned ${earned} boss badge${earned === 1 ? '' : 's'}. Keep clearing levels to fill the full row.`
+    : 'No boss badges earned yet. Clear one boss round to begin your badge row.';
 </script>
