@@ -1,4 +1,7 @@
-<section class="panel placement-shell">
+---
+const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
+---
+<section class="panel placement-shell" data-base={base}>
   <div class="section-head">
     <div>
       <p class="eyebrow">Placement self-check · 見立て</p>
@@ -20,7 +23,7 @@
 
 <script is:inline>
   const STORAGE_KEY = 'soroban-dojo:placement-result';
-  const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
+  const base = document.querySelector('.placement-shell')?.dataset.base || '/soroban-dojo/';
   const questions = [
     {
       id: 'q1',

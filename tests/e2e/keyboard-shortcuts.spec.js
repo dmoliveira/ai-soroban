@@ -63,9 +63,9 @@ test('practice fast start launches a warm-up session immediately', async ({ page
 test('practice journey can launch multiplication and division training', async ({ page }) => {
   await page.goto('practice');
 
-  await page.getByRole('button', { name: 'Start now' }).nth(3).click();
+  await page.locator('.practice-journey-start[data-journey="muldiv"]').click();
 
-  await expect(page.locator('#session-title')).toContainText('Generated L4 session');
+  await expect(page.locator('#session-title')).toContainText('Multiply and divide journey');
   await expect(page.locator('#session-progress')).toContainText('Question 1 / 15');
   await expect(page.locator('#session-profile')).toContainText('Profile');
 });
@@ -73,7 +73,7 @@ test('practice journey can launch multiplication and division training', async (
 test('practice challenge can launch anzan burst mode', async ({ page }) => {
   await page.goto('practice');
 
-  await page.getByRole('button', { name: 'Start now' }).last().click();
+  await page.locator('.practice-challenge-start[data-challenge="anzan-burst"]').click();
 
   await expect(page.locator('#session-title')).toContainText('Generated L5 session');
   await expect(page.locator('#session-progress')).toContainText('Question 1 / 10');

@@ -14,7 +14,7 @@ const { lessons, exercises } = Astro.props;
 const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
 ---
 
-<section class="panel progress-panel" data-lessons={JSON.stringify(lessons)} data-exercises={JSON.stringify(exercises)}>
+<section class="panel progress-panel" data-base={base} data-lessons={JSON.stringify(lessons)} data-exercises={JSON.stringify(exercises)}>
   <div class="section-head">
     <div>
       <p class="eyebrow">Progress garden · 歩み</p>
@@ -113,7 +113,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
 <script is:inline>
   const root = document.querySelector('.progress-panel');
-  const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
+  const base = root?.dataset.base || '/soroban-dojo/';
   const lessonKey = 'soroban-dojo:completed-lessons';
   const exerciseKey = 'soroban-dojo:exercise-states';
   const timerKey = 'soroban-dojo:timer-history';

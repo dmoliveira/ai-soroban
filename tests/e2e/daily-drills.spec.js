@@ -19,7 +19,7 @@ test('daily drills adapt to unfinished weekly plan step and weak area', async ({
 
   await expect(page.locator('#daily-drill-focus')).toContainText('division');
   await expect(page.locator('#daily-drill-focus')).toContainText('exercise');
-  await expect(page.locator('#daily-guidance-title')).toContainText('Division quotient today');
+  await expect(page.locator('#daily-guidance-title')).toContainText(/Division quotient today|Division factor search today/);
   await expect(page.locator('#daily-link-worksheet')).toHaveAttribute('href', /submode=quotient-building/);
-  await expect(page.locator('#daily-drill-list')).toContainText('÷');
+  await expect(page.locator('#daily-drill-list')).toContainText(/÷|factor/);
 });

@@ -21,9 +21,9 @@ interface Props {
 }
 
 const { lessons, exercises } = Astro.props;
+const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
 ---
-
-<section class="panel weekly-plan-panel" data-lessons={JSON.stringify(lessons)} data-exercises={JSON.stringify(exercises)}>
+<section class="panel weekly-plan-panel" data-base={base} data-lessons={JSON.stringify(lessons)} data-exercises={JSON.stringify(exercises)}>
   <div class="section-head">
     <div>
       <p class="eyebrow">Weekly plan</p>
@@ -44,7 +44,7 @@ const { lessons, exercises } = Astro.props;
   const root = document.querySelector('.weekly-plan-panel');
   const lessons = JSON.parse(root?.dataset.lessons || '[]');
   const exercises = JSON.parse(root?.dataset.exercises || '[]');
-  const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
+  const base = root?.dataset.base || '/soroban-dojo/';
   const exerciseKey = 'soroban-dojo:exercise-states';
   const lessonKey = 'soroban-dojo:completed-lessons';
   const weeklyPlanKey = 'soroban-dojo:weekly-study-plan';
