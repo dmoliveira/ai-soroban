@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import StudioHero from '../components/StudioHero.astro';
 
 const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
 
@@ -86,11 +87,21 @@ const rounds = [
 ---
 
 <BaseLayout title="Boss Rounds | Soroban Dojo">
-  <section class="panel content-prose boss-rounds-hero">
-    <p class="eyebrow">Boss rounds</p>
-    <h1>Level endings that feel like milestones</h1>
-    <p>Each boss round now includes a playable three-phase session: a warm-up, a core challenge, and a calm finisher. Clear all three to earn the boss badge and unlock the certificate.</p>
-  </section>
+  <StudioHero
+    eyebrow="Boss rounds"
+    title="Level endings that feel like milestones"
+    summary="Each boss round includes a playable three-phase session: warm-up, core challenge, and calm finisher. Clear all three to earn the badge and unlock the certificate."
+    stats={[
+      { label: 'Structure', value: '3 phases per boss' },
+      { label: 'Best use', value: 'Level-ending checkpoint' },
+      { label: 'Reward', value: 'Badge + certificate' },
+    ]}
+    actions={[
+      { href: `${base}levels`, label: 'Browse levels' },
+      { href: `${base}worksheets`, label: 'Open worksheets', secondary: true },
+      { href: `${base}progress`, label: 'View progress', secondary: true },
+    ]}
+  />
 
   <section class="panel content-prose boss-session-explainer">
     <p class="eyebrow">Boss format</p>
