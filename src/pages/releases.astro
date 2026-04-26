@@ -41,7 +41,7 @@ const releases = [
 
   <section class="session-list">
     {releases.map((release) => (
-      <article class="panel">
+      <article class="panel route-card">
         <div class="section-head">
           <div>
             <p class="eyebrow">Version {release.version}</p>
@@ -50,12 +50,15 @@ const releases = [
           <span class="badge">{release.date}</span>
         </div>
         <p class="muted small">Best for: revisit this if you want the newest training tools and cleaner practice flows.</p>
-        <ul>
+        <ul class="list-clean release-note-list">
           {release.notes.map((note) => <li>{note}</li>)}
         </ul>
-        <div class="button-row button-row-compact">
-          <a class="button button-secondary" href="/soroban-dojo/worksheets">Open worksheets</a>
-          <a class="button button-secondary" href="/soroban-dojo/practice">Open practice</a>
+        <div class="route-card-footer">
+          <span class="muted small">Best next step: revisit the updated tools directly</span>
+          <div class="button-row button-row-compact">
+            <a class="button button-secondary" href="/soroban-dojo/worksheets">Open worksheets</a>
+            <a class="button button-secondary" href="/soroban-dojo/practice">Open practice</a>
+          </div>
         </div>
       </article>
     ))}

@@ -82,6 +82,8 @@ a { color: inherit; text-decoration: none; }
 .route-card-footer { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-top: auto; padding-top: var(--space-3); border-top: 1px dashed rgba(99,88,79,0.14); }
 .route-card-footer .text-link { white-space: nowrap; }
 .home-path-panel { margin-top: var(--space-4); }
+.library-card-item { display: grid; gap: var(--space-3); align-content: start; }
+.release-note-list li { background: rgba(255,255,255,0.35); }
 .section-head { display: flex; justify-content: space-between; gap: var(--space-4); align-items: start; margin-bottom: var(--space-4); }
 .section-head p, .section-head .muted { max-width: 42rem; margin: 0; }
 .split-grid { display: grid; grid-template-columns: 2fr 1fr; gap: var(--space-4); margin: var(--space-4) 0 var(--space-6); }
