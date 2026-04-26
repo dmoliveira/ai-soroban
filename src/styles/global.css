@@ -78,6 +78,10 @@ a { color: inherit; text-decoration: none; }
 .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--space-4); margin: var(--space-4) 0 var(--space-6); }
 .card h2, .card h3 { margin-top: 0.35rem; }
 .compact-card { min-height: 180px; }
+.route-card { display: grid; gap: var(--space-3); align-content: start; }
+.route-card-footer { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-top: auto; padding-top: var(--space-3); border-top: 1px dashed rgba(99,88,79,0.14); }
+.route-card-footer .text-link { white-space: nowrap; }
+.home-path-panel { margin-top: var(--space-4); }
 .section-head { display: flex; justify-content: space-between; gap: var(--space-4); align-items: start; margin-bottom: var(--space-4); }
 .section-head p, .section-head .muted { max-width: 42rem; margin: 0; }
 .split-grid { display: grid; grid-template-columns: 2fr 1fr; gap: var(--space-4); margin: var(--space-4) 0 var(--space-6); }
