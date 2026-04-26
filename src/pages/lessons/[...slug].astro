@@ -173,8 +173,8 @@ const bestFor = lesson.data.skill === 'abacus-orientation'
           <button class="button button-secondary lesson-complete-toggle" data-lesson-id={lesson.data.id}>Mark lesson complete</button>
           <a class="button button-secondary" href={`${base}progress`}>View progress</a>
         </div>
-        <div id="lesson-complete-next" class="lesson-complete-next subtle-panel" hidden>
-          <strong>Completed. Continue with the next move.</strong>
+        <div id="lesson-complete-next" class="lesson-complete-next reward-state-card" hidden>
+          <div class="reward-state-head"><span class="reward-state-mark">✓</span><strong>Lesson completed</strong></div>
           <p id="lesson-complete-saved" class="muted small">Saved on this device. Keep the path moving with one quiet next step.</p>
           <div class="button-row lesson-complete-actions">
             {recommendedNextLesson && <a class="button button-secondary" href={`${base}lessons/${recommendedNextLesson.slug}`}>Next lesson</a>}
@@ -288,3 +288,12 @@ const bestFor = lesson.data.skill === 'abacus-orientation'
     syncLabel();
   </script>
 </BaseLayout>
+
+<style>
+  .lesson-complete-next { gap: 0.75rem; }
+  .lesson-complete-actions { margin-top: 0.1rem; }
+  .lesson-summary-panel .button-row { gap: 0.65rem; }
+  @media (max-width: 860px) {
+    .lesson-complete-actions { gap: 0.5rem; }
+  }
+</style>
