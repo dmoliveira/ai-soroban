@@ -130,18 +130,18 @@ const bestFor = lesson.data.skill === 'abacus-orientation'
   <article class="panel content-prose lesson-page-panel">
     <p class="eyebrow">Lesson · {lesson.data.level}</p>
     <h1>{lesson.data.title}</h1>
-    <div class="meta-row">
+    <div class="meta-row detail-meta-row">
       <span>{lesson.data.skill}</span>
       <span>{lesson.data.estimatedMinutes} min</span>
       <span>{lesson.data.audience.join(', ')}</span>
       {lesson.data.visualValue !== undefined && <span>数 {numberToKanji(lesson.data.visualValue)}</span>}
     </div>
-    <div class="lesson-utility-row">
+    <div class="lesson-utility-row detail-utility-row">
       <a class="text-link" href={`${base}lessons`}>All lessons</a>
       <a class="text-link" href={`${base}levels/${lesson.data.level.toLowerCase()}`}>This level</a>
       <a class="text-link" href={`${base}worksheets`}>Worksheet</a>
     </div>
-    <section class="lesson-facts-grid">
+    <section class="lesson-facts-grid detail-facts-grid">
       <article class="stat-card stat-card-soft"><span>{lesson.data.level}</span><small>Level</small></article>
       <article class="stat-card stat-card-soft"><span>{lesson.data.skill}</span><small>Skill</small></article>
       <article class="stat-card stat-card-soft"><span>{lesson.data.estimatedMinutes}m</span><small>Time</small></article>
@@ -160,7 +160,7 @@ const bestFor = lesson.data.skill === 'abacus-orientation'
       <a href="#lesson-next">Next step</a>
       <a href="#lesson-exercises">Exercises</a>
     </nav>
-    <div class="review-chip-row lesson-flow-strip">
+    <div class="review-chip-row lesson-flow-strip lesson-flow-steps">
       <span class="review-chip">1. Read the core idea</span>
       <span class="review-chip">2. Study the worked example</span>
       <span class="review-chip">3. Practice the related drills</span>

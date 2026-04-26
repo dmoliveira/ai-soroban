@@ -27,19 +27,19 @@ const bestFor = exercise.data.type === 'visual-check'
   <article class="panel content-prose exercise-page-panel">
     <p class="eyebrow">Exercise · {exercise.data.level}</p>
     <h1>{exercise.data.title}</h1>
-    <div class="meta-row">
+    <div class="meta-row detail-meta-row">
       <span>{exercise.data.skill}</span>
       <span>{exercise.data.type}</span>
       <span>{exercise.data.estimatedMinutes} min</span>
       {exercise.data.visualValue !== undefined && <span>数 {numberToKanji(exercise.data.visualValue)}</span>}
       {exercise.data.worksheetProfile && <span>{exercise.data.worksheetProfile.label ?? `${exercise.data.worksheetProfile.digitRange} digits · ${exercise.data.worksheetProfile.operationRange} ops · ${exercise.data.worksheetProfile.operatorMode}`}</span>}
     </div>
-    <div class="exercise-utility-row">
+    <div class="exercise-utility-row detail-utility-row">
       <a class="text-link" href={`${base}exercises`}>All exercises</a>
       <a class="text-link" href={`${base}levels/${exercise.data.level.toLowerCase()}`}>This level</a>
       <a class="text-link" href={`${base}practice`}>Practice</a>
     </div>
-    <section class="exercise-facts-grid">
+    <section class="exercise-facts-grid detail-facts-grid">
       <article class="stat-card stat-card-soft"><span>{exercise.data.level}</span><small>Level</small></article>
       <article class="stat-card stat-card-soft"><span>{exercise.data.skill}</span><small>Skill</small></article>
       <article class="stat-card stat-card-soft"><span>{exercise.data.type}</span><small>Type</small></article>
@@ -62,7 +62,7 @@ const bestFor = exercise.data.type === 'visual-check'
 
     <section class="panel exercise-interaction-panel">
       <p class="eyebrow">Attempt first</p>
-      <div class="question-flow-note">
+      <div class="question-flow-note lesson-flow-steps">
         <span class="review-chip">1. Solve first</span>
         <span class="review-chip">2. Write your response</span>
         <span class="review-chip">3. Verify or reveal</span>
