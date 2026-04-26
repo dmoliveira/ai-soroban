@@ -41,6 +41,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         <p class="muted">Use a preset to get moving quickly, then tune the worksheet details below.</p>
       </div>
 
+      <details class="worksheet-preset-disclosure">
+        <summary>More worksheet presets</summary>
       <div class="worksheet-preset-row">
         <button class="button button-secondary preset-button" data-preset="warmup">Warm-up</button>
         <button class="button button-secondary preset-button" data-preset="practice">Practice</button>
@@ -55,9 +57,10 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       <button class="button button-secondary preset-button" data-preset="anzan-focus">Anzan</button>
       <button class="button button-secondary preset-button" data-preset="carry">Carry</button>
       <button class="button button-secondary preset-button" data-preset="borrow">Borrow</button>
-      <button class="button button-secondary preset-button" data-preset="complements">Complements</button>
-      <button class="button button-secondary preset-button" data-preset="sequence-mix">Sequence mix</button>
-    </div>
+        <button class="button button-secondary preset-button" data-preset="complements">Complements</button>
+        <button class="button button-secondary preset-button" data-preset="sequence-mix">Sequence mix</button>
+      </div>
+      </details>
 
       <div class="ledger-controls worksheet-controls-shell">
       <div class="worksheet-controls-grid worksheet-controls-grid-main">
@@ -201,12 +204,15 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
           <button class="button button-secondary" id="check-worksheet">Check answered</button>
         <button class="button button-secondary" id="reveal-worksheet">Reveal answers</button>
       </div>
-        <div class="button-row worksheet-action-row worksheet-action-row-secondary">
-          <button class="button button-secondary" id="teacher-key">Teacher key</button>
-          <button class="button button-secondary" id="worksheet-timer-toggle">Start timer</button>
-          <button class="button button-secondary" id="print-worksheet">Print sheet</button>
-          <a class="button button-secondary" href={`${base}practice`}>Return to practice</a>
-        </div>
+        <details class="worksheet-secondary-tools">
+          <summary>More worksheet tools</summary>
+          <div class="button-row worksheet-action-row worksheet-action-row-secondary">
+            <button class="button button-secondary" id="teacher-key">Teacher key</button>
+            <button class="button button-secondary" id="worksheet-timer-toggle">Start timer</button>
+            <button class="button button-secondary" id="print-worksheet">Print sheet</button>
+            <a class="button button-secondary" href={`${base}practice`}>Return to practice</a>
+          </div>
+        </details>
       </div>
     </section>
 

@@ -169,6 +169,20 @@ a { color: inherit; text-decoration: none; }
 .button-row-compact { gap: 0.65rem; }
 .question-flow-note { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .subtle-panel { padding: 1rem; border-radius: 16px; border: 1px dashed var(--line); background: rgba(255,255,255,0.45); }
+.practice-discovery-block,
+.worksheet-preset-disclosure,
+.worksheet-secondary-tools,
+.home-route-strip {
+  display: grid;
+  gap: var(--space-3);
+}
+.practice-discovery-block summary,
+.worksheet-preset-disclosure summary,
+.worksheet-secondary-tools summary,
+.home-route-strip summary {
+  cursor: pointer;
+  font-weight: 600;
+}
 .empty-state-card,
 .reward-state-card {
   display: grid;
@@ -397,12 +411,14 @@ summary:focus-visible {
   .vertical-table { grid-template-columns: 1fr 1fr; } 
   .ledger-head, 
   .ledger-row { grid-template-columns: 52px 1fr 100px 70px 96px; } 
-  .worksheet-controls-grid { grid-template-columns: 1fr 1fr; }
+  .worksheet-controls-grid { grid-template-columns: 1fr; }
   .worksheet-operation-group { grid-column: 1 / -1; }
   .worksheet-scorebar { position: static; }
   .worksheet-note-strip { grid-template-columns: 1fr; }
   .reflection-grid { grid-template-columns: 1fr; }
   .panel { padding: var(--space-4); }
+  .practice-journey-grid,
+  .practice-challenge-grid { grid-template-columns: 1fr; }
 }
 
 @media (prefers-reduced-motion: reduce) {
