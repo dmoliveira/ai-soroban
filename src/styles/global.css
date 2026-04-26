@@ -323,9 +323,14 @@ a { color: inherit; text-decoration: none; }
 .exercise-page-panel h1 { margin-bottom: 0.45rem; }
 .lesson-page-panel .meta-row,
 .exercise-page-panel .meta-row { margin: 0.25rem 0 0.55rem; }
+.detail-meta-row { font-size: 0.88rem; gap: 0.55rem; opacity: 0.88; }
 .lesson-summary-grid { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 0.8rem; margin: 0.3rem 0 0.8rem; }
 .lesson-facts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.45rem; margin: 0.35rem 0 0.45rem; }
 .lesson-utility-row { display: flex; flex-wrap: wrap; gap: 0.75rem; margin: 0.2rem 0 0.4rem; }
+.detail-utility-row { gap: 0.5rem; }
+.detail-utility-row a { padding: 0.18rem 0.48rem; border-radius: 999px; background: rgba(255,255,255,0.56); border: 1px solid rgba(217,204,190,0.9); }
+.detail-facts-grid { margin-bottom: 0.3rem; }
+.detail-facts-grid .stat-card { box-shadow: none; background: rgba(255,255,255,0.52); }
 .lesson-facts-grid .stat-card { padding: 0.55rem 0.65rem; border-radius: 10px; }
 .lesson-facts-grid .stat-card span { font-size: 0.95rem; }
 .lesson-facts-grid .stat-card small { display: block; margin-top: 0.12rem; }
@@ -334,6 +339,7 @@ a { color: inherit; text-decoration: none; }
 .lesson-nav-strip { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0.25rem 0 0.45rem; }
 .lesson-nav-strip a { padding: 0.26rem 0.56rem; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,0.66); color: var(--muted); font-size: 0.8rem; }
 .lesson-flow-strip { margin: 0.3rem 0 0.45rem; }
+.lesson-flow-steps .review-chip { background: rgba(248,242,233,0.8); border-color: rgba(217,204,190,0.8); color: #7a5a5a; font-size: 0.78rem; }
 .lesson-nav-grid { margin: 1rem 0 1.2rem; }
 .lesson-summary-panel p { margin: 0; }
 .lesson-summary-panel ul { margin: 0; padding-left: 1.15rem; }
@@ -411,6 +417,9 @@ summary:focus-visible {
   .progress-hero-grid { grid-template-columns: 1fr; }
   .progress-links-strip { grid-template-columns: 1fr; display: grid; }
   .lesson-facts-grid { grid-template-columns: 1fr 1fr; }
+  .detail-meta-row { font-size: 0.82rem; }
+  .detail-utility-row { gap: 0.35rem; }
+  .detail-utility-row a { font-size: 0.82rem; }
   .lesson-summary-grid { grid-template-columns: 1fr; }
   .skill-row { grid-template-columns: 1fr; }
   .skill-actions { flex-wrap: wrap; }
@@ -429,6 +438,7 @@ summary:focus-visible {
   .panel { padding: var(--space-4); }
   .practice-journey-grid,
   .practice-challenge-grid { grid-template-columns: 1fr; }
+  .lesson-nav-strip, .lesson-flow-steps { gap: 0.28rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {
