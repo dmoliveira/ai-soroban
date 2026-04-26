@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import StudioHero from '../components/StudioHero.astro';
 
 const releases = [
   {
@@ -27,11 +28,16 @@ const releases = [
 ---
 
 <BaseLayout title="Releases | Soroban Dojo">
-  <section class="panel content-prose">
-    <p class="eyebrow">Releases · 更新</p>
-    <h1>Release notes</h1>
-    <p>Track the dojo’s progress over time: new lessons, new drills, new review tools, and deployment milestones.</p>
-  </section>
+  <StudioHero
+    eyebrow="Releases · 更新"
+    title="Release notes"
+    summary="Track the dojo’s progress over time: new lessons, new drills, new review tools, and deployment milestones."
+    stats={[
+      { label: 'Latest version', value: releases[0].version },
+      { label: 'Current focus', value: 'Worksheets + practice polish' },
+      { label: 'Best use', value: 'See what changed recently' },
+    ]}
+  />
 
   <section class="session-list">
     {releases.map((release) => (

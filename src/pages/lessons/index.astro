@@ -1,16 +1,31 @@
 ---
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import StudioHero from '../../components/StudioHero.astro';
 
 const lessons = (await getCollection('lessons')).sort((a, b) => a.data.id.localeCompare(b.data.id));
 const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
 ---
 
 <BaseLayout title="Lessons | Soroban Dojo">
+  <StudioHero
+    eyebrow="Lessons"
+    title="Learn in order, then practice"
+    summary="Need the full path from first beads through multiplication, division, worksheets, and mental practice? Open the curriculum map first, then move lesson by lesson."
+    stats={[
+      { label: 'Use this for', value: 'Core concept study' },
+      { label: 'Best companion', value: 'Matching worksheet' },
+      { label: 'Best next move', value: 'Practice after reading' },
+    ]}
+    actions={[
+      { href: `${base}curriculum`, label: 'Open curriculum map' },
+      { href: `${base}worksheets`, label: 'Open worksheets', secondary: true },
+    ]}
+  />
+
   <section class="panel">
-    <p class="eyebrow">Lessons</p>
-    <h1>Learn in order, then practice</h1>
-    <p class="muted">Need the full path from first beads through multiplication, division, worksheets, and mental practice? <a class="text-link" href={`${base}curriculum`}>Open the curriculum map</a>.</p>
+    <p class="eyebrow">Lesson library</p>
+    <h2>Browse by title and skill</h2>
     <ul class="list-clean">
       {lessons.map((lesson) => (
         <li>
