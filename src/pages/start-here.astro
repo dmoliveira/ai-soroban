@@ -24,14 +24,32 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   <section class="panel content-prose">
     <p class="eyebrow">Start flow</p>
     <h2>Simple order to follow</h2>
-    <ol>
-      <li>Pick the Children or Adult path.</li>
-      <li>Use the curriculum map if you want the full theory-to-practice sequence.</li>
-      <li>Read one short lesson.</li>
-      <li>Try the linked exercise before revealing the answer.</li>
-      <li>Mark whether you got it, almost got it, or need review.</li>
-      <li>Return tomorrow for another small session.</li>
-    </ol>
+    <div class="card-grid start-flow-grid">
+      <article class="panel route-card compact-card">
+        <p class="eyebrow">1. Choose a path</p>
+        <p>Pick the Children or Adult path first so the pacing fits the learner.</p>
+      </article>
+      <article class="panel route-card compact-card">
+        <p class="eyebrow">2. See the map</p>
+        <p>Use the curriculum map if you want the full theory-to-practice sequence.</p>
+      </article>
+      <article class="panel route-card compact-card">
+        <p class="eyebrow">3. Read one lesson</p>
+        <p>Keep the first study session short and concept-led.</p>
+      </article>
+      <article class="panel route-card compact-card">
+        <p class="eyebrow">4. Attempt first</p>
+        <p>Try the linked exercise before revealing the answer or method.</p>
+      </article>
+      <article class="panel route-card compact-card">
+        <p class="eyebrow">5. Mark honestly</p>
+        <p>Decide whether you got it, almost got it, or need review.</p>
+      </article>
+      <article class="panel route-card compact-card">
+        <p class="eyebrow">6. Return tomorrow</p>
+        <p>Come back for another small session while the pattern is still clear.</p>
+      </article>
+    </div>
     <div class="hero-actions">
       <a class="button button-secondary" href={`${base}curriculum`}>Curriculum map</a>
       <a class="button button-secondary" href={`${base}study-plan`}>Weekly study plan</a>
