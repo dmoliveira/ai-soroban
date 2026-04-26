@@ -1,12 +1,35 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import StudioHero from '../components/StudioHero.astro';
+const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
 ---
 
 <BaseLayout title="About Soroban Dojo" description="About Soroban Dojo, a calm GitHub Pages site for learning soroban online through lessons, worksheets, practice, and mental abacus drills.">
-  <section class="panel content-prose">
-    <p class="eyebrow">About</p>
-    <h1>An open learning dojo for focused practice</h1>
-    <p>This project is designed as a public, static-first Soroban learning space that can grow through clear content, simple tooling, and respectful pacing.</p>
-    <p>Contributions are welcome through issues, pull requests, and curriculum feedback.</p>
+  <StudioHero
+    eyebrow="About"
+    title="An open learning dojo for focused practice"
+    summary="Soroban Dojo is a public, static-first learning space designed to grow through clear content, simple tools, and respectful pacing."
+    stats={[
+      { label: 'Built for', value: 'Calm daily practice' },
+      { label: 'Core tools', value: 'Lessons + worksheets + drills' },
+      { label: 'Community', value: 'Open to feedback' },
+    ]}
+    actions={[
+      { href: `${base}start-here`, label: 'Start here' },
+      { href: `${base}releases`, label: 'See recent updates', secondary: true },
+    ]}
+  />
+
+  <section class="split-grid">
+    <article class="panel content-prose">
+      <p class="eyebrow">Why this exists</p>
+      <h2>Practical learning without noise</h2>
+      <p>The dojo is built around one belief: small, steady study beats rushed intensity. Each page is meant to help you read, practice, and review with enough structure to stay calm.</p>
+    </article>
+    <article class="panel content-prose">
+      <p class="eyebrow">How it grows</p>
+      <h2>Open to careful improvement</h2>
+      <p>Lessons, exercises, worksheets, and browser tools are refined over time. Useful feedback, curriculum suggestions, and clear bug reports all help shape the next version.</p>
+    </article>
   </section>
 </BaseLayout>
