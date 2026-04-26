@@ -35,8 +35,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     </div>
   </section>
 
-  <div class="home-route-strip panel">
-    <strong>Quick routes</strong>
+  <details class="panel home-route-strip">
+    <summary>More ways to train</summary>
     <div class="button-row button-row-compact">
       <a class="button button-secondary" href={`${base}lessons`}>Lessons</a>
       <a class="button button-secondary" href={`${base}mini-games`}>Mini games</a>
@@ -45,7 +45,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       <a class="button button-secondary" href={`${base}progress`}>Progress</a>
       <a class="button button-secondary" href={`${base}curriculum`}>Curriculum</a>
     </div>
-  </div>
+  </details>
 
   <PathCards />
 
@@ -69,10 +69,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         <a class="button" href={`${base}start-here`}>Take the best next step</a>
         <a class="button button-secondary" href={`${base}curriculum`}>Follow curriculum</a>
         <a class="button button-secondary" href={`${base}practice`}>Practice now</a>
-        <a class="button button-secondary" href={`${base}lessons/l0/parts-of-the-soroban`}>Start at L0</a>
-        <a class="button button-secondary" href={`${base}support`}>Support the dojo</a>
-        <a class="button button-secondary" href={`${base}daily-drills`}>Daily drills</a>
       </div>
+      <p class="muted small">Need another route? Try <a class="text-link" href={`${base}lessons/l0/parts-of-the-soroban`}>Start at L0</a>, <a class="text-link" href={`${base}daily-drills`}>Daily drills</a>, or <a class="text-link" href={`${base}support`}>Support the dojo</a>.</p>
     </article>
   </section>
 
