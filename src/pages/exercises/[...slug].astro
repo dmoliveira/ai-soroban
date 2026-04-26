@@ -71,16 +71,21 @@ const bestFor = exercise.data.type === 'visual-check'
         <span>Your response</span>
         <input id="exercise-response" class="input" type="text" inputmode={exercise.data.expectedValue !== undefined ? 'numeric' : 'text'} placeholder={exercise.data.expectedValue !== undefined ? 'Write your number before checking' : 'Write your response before checking'} />
       </label>
-      <div class="button-row button-row-compact">
+      <div class="button-row button-row-compact exercise-primary-actions">
         <button class="button" id="verify-exercise">Verify response</button>
+      </div>
+      <div class="reward-state-card exercise-checkpoint-card">
+        <div class="reward-state-head"><span class="reward-state-mark">✦</span><strong id="exercise-state-status">Ready to attempt</strong></div>
+        <div class="exercise-state-strip">
+          <div class="exercise-state-card"><small>Response</small><span id="exercise-state-response">—</span></div>
+        <div class="exercise-state-card"><small>Saved state</small><span id="exercise-state-memory">This attempt stays on this device.</span></div>
+        </div>
+      </div>
+      <div class="button-row button-row-compact exercise-support-actions">
         <button class="button button-secondary" id="hint-exercise">Need a hint?</button>
         <button class="button button-secondary" id="reveal-answer">Reveal answer</button>
         <button class="button button-secondary" id="reveal-method">Reveal method</button>
         <button class="button button-secondary" id="reset-exercise">Try again</button>
-      </div>
-      <div class="exercise-state-strip">
-        <div class="exercise-state-card"><small>Response:</small><span id="exercise-state-response">—</span></div>
-        <div class="exercise-state-card"><small>Status:</small><span id="exercise-state-status">Not checked</span></div>
       </div>
       <div id="exercise-feedback" class="reveal-panel" hidden role="status" aria-live="polite"></div>
       <div id="exercise-method" class="reveal-panel" hidden></div>
@@ -111,6 +116,7 @@ const bestFor = exercise.data.type === 'visual-check'
     const method = document.getElementById('exercise-method');
     const responseState = document.getElementById('exercise-state-response');
     const statusState = document.getElementById('exercise-state-status');
+    const memoryState = document.getElementById('exercise-state-memory');
     const exerciseStateKey = 'soroban-dojo:exercise-states';
     const audioWindow = typeof window !== 'undefined' ? /** @type {any} */ (window) : null;
     const AudioContextCtor = audioWindow
@@ -179,7 +185,8 @@ const bestFor = exercise.data.type === 'visual-check'
         feedback.hidden = false;
         feedback.textContent = 'Write your response first, or choose to reveal the answer or method.';
         responseState.textContent = 'Empty';
-        statusState.textContent = 'Waiting';
+        statusState.textContent = 'Waiting for an attempt';
+        if (memoryState) memoryState.textContent = 'Write something first.';
         return;
       }
       const numericExpected = typeof expectedValue === 'number' ? expectedValue : null;
@@ -197,7 +204,8 @@ const bestFor = exercise.data.type === 'visual-check'
           ? 'Not correct yet. Revise your number, ask for a hint, or reveal the answer.'
           : 'Not correct yet. Revise your wording, ask for a hint, or reveal the answer.';
       responseState.textContent = value;
-      statusState.textContent = correct ? 'Correct' : 'Try again';
+      statusState.textContent = correct ? 'Correct response' : 'Try one revision';
+      if (memoryState) memoryState.textContent = correct ? 'Saved as correct on this device.' : 'Saved for review on this device.';
       const state = readExerciseStates();
       state[exerciseId] = {
         status: correct ? 'got-it' : 'needs-review',
@@ -213,6 +221,7 @@ const bestFor = exercise.data.type === 'visual-check'
       feedback.hidden = false;
       feedback.textContent = `Hint: ${hint}`;
       statusState.textContent = 'Hint shown';
+      if (memoryState) memoryState.textContent = 'Use the hint, then try one revision.';
     });
 
     document.getElementById('reveal-answer')?.addEventListener('click', () => {
@@ -220,12 +229,14 @@ const bestFor = exercise.data.type === 'visual-check'
       playTone('success');
       feedback.textContent = `Answer: ${answer}`;
       statusState.textContent = 'Answer shown';
+      if (memoryState) memoryState.textContent = 'The answer is visible now.';
     });
 
     document.getElementById('reveal-method')?.addEventListener('click', () => {
       method.hidden = false;
       method.textContent = explanation;
       statusState.textContent = 'Method shown';
+      if (memoryState) memoryState.textContent = 'Method is open for review.';
     });
     document.getElementById('reset-exercise')?.addEventListener('click', () => {
       responseInput.value = '';
@@ -234,7 +245,8 @@ const bestFor = exercise.data.type === 'visual-check'
       method.hidden = true;
       method.textContent = '';
       responseState.textContent = '—';
-      statusState.textContent = 'Not checked';
+      statusState.textContent = 'Ready to attempt';
+      if (memoryState) memoryState.textContent = 'This attempt stays on this device.';
       responseInput.focus();
     });
     responseInput?.addEventListener('keydown', (event) => {
@@ -247,6 +259,15 @@ const bestFor = exercise.data.type === 'visual-check'
 </BaseLayout>
 
 <style>
+  .exercise-checkpoint-card { gap: 0.75rem; }
+  .exercise-state-strip { display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:0.65rem; }
+  .exercise-state-card { display:grid; gap:0.18rem; padding:0.7rem 0.8rem; border-radius:14px; background:rgba(255,255,255,0.5); border:1px solid rgba(217,204,190,0.9); }
+  .exercise-state-card small { color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .exercise-support-actions { margin-top: 0.2rem; }
+  @media (max-width: 860px) {
+    .exercise-state-strip { grid-template-columns: 1fr; }
+    .exercise-support-actions { gap: 0.5rem; }
+  }
   .worksheet-ledger {
     margin: 1rem 0;
     padding: 0.9rem 1rem;
