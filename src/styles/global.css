@@ -88,6 +88,7 @@ a { color: inherit; text-decoration: none; }
 .support-card { display: grid; gap: var(--space-3); align-content: start; }
 .home-homework-card .text-link,
 .support-card .text-link { margin-top: auto; }
+.start-flow-grid { margin-top: var(--space-4); }
 .section-head { display: flex; justify-content: space-between; gap: var(--space-4); align-items: start; margin-bottom: var(--space-4); }
 .section-head p, .section-head .muted { max-width: 42rem; margin: 0; }
 .split-grid { display: grid; grid-template-columns: 2fr 1fr; gap: var(--space-4); margin: var(--space-4) 0 var(--space-6); }
