@@ -1,16 +1,39 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import StudioHero from '../components/StudioHero.astro';
+const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
 ---
 
 <BaseLayout title="Privacy | Soroban Dojo">
-  <section class="panel content-prose">
-    <p class="eyebrow">Privacy</p>
-    <h1>Your progress stays in your browser</h1>
-    <p>The MVP stores lesson completion, exercise review states, and timer history in browser storage on your device.</p>
-    <ul>
-      <li>No account is required.</li>
-      <li>No hidden analytics are enabled in this MVP.</li>
-      <li>You can clear progress from the Progress page at any time.</li>
-    </ul>
+  <StudioHero
+    eyebrow="Privacy"
+    title="Your progress stays in your browser"
+    summary="Soroban Dojo keeps progress local-first by default, so lesson completion, review states, and timer history remain on your device unless you choose otherwise."
+    stats={[
+      { label: 'Accounts', value: 'Not required' },
+      { label: 'Analytics', value: 'No hidden tracking' },
+      { label: 'Control', value: 'You can clear local progress' },
+    ]}
+    actions={[
+      { href: `${base}progress`, label: 'Open progress controls' },
+      { href: `${base}start-here`, label: 'Back to Start here', secondary: true },
+    ]}
+  />
+
+  <section class="split-grid">
+    <article class="panel content-prose">
+      <p class="eyebrow">What is stored</p>
+      <h2>Only the study state you create</h2>
+      <ul>
+        <li>Lesson completion</li>
+        <li>Exercise review states</li>
+        <li>Session history and timer results</li>
+      </ul>
+    </article>
+    <article class="panel content-prose">
+      <p class="eyebrow">What is not required</p>
+      <h2>No account or signup pressure</h2>
+      <p>You can use the dojo without creating an account. The design goal is calm, local-first study rather than account collection or behavioral tracking.</p>
+    </article>
   </section>
 </BaseLayout>
