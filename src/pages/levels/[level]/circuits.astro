@@ -1,6 +1,7 @@
 ---
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
+import StudioHero from '../../../components/StudioHero.astro';
 import { LEVELS } from '../../../lib/constants';
 
 export async function getStaticPaths() {
@@ -53,16 +54,21 @@ const circuits = [
 ---
 
 <BaseLayout title={`${level.id} dojo circuits | Soroban Dojo`}>
-  <section class="panel content-prose">
-    <p class="eyebrow">Dojo circuits</p>
-    <h1>{level.id} mixed-mode circuits</h1>
-    <p>Use one circuit when you want a short guided session that mixes lesson study, one exercise, and one more interactive finish.</p>
-    <div class="hero-actions">
-      <a class="button" href={`${base}levels/${level.id.toLowerCase()}`}>Back to level</a>
-      <a class="button button-secondary" href={`${base}study-plan`}>Open study plan</a>
-      <a class="button button-secondary" href={`${base}daily-drills`}>Use daily drills instead</a>
-    </div>
-  </section>
+  <StudioHero
+    eyebrow="Dojo circuits"
+    title={`${level.id} mixed-mode circuits`}
+    summary="Use one circuit when you want a short guided session that mixes lesson study, one exercise, and one more interactive finish."
+    stats={[
+      { label: 'Best use', value: '10-minute guided session' },
+      { label: 'Mix', value: 'Lesson + exercise + finish' },
+      { label: 'Alternative', value: 'Daily drills' },
+    ]}
+    actions={[
+      { href: `${base}levels/${level.id.toLowerCase()}`, label: 'Back to level' },
+      { href: `${base}study-plan`, label: 'Open study plan', secondary: true },
+      { href: `${base}daily-drills`, label: 'Use daily drills instead', secondary: true },
+    ]}
+  />
 
   <section class="card-grid">
     {circuits.map((circuit) => (

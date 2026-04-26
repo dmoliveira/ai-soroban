@@ -1,6 +1,7 @@
 ---
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import StudioHero from '../../components/StudioHero.astro';
 
 const exercises = (await getCollection('exercises')).sort((a, b) => a.data.id.localeCompare(b.data.id));
 const levelOrder = ['L0', 'L1', 'L2', 'L3', 'L4', 'L5'];
@@ -10,10 +11,24 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 ---
 
 <BaseLayout title="Exercises | Soroban Dojo">
+  <StudioHero
+    eyebrow="Exercise library"
+    title="Attempt first. Then compare."
+    summary="Use these like a skill ladder: concept checks first, then rhythm drills, then challenge-style review inside practice and worksheets."
+    stats={[
+      { label: 'Best use', value: 'Single focused checks' },
+      { label: 'Best follow-up', value: 'Practice or worksheet' },
+      { label: 'Tone', value: 'Attempt first' },
+    ]}
+    actions={[
+      { href: `${base}practice`, label: 'Open practice' },
+      { href: `${base}worksheets`, label: 'Open worksheets', secondary: true },
+    ]}
+  />
+
   <section class="panel">
     <p class="eyebrow">Exercise library</p>
-    <h1>Attempt first. Then compare.</h1>
-    <p class="muted">Use these like a skill ladder: concept checks first, then rhythm drills, then challenge-style review inside practice and worksheets.</p>
+    <h2>Browse by level</h2>
     <div class="content-prose">
       {groupedExercises.map((group) => (
         <section>
