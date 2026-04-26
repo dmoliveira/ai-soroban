@@ -45,8 +45,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       </label>
       <div class="button-row"> 
         <button class="button" id="generate-daily-drill">Generate pack</button>
-        <button class="button button-secondary" id="print-daily-drill">Print pack</button>
-        <button class="button button-secondary" id="reveal-daily-answers">Reveal answers</button>
+        <button class="button button-secondary" id="print-daily-drill" disabled>Print pack</button>
+        <button class="button button-secondary" id="reveal-daily-answers" disabled>Reveal answers</button>
       </div>
     </div>
       <div class="subtle-panel daily-drill-summary-card">
@@ -402,6 +402,12 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     return Array.from({ length: count }, (_, index) => factories[index % factories.length]());
   };
 
+  const syncActionAvailability = () => {
+    const hasRows = byId('daily-drill-list')?.children.length > 0;
+    byId('print-daily-drill').disabled = !hasRows;
+    byId('reveal-daily-answers').disabled = !hasRows;
+  };
+
   const revealAnswers = () => {
     document.querySelectorAll('.daily-answer').forEach((node) => {
       node.hidden = false;
@@ -443,6 +449,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       li.append(strong, reveal, answer);
       list.appendChild(li);
     });
+    syncActionAvailability();
   };
 
   byId('generate-daily-drill')?.addEventListener('click', renderPack);
