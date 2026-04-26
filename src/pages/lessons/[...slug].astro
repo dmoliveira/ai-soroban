@@ -221,19 +221,25 @@ const bestFor = lesson.data.skill === 'abacus-orientation'
     {(prerequisiteLesson || nextLessons.length) && (
       <section class="split-grid lesson-nav-grid">
         {prerequisiteLesson && (
-          <article class="panel">
+          <article class="panel route-card compact-card">
             <p class="eyebrow">Previous lesson</p>
             <h2>{prerequisiteLesson.data.title}</h2>
             <p>{prerequisiteLesson.data.summary}</p>
-            <a class="text-link" href={`${base}lessons/${prerequisiteLesson.slug}`}>Open previous lesson →</a>
+            <div class="route-card-footer">
+              <span class="muted small">Best next step: stabilize the prerequisite first</span>
+              <a class="text-link" href={`${base}lessons/${prerequisiteLesson.slug}`}>Open previous lesson →</a>
+            </div>
           </article>
         )}
         {nextLessons.map((nextLesson) => (
-          <article class="panel">
+          <article class="panel route-card compact-card">
             <p class="eyebrow">Next lesson</p>
             <h2>{nextLesson.data.title}</h2>
             <p>{nextLesson.data.summary}</p>
-            <a class="text-link" href={`${base}lessons/${nextLesson.slug}`}>Open next lesson →</a>
+            <div class="route-card-footer">
+              <span class="muted small">Best next step: continue while the pattern is still clear</span>
+              <a class="text-link" href={`${base}lessons/${nextLesson.slug}`}>Open next lesson →</a>
+            </div>
           </article>
         ))}
       </section>
@@ -241,7 +247,7 @@ const bestFor = lesson.data.skill === 'abacus-orientation'
     <h2 id="lesson-exercises">Related exercises</h2>
     <ul class="list-clean">
       {relatedExercises.map((exercise) => (
-        <li>
+        <li class="library-card-item">
           <strong>{exercise.data.title}</strong>
           <div class="meta-row">
             <span>{exercise.data.level}</span>
@@ -249,7 +255,10 @@ const bestFor = lesson.data.skill === 'abacus-orientation'
             <span>{exercise.data.estimatedMinutes} min</span>
           </div>
           <p>{exercise.data.explanation}</p>
-          <a class="text-link" href={`${base}exercises/${exercise.slug}`}>Try exercise →</a>
+          <div class="route-card-footer">
+            <span class="muted small">Best next step: attempt before checking</span>
+            <a class="text-link" href={`${base}exercises/${exercise.slug}`}>Try exercise →</a>
+          </div>
         </li>
       ))}
     </ul>

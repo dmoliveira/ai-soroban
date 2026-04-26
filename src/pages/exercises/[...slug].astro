@@ -101,10 +101,13 @@ const bestFor = exercise.data.type === 'visual-check'
       </div>
       <p class="muted">Move straight into guided practice, or open worksheets for a denser set of drills around this same skill.</p>
       {relatedLesson && (
-        <div class="subtle-panel exercise-related-lesson">
+        <div class="subtle-panel exercise-related-lesson route-card">
           <strong>Related lesson</strong>
           <p class="muted">{relatedLesson.data.title}</p>
-          <a class="text-link" href={`${base}lessons/${relatedLesson.slug}`}>Open lesson →</a>
+          <div class="route-card-footer">
+            <span class="muted small">Best next step: review the concept, then retry</span>
+            <a class="text-link" href={`${base}lessons/${relatedLesson.slug}`}>Open lesson →</a>
+          </div>
         </div>
       )}
     </section>

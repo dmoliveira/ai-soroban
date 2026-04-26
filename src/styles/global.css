@@ -337,6 +337,10 @@ a { color: inherit; text-decoration: none; }
 .lesson-nav-grid { margin: 1rem 0 1.2rem; }
 .lesson-summary-panel p { margin: 0; }
 .lesson-summary-panel ul { margin: 0; padding-left: 1.15rem; }
+.lesson-nav-grid .route-card,
+.exercise-related-lesson.route-card,
+.lesson-page-panel .list-clean .library-card-item,
+.curriculum-stage-grid .route-card { display: grid; gap: var(--space-3); align-content: start; }
 .lesson-mini-check { margin: 1rem 0; background: linear-gradient(180deg, rgba(255,255,255,0.76), rgba(234,211,204,0.32)); }
 .lesson-mini-check h3 { margin: 0.1rem 0 0.45rem; }
 .lesson-mini-check-body > :first-child { margin-top: 0; }
