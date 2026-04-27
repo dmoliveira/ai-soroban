@@ -9,6 +9,7 @@ const promptStructureSignature = (prompt) => prompt
 test('3-4 digit sequence worksheet keeps every rendered operand in band', async ({ page }) => {
   await page.goto('worksheets');
 
+  await page.getByText('More worksheet presets').click();
   await page.getByRole('button', { name: 'Sequence mix' }).click();
   await page.selectOption('#worksheet-band', '3-4');
   await page.getByText('Advanced options').click();
