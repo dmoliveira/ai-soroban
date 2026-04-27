@@ -16,12 +16,11 @@ const socialDescription = description;
 const socialImage = new URL(`${base}favicon.svg`, Astro.site).toString();
 const currentPath = Astro.url.pathname;
 const primaryNav = [
-  { href: `${base}start-here`, english: 'Start', japanese: 'はじめ' },
-  { href: `${base}curriculum`, english: 'Curriculum', japanese: '道筋' },
-  { href: `${base}practice`, english: 'Practice', japanese: '修練' },
-  { href: `${base}worksheets`, english: 'Worksheets', japanese: '印刷' },
-  { href: `${base}progress`, english: 'Progress', japanese: '歩み' },
-  { href: `${base}support`, english: 'Support', japanese: '支援' },
+  { href: `${base}start-here`, english: 'Start', japanese: 'はじめ', matchPrefixes: [`${base}start-here`, `${base}assessments`] },
+  { href: `${base}curriculum`, english: 'Learn', japanese: '道筋', matchPrefixes: [`${base}curriculum`, `${base}lessons`, `${base}levels`, `${base}paths/children`, `${base}paths/adults`] },
+  { href: `${base}practice`, english: 'Practice', japanese: '修練', matchPrefixes: [`${base}practice`, `${base}exercises`, `${base}worksheets`, `${base}daily-drills`, `${base}mini-games`, `${base}boss-rounds`] },
+  { href: `${base}progress`, english: 'Progress', japanese: '歩み', matchPrefixes: [`${base}progress`, `${base}study-plan`] },
+  { href: `${base}support`, english: 'Support', japanese: '支援', matchPrefixes: [`${base}support`, `${base}about`, `${base}privacy`, `${base}releases`] },
 ];
 const secondaryNav = [
   { href: `${base}paths/children`, english: 'Children', japanese: 'こども' },
@@ -34,7 +33,11 @@ const secondaryNav = [
   { href: `${base}daily-drills`, english: 'Daily Drills', japanese: '日々' },
   { href: `${base}releases`, english: 'Releases', japanese: '更新' },
 ];
-const isActive = (href: string) => currentPath === href || (href !== base && currentPath.startsWith(href));
+const isActive = (href: string, matchPrefixes: string[] = [href]) => {
+  if (href === base && currentPath === base) return true;
+  return matchPrefixes.some((prefix) => currentPath === prefix || (prefix !== base && currentPath.startsWith(prefix)));
+};
+const hasActiveSecondary = secondaryNav.some((item) => isActive(item.href));
 ---
 
 <!doctype html>
@@ -74,20 +77,23 @@ const isActive = (href: string) => currentPath === href || (href !== base && cur
           </a>
         </div>
         <div class="nav-stack">
-          <nav class="nav nav-row nav-primary">
+          <nav class="nav nav-row nav-primary" aria-label="Primary">
             {primaryNav.map((item) => (
-              <a href={item.href} class:list={{ 'nav-active': isActive(item.href) }}>
+              <a href={item.href} class:list={{ 'nav-active': isActive(item.href, item.matchPrefixes) }} aria-current={currentPath === item.href ? 'page' : undefined}>
                 <JapaneseLabel english={item.english} japanese={item.japanese} />
               </a>
             ))}
           </nav>
-          <nav class="nav nav-row nav-secondary">
-            {secondaryNav.map((item) => (
-              <a href={item.href} class:list={{ 'nav-active': isActive(item.href) }}>
-                <JapaneseLabel english={item.english} japanese={item.japanese} />
-              </a>
-            ))}
-          </nav>
+          <details class="nav-more nav-row" open={hasActiveSecondary}>
+            <summary>More routes</summary>
+            <nav class="nav nav-secondary" aria-label="More routes">
+              {secondaryNav.map((item) => (
+                <a href={item.href} class:list={{ 'nav-active': isActive(item.href) }} aria-current={currentPath === item.href ? 'page' : undefined}>
+                  <JapaneseLabel english={item.english} japanese={item.japanese} />
+                </a>
+              ))}
+            </nav>
+          </details>
         </div>
       </div>
     </header>

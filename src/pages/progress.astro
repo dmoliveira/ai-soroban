@@ -1,6 +1,7 @@
 ---
 import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
+import StudioHero from '../components/StudioHero.astro';
 import ProgressSummary from '../components/ProgressSummary.astro';
 import WeeklyStudyPlan from '../components/WeeklyStudyPlan.astro';
 import BossBadgeSummary from '../components/BossBadgeSummary.astro';
@@ -12,44 +13,26 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 ---
 
 <BaseLayout title="Progress | Soroban Dojo">
-  <section class="progress-studio-hero panel" style={`--progress-mist:url('${base}graphics/worksheet-mist.svg')`}>
-    <div class="progress-studio-brand">
-      <div class="progress-studio-mark" aria-hidden="true">
-        <img src={`${base}graphics/sakura-mark.svg`} alt="" />
-      </div>
-      <div class="content-prose">
-        <p class="eyebrow">Progress studio · 歩み</p>
-        <h1>See your path, rank, and next move clearly</h1>
-        <p>This overview pulls together your recent sessions, review load, and best next action so your practice decisions feel quieter and more deliberate.</p>
-      </div>
-    </div>
-    <div class="progress-studio-stats">
-      <article class="subtle-panel progress-studio-stat"><span>View</span><strong>Dojo landscape</strong></article>
-      <article class="subtle-panel progress-studio-stat"><span>Best use</span><strong>Review + plan next</strong></article>
-      <article class="subtle-panel progress-studio-stat"><span>Signals</span><strong>Rank · review · milestones</strong></article>
-    </div>
-  </section>
-  <ProgressSummary lessons={lessons} exercises={exercises} />
-  <BossBadgeSummary />
-  <CertificateSummary />
+  <StudioHero
+    eyebrow="Progress studio · 歩み"
+    title="See the next move before everything else"
+    summary="Use this page to decide what to do next, keep the week on track, and only then review deeper progress signals and milestones."
+    stats={[
+      { label: 'Best use', value: 'Choose the next action' },
+      { label: 'Best follow-up', value: 'Continue the weekly plan' },
+      { label: 'Signals', value: 'Review · sessions · milestones' },
+    ]}
+    actions={[
+      { href: `${base}practice`, label: 'Continue practice' },
+      { href: `${base}study-plan`, label: 'Open the study plan', secondary: true },
+      { href: `${base}worksheets`, label: 'Generate a worksheet', secondary: true },
+    ]}
+    mistVar="--progress-mist"
+  />
   <WeeklyStudyPlan lessons={lessons} exercises={exercises} />
-
-  <style>
-    .progress-studio-hero {
-      display: grid;
-      gap: 1rem;
-      border: 1px solid rgba(244, 194, 194, 0.55);
-      box-shadow: 0 18px 48px rgba(201, 114, 114, 0.08);
-      background-image: linear-gradient(135deg, rgba(255,250,248,0.95), rgba(255,244,246,0.98)), var(--progress-mist);
-      background-size: cover;
-      background-position: center bottom;
-    }
-    .progress-studio-brand { display:flex; gap:1rem; align-items:flex-start; }
-    .progress-studio-mark { width:4.5rem; height:4.5rem; border-radius:1.5rem; background:rgba(255,255,255,0.8); display:grid; place-items:center; box-shadow:0 12px 32px rgba(201,114,114,0.12); flex:0 0 auto; }
-    .progress-studio-mark img { width:3.25rem; height:3.25rem; }
-    .progress-studio-stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:0.85rem; }
-    .progress-studio-stat { display:grid; gap:0.35rem; }
-    .progress-studio-stat span { font-size:0.75rem; text-transform:uppercase; letter-spacing:0.06em; color:#9a6c6c; }
-    @media (max-width: 900px) { .progress-studio-stats { grid-template-columns:1fr; } }
-  </style>
+  <ProgressSummary lessons={lessons} exercises={exercises} />
+  <section class="split-grid progress-milestone-grid">
+    <BossBadgeSummary />
+    <CertificateSummary />
+  </section>
 </BaseLayout>

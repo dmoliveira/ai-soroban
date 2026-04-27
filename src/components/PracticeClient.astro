@@ -20,20 +20,20 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     <div class="section-head">
       <div>
         <p class="eyebrow">Dojo practice</p>
-        <h1>Choose how you want to train today</h1>
+        <h2>Choose one training mode and begin</h2>
       </div>
       <span class="badge">Attempt first · 先に挑戦</span>
     </div>
     <div class="option-grid option-grid-compact">
       <article class="choice-card">
-        <p class="eyebrow">Curated</p>
-        <h3>Fixed lesson-aligned list</h3>
-        <p>Use an authored sequence to reinforce the current curriculum in a calm order.</p>
+        <p class="eyebrow">Recommended</p>
+        <h3>Focused practice</h3>
+        <p>Use a short, lesson-aligned list when you want the clearest next step.</p>
       </article>
       <article class="choice-card">
         <p class="eyebrow">Generated</p>
-        <h3>New drill list</h3>
-        <p>Create a replayable session with its own ID so you can resume or replay the same list later.</p>
+        <h3>Fresh drill set</h3>
+        <p>Create a replayable session when you want a clean sheet with its own pace.</p>
       </article>
       <article class="choice-card">
         <p class="eyebrow">Review</p>
@@ -43,11 +43,11 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     </div>
     <div class="subtle-panel practice-fast-start">
       <strong>Fast start</strong>
-      <p class="muted small">Launch a recommended session immediately, then open the deeper training options only if you need them.</p>
+      <p class="muted small">Launch a recommended session immediately. Open the deeper training options only if the next move is still unclear.</p>
       <div class="button-row button-row-compact">
         <button class="button" id="start-warmup-now">Start warm-up now</button>
         <button class="button button-secondary" id="start-practice-now">Start focused practice</button>
-        <a class="button button-secondary" href={`${base}worksheets`}>Open worksheets</a>
+        <a class="button button-secondary" href={`${base}worksheets`}>Print a worksheet instead</a>
       </div>
     </div>
     <details class="practice-discovery-block">

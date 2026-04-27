@@ -35,10 +35,39 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     <section class="worksheet-command-deck panel no-print">
       <div class="worksheet-command-head">
         <div>
-          <p class="eyebrow">Preset routes</p>
-          <h2>Choose a training route</h2>
+          <p class="eyebrow">Guided worksheet setup</p>
+          <h2>Choose a preset, adjust essentials, then generate</h2>
         </div>
-        <p class="muted">Use a preset to get moving quickly, then tune the worksheet details below.</p>
+        <p class="muted">The fastest path is one preset and one generate action. Open advanced controls only when you need a more precise training shape.</p>
+      </div>
+
+      <div class="card-grid worksheet-step-grid">
+        <article class="subtle-panel worksheet-step-card">
+          <p class="eyebrow">Step 1</p>
+          <h3>Pick a preset</h3>
+          <p class="muted small">Use a route below to load a good default instead of building from zero.</p>
+        </article>
+        <article class="subtle-panel worksheet-step-card">
+          <p class="eyebrow">Step 2</p>
+          <h3>Adjust only the essentials</h3>
+          <p class="muted small">Level, operation family, and digit band are enough for most first runs.</p>
+        </article>
+        <article class="subtle-panel worksheet-step-card">
+          <p class="eyebrow">Step 3</p>
+          <h3>Generate the sheet</h3>
+          <p class="muted small">Use scoring, reveal, timer, and print tools after the sheet is on the page.</p>
+        </article>
+      </div>
+
+      <div class="subtle-panel worksheet-quickstart-block">
+        <strong>Quick start presets</strong>
+        <p class="muted small">Recommended first choices for most learners and review sessions.</p>
+        <div class="worksheet-preset-row worksheet-preset-row-primary">
+          <button class="button preset-button" data-preset="foundations-focus">Foundations</button>
+          <button class="button button-secondary preset-button" data-preset="complements">Complements</button>
+          <button class="button button-secondary preset-button" data-preset="mixed-fluency">Mixed fluency</button>
+          <button class="button button-secondary preset-button" data-preset="multiplication-focus">Multiplication</button>
+        </div>
       </div>
 
       <details class="worksheet-preset-disclosure">
@@ -63,6 +92,10 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       </details>
 
       <div class="ledger-controls worksheet-controls-shell">
+      <div class="worksheet-controls-label-row">
+        <strong>Essential controls</strong>
+        <span class="muted small">Most first-time sheets only need these settings.</span>
+      </div>
       <div class="worksheet-controls-grid worksheet-controls-grid-main">
       <label class="stack-sm">
         <span>Sheet mode</span>
@@ -199,14 +232,18 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     </div>
 
       <div class="worksheet-toolbar-actions">
+        <div class="subtle-panel worksheet-generate-note">
+          <strong>Best next step</strong>
+          <p class="muted small">When the preset and essentials look right, generate the sheet first. Use checking, reveal, print, and teacher tools after the sheet appears.</p>
+        </div>
         <div class="button-row worksheet-action-row worksheet-action-row-primary">
-          <button class="button" id="generate-worksheet">Generate ledger</button>
-          <button class="button button-secondary" id="check-worksheet">Check answered</button>
-        <button class="button button-secondary" id="reveal-worksheet">Reveal answers</button>
-      </div>
+          <button class="button" id="generate-worksheet">Generate worksheet</button>
+        </div>
         <details class="worksheet-secondary-tools">
-          <summary>More worksheet tools</summary>
+          <summary>After you generate</summary>
           <div class="button-row worksheet-action-row worksheet-action-row-secondary">
+            <button class="button button-secondary" id="check-worksheet">Check answered</button>
+            <button class="button button-secondary" id="reveal-worksheet">Reveal answers</button>
             <button class="button button-secondary" id="teacher-key">Teacher key</button>
             <button class="button button-secondary" id="worksheet-timer-toggle">Start timer</button>
             <button class="button button-secondary" id="print-worksheet">Print sheet</button>
@@ -312,6 +349,15 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       box-shadow: 0 18px 48px rgba(201, 114, 114, 0.08);
       background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,251,249,0.96));
     }
+
+    .worksheet-step-grid { margin: 0 0 1rem; }
+    .worksheet-step-card { display:grid; gap:0.3rem; min-height: 0; }
+    .worksheet-step-card h3 { margin: 0; }
+    .worksheet-quickstart-block,
+    .worksheet-generate-note,
+    .worksheet-controls-label-row { display:grid; gap:0.35rem; }
+    .worksheet-preset-row-primary { margin-bottom: 0; }
+    .worksheet-controls-label-row { margin-bottom: 0.65rem; }
 
     .worksheet-hero {
       display: grid;
@@ -651,7 +697,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       'anzan-focus': { mode: 'dynamic', level: 'L5', families: ['anzan', 'sequence'], band: '4-6', style: 'review', orientation: 'vertical', count: '40', flowMode: 'ramp', submode: 'anzan-recall', opMin: '2', opMax: '4' },
       carry: { mode: 'dynamic', level: 'L2', families: ['addition'], band: '2-3', style: 'practice', orientation: 'vertical', count: '40', flowMode: 'ramp', opMin: '1', opMax: '2' },
       borrow: { mode: 'dynamic', level: 'L2', families: ['subtraction'], band: '2-3', style: 'practice', orientation: 'vertical', count: '40', flowMode: 'ramp', opMin: '1', opMax: '2' },
-      complements: { mode: 'dynamic', level: 'L2', families: ['anzan'], band: '2-3', style: 'review', orientation: 'ledger', count: '40', submode: 'complement-balance', opMin: '2', opMax: '3' },
+      complements: { mode: 'dynamic', level: 'L2', families: ['addition', 'subtraction'], band: '2-3', style: 'review', orientation: 'ledger', count: '40', submode: 'complement-balance', opMin: '2', opMax: '3' },
       'sequence-mix': { mode: 'dynamic', level: 'L3', families: ['sequence', 'mixed'], band: '3-4', style: 'practice', orientation: 'vertical', count: '40', flowMode: 'ramp', submode: 'sequence-signs', opMin: '2', opMax: '4' },
     };
 
