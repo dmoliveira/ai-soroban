@@ -51,6 +51,12 @@ test('mobile header keeps the secondary route disclosure usable', async ({ page 
   const moreRoutes = page.locator('.nav-more');
   await expect(moreRoutes.getByText('More routes')).toBeVisible();
   await expect(page.getByRole('link', { name: /by diego marinho/i })).toBeVisible();
+
+  const brandBox = await page.locator('.brand').boundingBox();
+  const bylineBox = await page.getByRole('link', { name: /by diego marinho/i }).boundingBox();
+  expect(brandBox).not.toBeNull();
+  expect(bylineBox).not.toBeNull();
+  expect(bylineBox.y).toBeGreaterThan(brandBox.y);
 });
 
 test('curriculum uses lighter stage guidance and clear stage actions', async ({ page }) => {
@@ -79,6 +85,7 @@ test('worksheets presents a guided generator with one dominant initial action', 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('worksheets');
 
+  await expect(page.getByRole('heading', { level: 1, name: /printable worksheet studio/i })).toBeVisible();
   await expect(page.getByRole('heading', { level: 2, name: /choose a preset, adjust essentials, then generate/i })).toBeVisible();
   await expect(page.locator('.worksheet-step-grid .worksheet-step-card')).toHaveCount(3);
   await expect(page.getByRole('button', { name: /generate worksheet/i })).toBeVisible();
