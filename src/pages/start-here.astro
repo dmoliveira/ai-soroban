@@ -7,52 +7,52 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 <BaseLayout title="Start Learning Soroban | Soroban Dojo" description="Start learning soroban with the best first steps for children, adults, lessons, assessments, and a practical weekly study plan.">
   <StudioHero
     eyebrow="Start here"
-    title="How to use the dojo"
-    summary="Choose the path that fits your learner, start at a level that feels honest, and practice one concept at a time."
+    title="Start in one calm sitting"
+    summary="Choose the learner route, read one short lesson, and finish with one attempt-first exercise before you stop."
     stats={[
-      { label: 'Best first move', value: 'Pick a path' },
-      { label: 'Best support', value: 'Curriculum + study plan' },
-      { label: 'Pace', value: 'One calm concept at a time' },
+      { label: 'Best first move', value: 'Choose a learner route' },
+      { label: 'Best support', value: 'Follow one guided sequence' },
+      { label: 'Pace', value: 'One short session' },
     ]}
     actions={[
-      { href: `${base}paths/children`, label: 'Children path' },
-      { href: `${base}paths/adults`, label: 'Adult path', secondary: true },
-      { href: `${base}assessments`, label: 'Placement self-check', secondary: true },
+      { href: `${base}paths/children`, label: 'Start with the children route' },
+      { href: `${base}paths/adults`, label: 'Use the adult route', secondary: true },
+      { href: `${base}assessments`, label: 'Take a placement self-check', secondary: true },
     ]}
   />
 
-  <section class="panel content-prose">
-    <p class="eyebrow">Start flow</p>
-    <h2>Simple order to follow</h2>
-    <div class="card-grid start-flow-grid">
-      <article class="panel route-card compact-card">
-        <p class="eyebrow">1. Choose a path</p>
-        <p>Pick the Children or Adult path first so the pacing fits the learner.</p>
-      </article>
-      <article class="panel route-card compact-card">
-        <p class="eyebrow">2. See the map</p>
-        <p>Use the curriculum map if you want the full theory-to-practice sequence.</p>
-      </article>
-      <article class="panel route-card compact-card">
-        <p class="eyebrow">3. Read one lesson</p>
-        <p>Keep the first study session short and concept-led.</p>
-      </article>
-      <article class="panel route-card compact-card">
-        <p class="eyebrow">4. Attempt first</p>
-        <p>Try the linked exercise before revealing the answer or method.</p>
-      </article>
-      <article class="panel route-card compact-card">
-        <p class="eyebrow">5. Mark honestly</p>
-        <p>Decide whether you got it, almost got it, or need review.</p>
-      </article>
-      <article class="panel route-card compact-card">
-        <p class="eyebrow">6. Return tomorrow</p>
-        <p>Come back for another small session while the pattern is still clear.</p>
-      </article>
-    </div>
-    <div class="hero-actions">
-      <a class="button button-secondary" href={`${base}curriculum`}>Curriculum map</a>
-      <a class="button button-secondary" href={`${base}study-plan`}>Weekly study plan</a>
-    </div>
+  <section class="split-grid start-here-grid">
+    <article class="panel content-prose">
+      <p class="eyebrow">First session</p>
+      <h2>Use this three-step order</h2>
+      <div class="card-grid start-flow-grid start-flow-grid-compact">
+        <article class="panel route-card compact-card">
+          <p class="eyebrow">1. Choose a route</p>
+          <p>Pick the learner path first so the examples and pacing feel natural.</p>
+        </article>
+        <article class="panel route-card compact-card">
+          <p class="eyebrow">2. Learn one idea</p>
+          <p>Read a short lesson or use the curriculum map to find the right starting point.</p>
+        </article>
+        <article class="panel route-card compact-card">
+          <p class="eyebrow">3. Practice once</p>
+          <p>Attempt the linked exercise before checking the answer, then stop while the pattern is still clear.</p>
+        </article>
+      </div>
+    </article>
+    <aside class="panel support-card start-here-support">
+      <p class="eyebrow">Best next step</p>
+      <h2>Keep the first day intentionally small</h2>
+      <p>Most learners do better with one route, one lesson, and one practice round than with a full tour of the whole dojo.</p>
+      <ul class="list-clean compact-library">
+        <li><strong>Need structure?</strong> Open the curriculum map and follow the sequence.</li>
+        <li><strong>Need a weekly rhythm?</strong> Use the study plan after the first session feels right.</li>
+        <li><strong>Need a level check?</strong> Start with the placement self-check before choosing lessons.</li>
+      </ul>
+      <div class="hero-actions">
+        <a class="button" href={`${base}curriculum`}>Follow the learning map</a>
+        <a class="button button-secondary" href={`${base}study-plan`}>Open the weekly study plan</a>
+      </div>
+    </aside>
   </section>
 </BaseLayout>

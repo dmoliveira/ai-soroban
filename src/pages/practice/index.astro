@@ -2,6 +2,7 @@
 import { getCollection } from 'astro:content';
 import PracticeClient from '../../components/PracticeClient.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import StudioHero from '../../components/StudioHero.astro';
 
 const exercises = (await getCollection('exercises')).map((exercise) => ({
   id: exercise.data.id,
@@ -14,46 +15,21 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 ---
 
 <BaseLayout title="Interactive Soroban Practice | Soroban Dojo" description="Practice soroban online with guided drills, adaptive review, worksheet-style sessions, visual beginner play, and mental abacus exercises.">
-  <section class="practice-studio-hero panel" style={`--practice-mist:url('${base}graphics/worksheet-mist.svg')`}>
-    <div class="practice-studio-brand">
-      <div class="practice-studio-mark" aria-hidden="true">
-        <img src={`${base}graphics/sakura-mark.svg`} alt="" />
-      </div>
-      <div class="content-prose">
-        <p class="eyebrow">Practice studio · 修練</p>
-        <h1>Pick one setup and begin with intent</h1>
-        <p>The best default here is one short, focused session. Use journeys, challenges, and adaptive next moves only when they add clarity.</p>
-      </div>
-    </div>
-    <div class="practice-studio-stats">
-      <article class="subtle-panel practice-studio-stat"><span>Best starting move</span><strong>One short session</strong></article>
-      <article class="subtle-panel practice-studio-stat"><span>Fast alternatives</span><strong>Daily pack or worksheet</strong></article>
-      <article class="subtle-panel practice-studio-stat"><span>Current tone</span><strong>Attempt first · 先に挑戦</strong></article>
-    </div>
-    <div class="hero-actions">
-      <a class="button" href="#practice-client">Start one short session</a>
-      <a class="button button-secondary" href={`${base}daily-drills`}>Use a daily pack</a>
-      <a class="button button-secondary" href={`${base}worksheets`}>Open worksheets</a>
-    </div>
-  </section>
+  <StudioHero
+    eyebrow="Practice studio · 修練"
+    title="Start one short session"
+    summary="Begin with one clear practice run, then open journeys, challenges, or extra controls only if they help the next move feel easier."
+    stats={[
+      { label: 'Best starting move', value: 'One focused session' },
+      { label: 'Fast alternatives', value: 'Daily pack or worksheet' },
+      { label: 'Current tone', value: 'Attempt first · 先に挑戦' },
+    ]}
+    actions={[
+      { href: '#practice-client', label: 'Start focused practice' },
+      { href: `${base}daily-drills`, label: 'Use a daily pack', secondary: true },
+      { href: `${base}worksheets`, label: 'Print a worksheet instead', secondary: true },
+    ]}
+    mistVar="--practice-mist"
+  />
   <PracticeClient exercises={exercises} />
-
-  <style>
-    .practice-studio-hero {
-      display: grid;
-      gap: 1rem;
-      border: 1px solid rgba(244, 194, 194, 0.55);
-      box-shadow: 0 18px 48px rgba(201, 114, 114, 0.08);
-      background-image: linear-gradient(135deg, rgba(255,250,248,0.95), rgba(255,244,246,0.98)), var(--practice-mist);
-      background-size: cover;
-      background-position: center bottom;
-    }
-    .practice-studio-brand { display:flex; gap:1rem; align-items:flex-start; }
-    .practice-studio-mark { width:4.5rem; height:4.5rem; border-radius:1.5rem; background:rgba(255,255,255,0.8); display:grid; place-items:center; box-shadow:0 12px 32px rgba(201,114,114,0.12); flex:0 0 auto; }
-    .practice-studio-mark img { width:3.25rem; height:3.25rem; }
-    .practice-studio-stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:0.85rem; }
-    .practice-studio-stat { display:grid; gap:0.35rem; }
-    .practice-studio-stat span { font-size:0.75rem; text-transform:uppercase; letter-spacing:0.06em; color:#9a6c6c; }
-    @media (max-width: 900px) { .practice-studio-stats { grid-template-columns:1fr; } }
-  </style>
 </BaseLayout>

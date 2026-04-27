@@ -10,8 +10,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       <h3>{path.title}</h3>
       <p>{path.summary}</p>
       <div class="route-card-footer">
-        <span class="muted small">Best next step: worksheet or guided start</span>
-        <a class="text-link" href={`${base}paths/${path.id}`}>Open path →</a>
+        <span class="muted small">Best next step: choose this route, then start lesson one</span>
+        <a class="text-link" href={`${base}paths/${path.id}`}>{path.id === 'children' ? 'See child route' : 'See adult route'} →</a>
       </div>
     </article>
   ))}

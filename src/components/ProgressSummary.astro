@@ -17,16 +17,27 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 <section class="panel progress-panel" data-base={base} data-lessons={JSON.stringify(lessons)} data-exercises={JSON.stringify(exercises)}>
   <div class="section-head">
     <div>
-      <p class="eyebrow">Progress garden · 歩み</p>
-      <h2>Your dojo landscape</h2>
-      <p class="muted">A quiet view of your study path: stones for consistency, lanterns for milestones, and blossoms for strong sessions.</p>
+      <p class="eyebrow">Progress overview · 歩み</p>
+      <h2>Decide the next move first</h2>
+      <p class="muted">This page keeps the action path at the top, then shows deeper progress signals only after the next step is clear.</p>
     </div>
     <button class="button button-secondary" id="reset-progress">Reset progress</button>
   </div>
 
+  <section class="panel ink-panel progress-next-panel">
+    <p class="eyebrow">Recommended next move</p>
+    <div class="next-move-grid">
+      <div>
+        <h3 id="next-move-title">Start your first lesson</h3>
+        <p id="next-move-copy" class="muted">Begin with a calm lesson, then move into one short practice session.</p>
+      </div>
+      <div class="button-row" id="next-move-actions"></div>
+    </div>
+  </section>
+
   <div class="progress-hero-grid">
     <section class="panel ink-panel">
-      <p class="eyebrow">Path of practice</p>
+      <p class="eyebrow">Session path</p>
       <h3 id="journey-title">Begin your first stone</h3>
       <p id="journey-copy" class="muted">Small steps, steady hands.</p>
       <div class="garden-strip" id="garden-strip" aria-label="Progress garden"></div>
@@ -43,18 +54,6 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     </section>
   </div>
 
-  <section class="panel ink-panel progress-links-strip">
-    <strong>Quick links</strong>
-    <div class="button-row button-row-compact">
-      <a class="button button-secondary" href={`${base}lessons`}>Lessons</a>
-      <a class="button button-secondary" href={`${base}exercises`}>Exercises</a>
-      <a class="button button-secondary" href={`${base}practice`}>Practice</a>
-      <a class="button button-secondary" href={`${base}worksheets`}>Worksheets</a>
-      <a class="button button-secondary" href={`${base}study-plan`}>Study plan</a>
-      <a class="button button-secondary" href={`${base}daily-drills`}>Daily drills</a>
-    </div>
-  </section>
-
   <div class="stats-grid progress-stats-grid">
     <article class="stat-card stat-card-soft"><small>Lessons completed:</small><span id="completed-lessons">0</span></article>
     <article class="stat-card stat-card-soft"><small>Exercises attempted:</small><span id="attempted-exercises">0</span></article>
@@ -63,6 +62,18 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     <article class="stat-card stat-card-soft"><small>Sessions finished:</small><span id="finished-sessions">0</span></article>
     <article class="stat-card stat-card-soft"><small>Best score:</small><span id="best-score">0</span></article>
   </div>
+
+  <section class="panel ink-panel progress-links-strip">
+    <strong>Quick links</strong>
+    <div class="button-row button-row-compact">
+      <a class="button button-secondary" href={`${base}practice`}>Practice</a>
+      <a class="button button-secondary" href={`${base}worksheets`}>Worksheets</a>
+      <a class="button button-secondary" href={`${base}study-plan`}>Study plan</a>
+      <a class="button button-secondary" href={`${base}lessons`}>Lessons</a>
+      <a class="button button-secondary" href={`${base}exercises`}>Exercises</a>
+      <a class="button button-secondary" href={`${base}daily-drills`}>Daily drills</a>
+    </div>
+  </section>
 
   <div class="progress-hero-grid">
     <section class="panel ink-panel">
@@ -75,17 +86,6 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       <div id="recent-sessions" class="session-list"></div>
     </section>
   </div>
-
-  <section class="panel ink-panel">
-    <p class="eyebrow">Recommended next move</p>
-    <div class="next-move-grid">
-      <div>
-        <h3 id="next-move-title">Start your first lesson</h3>
-        <p id="next-move-copy" class="muted">Begin with a calm lesson, then move into one short practice session.</p>
-      </div>
-      <div class="button-row" id="next-move-actions"></div>
-    </div>
-  </section>
 
   <section class="panel ink-panel">
     <p class="eyebrow">Skill map</p>
@@ -103,7 +103,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     <p class="eyebrow">Today’s reflection</p>
     <div class="reflection-grid">
       <div>
-        <h3 id="reflection-title">Keep the brush light</h3>
+        <h3 id="reflection-title">Keep the next step calm</h3>
         <p id="reflection-copy" class="muted">Your progress stays in this browser unless you clear it.</p>
       </div>
       <div class="review-chip-row" id="reflection-chips"></div>
@@ -273,7 +273,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     reflectionChips.appendChild(chip);
   });
 
-  const reflectionTitle = reviewItems.length ? 'Kintsugi moment' : 'Keep the brush light';
+  const reflectionTitle = reviewItems.length ? 'Repair the weak spots next' : 'Keep the next step calm';
   const reflectionCopy = reviewItems.length
     ? 'A few places need repair. That is part of learning, not a setback.'
     : 'Your progress stays in this browser unless you clear it.';
@@ -351,6 +351,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     localStorage.removeItem(exerciseKey);
     localStorage.removeItem(timerKey);
     localStorage.removeItem(sessionKey);
+    localStorage.removeItem(worksheetKey);
+    localStorage.removeItem(bossKey);
     window.location.reload();
   });
 </script>
