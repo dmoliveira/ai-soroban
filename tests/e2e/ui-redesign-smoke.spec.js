@@ -44,6 +44,15 @@ test('secondary routes keep the more-routes group visible when active', async ({
   await expect(page.getByRole('link', { name: /children/i }).first()).toHaveAttribute('aria-current', 'page');
 });
 
+test('mobile header keeps the secondary route disclosure usable', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('');
+
+  const moreRoutes = page.locator('.nav-more');
+  await expect(moreRoutes.getByText('More routes')).toBeVisible();
+  await expect(page.getByRole('link', { name: /by diego marinho/i })).toBeVisible();
+});
+
 test('curriculum uses lighter stage guidance and clear stage actions', async ({ page }) => {
   await page.goto('curriculum');
 
@@ -74,4 +83,11 @@ test('worksheets presents a guided generator with one dominant initial action', 
   await expect(page.locator('.worksheet-step-grid .worksheet-step-card')).toHaveCount(3);
   await expect(page.getByRole('button', { name: /generate worksheet/i })).toBeVisible();
   await expect(page.getByText(/after you generate/i)).toBeVisible();
+
+  await page.getByText('More worksheet presets').click();
+  const extraPresets = page.locator('.worksheet-preset-disclosure .worksheet-preset-row');
+  await expect(extraPresets.getByRole('button', { name: 'Foundations' })).toHaveCount(0);
+  await expect(extraPresets.getByRole('button', { name: 'Mixed fluency' })).toHaveCount(0);
+  await expect(extraPresets.getByRole('button', { name: 'Multiplication' })).toHaveCount(0);
+  await expect(extraPresets.getByRole('button', { name: 'Complements' })).toHaveCount(0);
 });
