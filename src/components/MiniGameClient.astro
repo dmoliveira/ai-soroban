@@ -70,8 +70,8 @@
 
   <div class="subtle-panel mini-game-playfield">
     <div class="button-row button-row-compact mini-game-controls">
-      <button class="button" id="mini-game-generate">Next round</button>
-      <button class="button button-secondary" id="mini-game-check">Check answer</button>
+      <button class="button" id="mini-game-generate" disabled aria-disabled="true">Next round</button>
+      <button class="button button-secondary" id="mini-game-check" disabled aria-disabled="true">Check answer</button>
     </div>
     <div class="stats-grid">
       <article class="stat-card stat-card-soft"><small>Score</small><span id="mini-game-score">0</span></article>
@@ -81,9 +81,10 @@
     <div class="subtle-panel">
       <strong id="mini-game-prompt-title">Prompt</strong>
       <p id="mini-game-prompt" class="muted small">Start the selected game to begin the first round.</p>
-      <div class="button-row button-row-compact">
-        <input id="mini-game-answer" class="input" type="text" inputmode="numeric" placeholder="Write your answer" />
-      </div>
+      <label class="stack-sm" for="mini-game-answer">
+        <span>Answer</span>
+        <input id="mini-game-answer" class="input" type="text" inputmode="numeric" placeholder="Write your answer" disabled aria-disabled="true" />
+      </label>
       <p id="mini-game-feedback" class="muted small">Correct answers raise your score and streak.</p>
     </div>
   </div>
@@ -214,6 +215,13 @@
   let round = 0;
   let currentTier = 'starter';
   let currentModifier = modifierCycle[currentGame][0];
+  const setRoundControls = (active) => {
+    ['mini-game-generate', 'mini-game-check', 'mini-game-answer'].forEach((id) => {
+      const node = byId(id);
+      node.disabled = !active;
+      node.setAttribute('aria-disabled', String(!active));
+    });
+  };
 
   const readScores = () => {
     try { return JSON.parse(localStorage.getItem(scoreKey) || '{}'); } catch { return {}; }
@@ -275,6 +283,8 @@
     byId('mini-game-prompt').textContent = currentRound.prompt;
     byId('mini-game-answer').value = '';
     byId('mini-game-feedback').textContent = `Solve it, then check your answer. ${currentModifier?.label || 'Standard round'}.`;
+    setRoundControls(true);
+    byId('mini-game-answer').focus();
     syncStats();
   };
   const checkRound = () => {
@@ -312,6 +322,7 @@
     byId('mini-game-prompt').textContent = 'Start the selected game to begin the first round.';
     byId('mini-game-answer').value = '';
     byId('mini-game-feedback').textContent = 'Correct answers raise your score and streak.';
+    setRoundControls(false);
   }));
   document.querySelectorAll('.minigame-start').forEach((button) => button.addEventListener('click', () => {
     currentGame = button.dataset.game;
@@ -334,6 +345,7 @@
     byId('mini-game-prompt').textContent = 'Start the selected game to begin the first round.';
     byId('mini-game-answer').value = '';
     byId('mini-game-feedback').textContent = 'Correct answers raise your score and streak.';
+    setRoundControls(false);
   });
   byId('mini-game-answer')?.addEventListener('keydown', (event) => {
     if (event.key !== 'Enter') return;
@@ -342,4 +354,5 @@
   });
   syncGameMeta();
   syncStats();
+  setRoundControls(false);
 </script>

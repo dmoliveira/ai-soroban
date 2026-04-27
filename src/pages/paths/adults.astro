@@ -3,7 +3,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
 ---
 
-<BaseLayout title="Adult Path | Soroban Dojo">
+<BaseLayout title="Adult Path | Soroban Dojo" description="Follow a structured soroban self-study path for adults with practical first-week rhythm, confidence checks, and steady next steps.">
   <section class="path-studio-hero panel" style={`--path-mist:url('${base}graphics/worksheet-mist.svg')`}>
     <div class="path-studio-brand">
       <div class="path-studio-mark" aria-hidden="true"><img src={`${base}graphics/sakura-mark.svg`} alt="" /></div>
@@ -28,17 +28,11 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   <section class="panel content-prose">
     <p class="eyebrow">Adult path</p>
     <h2>How this path feels</h2>
-    <p>This path keeps explanations direct, practice disciplined, and progress easy to continue across short study sessions.</p>
     <ul>
       <li>10–20 minute sessions</li>
       <li>Clear objectives and prerequisites</li>
       <li>Review recommendations for weak points</li>
     </ul>
-    <div class="hero-actions">
-      <a class="button" href={`${base}worksheets?preset=one-rod-focus`}>Start worksheet</a>
-      <a class="button button-secondary" href={`${base}curriculum`}>View full curriculum</a>
-      <a class="button button-secondary" href={`${base}practice`}>Go to practice</a>
-    </div>
   </section>
 
   <style>

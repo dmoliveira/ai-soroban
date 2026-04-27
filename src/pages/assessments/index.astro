@@ -4,12 +4,12 @@ import PlacementClient from '../../components/PlacementClient.astro';
 const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
 ---
 
-<BaseLayout title="Assessments | Soroban Dojo">
+<BaseLayout title="Assessments | Soroban Dojo" description="Take a short soroban self-check to find a respectful starting level, then continue into the right worksheet, lesson, or study plan.">
   <section class="assessment-studio-hero panel" style={`--assessment-mist:url('${base}graphics/worksheet-mist.svg')`}>
     <div class="assessment-studio-brand">
       <div class="assessment-studio-mark" aria-hidden="true"><img src={`${base}graphics/sakura-mark.svg`} alt="" /></div>
       <div class="content-prose">
-        <p class="eyebrow">Assessments · 見取り</p>
+        <p class="eyebrow">Placement self-check · 見立て</p>
         <h1>Find a respectful starting level</h1>
         <p>Use this short self-check to estimate your starting point, then continue into a worksheet, lesson, or study plan that matches your current confidence.</p>
       </div>

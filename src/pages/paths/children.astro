@@ -3,7 +3,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
 ---
 
-<BaseLayout title="Children Path | Soroban Dojo">
+<BaseLayout title="Children Path | Soroban Dojo" description="Follow a short, visual soroban path for children with gentle first-week practice, clear wins, and calm next steps.">
   <section class="path-studio-hero panel" style={`--path-mist:url('${base}graphics/worksheet-mist.svg')`}>
     <div class="path-studio-brand">
       <div class="path-studio-mark" aria-hidden="true"><img src={`${base}graphics/sakura-mark.svg`} alt="" /></div>
@@ -40,11 +40,6 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       <li>Learn complements when direct moves get stuck.</li>
       <li>Move into bigger numbers and short worksheets.</li>
     </ol>
-    <div class="hero-actions">
-      <a class="button" href={`${base}worksheets?preset=foundations-focus`}>Start worksheet</a>
-      <a class="button button-secondary" href={`${base}curriculum`}>See the full learning map</a>
-      <a class="button button-secondary" href={`${base}practice`}>Try a quick exercise</a>
-    </div>
   </section>
 
   <style>
