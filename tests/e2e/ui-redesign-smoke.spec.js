@@ -98,3 +98,27 @@ test('worksheets presents a guided generator with one dominant initial action', 
   await expect(extraPresets.getByRole('button', { name: 'Multiplication' })).toHaveCount(0);
   await expect(extraPresets.getByRole('button', { name: 'Complements' })).toHaveCount(0);
 });
+
+test('placement self-check exposes clear selectable answers', async ({ page }) => {
+  await page.goto('assessments');
+
+  const firstGroup = page.locator('[role="radiogroup"]').first();
+  await expect(firstGroup).toBeVisible();
+  await expect(page.getByRole('button', { name: /get my recommendation/i })).toBeDisabled();
+
+  await firstGroup.getByRole('radio', { name: 'Sometimes' }).click();
+  await expect(firstGroup.getByRole('radio', { name: 'Sometimes' })).toHaveAttribute('aria-checked', 'true');
+});
+
+test('mini-games keeps round controls inactive until a game starts', async ({ page }) => {
+  await page.goto('mini-games');
+
+  await expect(page.getByRole('button', { name: /next round/i })).toBeDisabled();
+  await expect(page.getByRole('button', { name: /check answer/i })).toBeDisabled();
+  await expect(page.getByLabel('Answer')).toBeDisabled();
+
+  await page.getByRole('button', { name: /start selected game/i }).click();
+  await expect(page.getByRole('button', { name: /next round/i })).toBeEnabled();
+  await expect(page.getByRole('button', { name: /check answer/i })).toBeEnabled();
+  await expect(page.getByLabel('Answer')).toBeEnabled();
+});

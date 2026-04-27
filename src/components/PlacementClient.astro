@@ -91,36 +91,60 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
   const mount = document.getElementById('placement-questions');
   const result = document.getElementById('placement-result');
+  const scoreButton = document.getElementById('score-placement');
+
+  const chosenButtons = () => Array.from(document.querySelectorAll('[role="radio"][aria-checked="true"]'));
+  const updateScoreButton = () => {
+    const complete = chosenButtons().length === questions.length;
+    scoreButton.disabled = !complete;
+    scoreButton.setAttribute('aria-disabled', String(!complete));
+  };
 
   const renderQuestions = () => {
     questions.forEach((question) => {
-      const card = document.createElement('article');
+      const card = document.createElement('fieldset');
       card.className = 'session-card';
-      const prompt = document.createElement('strong');
+      const prompt = document.createElement('legend');
       prompt.textContent = question.prompt;
       const row = document.createElement('div');
       row.className = 'button-row';
+      row.setAttribute('role', 'radiogroup');
+      row.setAttribute('aria-label', question.prompt);
+      const status = document.createElement('p');
+      status.className = 'muted small';
+      status.id = `${question.id}-status`;
+      status.textContent = 'No answer selected yet.';
       question.options.forEach((option) => {
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'button button-secondary';
         button.textContent = option.label;
+        button.setAttribute('role', 'radio');
+        button.setAttribute('aria-checked', 'false');
+        button.setAttribute('aria-describedby', status.id);
         button.dataset.question = question.id;
         button.dataset.score = String(option.score);
         button.addEventListener('click', () => {
-          document.querySelectorAll(`[data-question="${question.id}"]`).forEach((node) => node.classList.remove('is-selected'));
+          document.querySelectorAll(`[data-question="${question.id}"]`).forEach((node) => {
+            node.classList.remove('is-selected');
+            node.setAttribute('aria-checked', 'false');
+          });
           button.classList.add('is-selected');
+          button.setAttribute('aria-checked', 'true');
+          status.textContent = `Selected: ${option.label}.`;
+          updateScoreButton();
         });
         row.appendChild(button);
       });
-      card.append(prompt, row);
+      card.append(prompt, row, status);
       mount.appendChild(card);
     });
+    updateScoreButton();
   };
 
-  const chosenScore = () => Array.from(document.querySelectorAll('.is-selected')).reduce((sum, node) => sum + Number(node.dataset.score || 0), 0);
+  const chosenScore = () => chosenButtons().reduce((sum, node) => sum + Number(node.dataset.score || 0), 0);
 
-  document.getElementById('score-placement')?.addEventListener('click', () => {
+  scoreButton?.addEventListener('click', () => {
     const score = chosenScore();
     const choice = recommendations.find((entry) => score <= entry.max) || recommendations[recommendations.length - 1];
     localStorage.setItem(STORAGE_KEY, JSON.stringify(choice));
@@ -129,10 +153,18 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   });
 
   document.getElementById('reset-placement')?.addEventListener('click', () => {
-    document.querySelectorAll('.is-selected').forEach((node) => node.classList.remove('is-selected'));
+    document.querySelectorAll('[role="radio"]').forEach((node) => {
+      node.classList.remove('is-selected');
+      node.setAttribute('aria-checked', 'false');
+    });
+    questions.forEach((question) => {
+      const status = document.getElementById(`${question.id}-status`);
+      if (status) status.textContent = 'No answer selected yet.';
+    });
     localStorage.removeItem(STORAGE_KEY);
     result.hidden = true;
     result.replaceChildren();
+    updateScoreButton();
   });
 
   renderQuestions();
