@@ -70,7 +70,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         </div>
       </div>
 
-      <details class="worksheet-preset-disclosure">
+      <details class="worksheet-preset-disclosure disclosure-block">
         <summary>More worksheet presets</summary>
       <div class="worksheet-preset-row">
         <button class="button button-secondary preset-button" data-preset="warmup">Warm-up</button>
@@ -78,15 +78,11 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         <button class="button button-secondary preset-button" data-preset="review">Review</button>
       <button class="button button-secondary preset-button" data-preset="speed">Speed</button>
       <button class="button button-secondary preset-button" data-preset="exam">Exam</button>
-      <button class="button button-secondary preset-button" data-preset="foundations-focus">Foundations</button>
       <button class="button button-secondary preset-button" data-preset="one-rod-focus">One-rod</button>
-      <button class="button button-secondary preset-button" data-preset="mixed-fluency">Mixed fluency</button>
-      <button class="button button-secondary preset-button" data-preset="multiplication-focus">Multiplication</button>
       <button class="button button-secondary preset-button" data-preset="division-focus">Division</button>
       <button class="button button-secondary preset-button" data-preset="anzan-focus">Anzan</button>
       <button class="button button-secondary preset-button" data-preset="carry">Carry</button>
       <button class="button button-secondary preset-button" data-preset="borrow">Borrow</button>
-        <button class="button button-secondary preset-button" data-preset="complements">Complements</button>
         <button class="button button-secondary preset-button" data-preset="sequence-mix">Sequence mix</button>
       </div>
       </details>
@@ -177,7 +173,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         <small id="worksheet-op-guide" class="muted small">Available for arithmetic, sequence, and anzan sheets. If you change it while on Fixed sheet, the page will switch to Dynamic ledger.</small>
       </label>
       </div>
-      <details class="worksheet-advanced-block">
+      <details class="worksheet-advanced-block disclosure-block">
         <summary id="worksheet-advanced-summary">Advanced options · Practice · 40 drills · Ledger rows</summary>
         <div class="worksheet-controls-grid worksheet-controls-grid-advanced">
           <label class="stack-sm">
@@ -239,7 +235,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         <div class="button-row worksheet-action-row worksheet-action-row-primary">
           <button class="button" id="generate-worksheet">Generate worksheet</button>
         </div>
-        <details class="worksheet-secondary-tools">
+        <details class="worksheet-secondary-tools disclosure-block">
           <summary>After you generate</summary>
           <div class="button-row worksheet-action-row worksheet-action-row-secondary">
             <button class="button button-secondary" id="check-worksheet">Check answered</button>
@@ -579,13 +575,11 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     }
 
     .worksheet-advanced-block {
-      border-top: 1px solid rgba(148, 163, 184, 0.25);
-      padding-top: 0.75rem;
+      border-top: 0;
+      padding-top: 0;
     }
 
     .worksheet-advanced-block summary {
-      cursor: pointer;
-      font-weight: 600;
       margin-bottom: 0.75rem;
     }
 
