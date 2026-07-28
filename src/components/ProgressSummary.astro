@@ -253,10 +253,17 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       const card = document.createElement('article');
       card.className = 'session-card';
       const title = document.createElement('strong');
-      title.textContent = `${entry.type} · ${entry.level}`;
+      title.textContent = entry.challengeTitle
+        ? `Challenge · ${entry.challengeTitle}`
+        : `${entry.type} · ${entry.level}`;
       const meta = document.createElement('p');
       meta.className = 'muted';
-      meta.textContent = entry.completed ? `Final score ${entry.finalScore}/100` : `Progress ${entry.currentIndex}/${entry.questions.length}`;
+      const challengeResult = entry.challengeOutcome
+        ? `${entry.challengeOutcome.met ? 'Target met' : 'Target not met yet'} · ${entry.challengeOutcome.metric === 'longestStreak' ? `streak ${entry.challengeOutcome.value}` : `${entry.challengeOutcome.value}/${entry.challengeOutcome.total} correct`}`
+        : '';
+      meta.textContent = entry.completed
+        ? `Final score ${entry.finalScore}/100${challengeResult ? ` · ${challengeResult}` : ''}`
+        : `Progress ${entry.currentIndex}/${entry.questions.length}${entry.challengeTarget ? ` · Target: ${entry.challengeTarget}` : ''}`;
       card.append(title, meta);
       recentSessions.appendChild(card);
     });
