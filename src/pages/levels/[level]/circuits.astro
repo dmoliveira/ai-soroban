@@ -11,7 +11,7 @@ export async function getStaticPaths() {
 const { level } = Astro.props;
 const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
 const lessons = (await getCollection('lessons')).filter((entry) => entry.data.level === level.id).sort((a, b) => a.data.id.localeCompare(b.data.id));
-const exercises = (await getCollection('exercises')).filter((entry) => entry.data.level === level.id).sort((a, b) => a.data.id.localeCompare(b.data.id));
+const exercises = (await getCollection('exercises')).filter((entry) => entry.data.level === level.id).sort((a, b) => a.data.difficulty - b.data.difficulty || a.data.estimatedMinutes - b.data.estimatedMinutes || a.data.title.localeCompare(b.data.title));
 
 const worksheetByLevel = {
   L0: `${base}worksheets?preset=foundations-focus`,
@@ -32,32 +32,51 @@ const miniGameByLevel = {
 };
 const worksheetHref = worksheetByLevel[level.id as keyof typeof worksheetByLevel] || `${base}worksheets`;
 const miniGameHref = miniGameByLevel[level.id as keyof typeof miniGameByLevel] || `${base}mini-games`;
+const normalizeSkill = (value = '') => value.toLowerCase().replace(/[^a-z0-9]+/g, '');
+const pickExerciseForLesson = (lesson: (typeof lessons)[number] | null | undefined, fallbackIndex = 0) => {
+  if (!lesson) return exercises[fallbackIndex] || null;
+  const lessonSkill = normalizeSkill(lesson.data.skill);
+  return exercises.find((exercise) => lesson.data.relatedExercises.includes(exercise.data.id) && normalizeSkill(exercise.data.skill) === lessonSkill)
+    || exercises.find((exercise) => normalizeSkill(exercise.data.skill) === lessonSkill)
+    || exercises[fallbackIndex]
+    || null;
+};
+const worksheetHrefForLesson = (lessonSkill?: string) => {
+  if (level.id !== 'L4') return worksheetHref;
+  return lessonSkill === 'division'
+    ? `${base}worksheets?preset=division-focus&submode=quotient-building`
+    : `${base}worksheets?preset=multiplication-focus`;
+};
 
 const circuits = [
   {
     title: '10-minute calm circuit',
     copy: 'Read one idea, solve one exercise, then finish with one short playful check.',
+    bestFor: 'Best for a first clean pass through the level.',
     lesson: lessons[0],
-    exercise: exercises[0],
-    gameHref: miniGameHref,
-    worksheetHref,
+    exercise: pickExerciseForLesson(lessons[0], 0),
+    finishHref: miniGameHref,
+    finishLabel: 'Mini-game finish',
+    worksheetHref: worksheetHrefForLesson(lessons[0]?.data.skill),
   },
   {
     title: 'Repair and replay circuit',
     copy: 'Review one lesson, retry one exercise, then use a worksheet or game to settle the pattern.',
+    bestFor: 'Best for review after one wobble or rushed session.',
     lesson: lessons[1] || lessons[0],
-    exercise: exercises[1] || exercises[0],
-    gameHref: `${base}practice`,
-    worksheetHref,
+    exercise: pickExerciseForLesson(lessons[1] || lessons[0], 1),
+    finishHref: `${base}practice`,
+    finishLabel: 'Structured practice finish',
+    worksheetHref: worksheetHrefForLesson((lessons[1] || lessons[0])?.data.skill),
   },
 ];
 ---
 
-<BaseLayout title={`${level.id} dojo circuits | Soroban Dojo`}>
+<BaseLayout title={`${level.id} dojo circuits | Soroban Dojo`} description={`Use short ${level.id} soroban circuits that keep lesson study, one matching exercise, and one calm finish in a clearer guided order.`}>
   <StudioHero
     eyebrow="Dojo circuits"
     title={`${level.id} mixed-mode circuits`}
-    summary="Use one circuit when you want a short guided session that mixes lesson study, one exercise, and one more interactive finish."
+    summary="Use one circuit after the first lesson-exercise pass when you want a short guided session with one clear start, one proof step, and one calm finish."
     stats={[
       { label: 'Best use', value: '10-minute guided session' },
       { label: 'Mix', value: 'Lesson + exercise + finish' },
@@ -70,24 +89,64 @@ const circuits = [
     ]}
   />
 
+  <section class="panel circuit-guide-panel">
+    <div class="section-head">
+      <div>
+        <p class="eyebrow">Circuit rhythm</p>
+        <h2>Keep each circuit in one calm order</h2>
+      </div>
+      <p class="muted">Start the card with the lesson, confirm it with one exercise attempt, then choose only one finish so the session stays light.</p>
+    </div>
+    <div class="card-grid circuit-guide-grid">
+      <article class="subtle-panel route-card compact-card">
+        <p class="eyebrow">1. Start with the lesson</p>
+        <p>Open the concept step first so the hand movement and reading rule are clear before repetition begins.</p>
+      </article>
+      <article class="subtle-panel route-card compact-card">
+        <p class="eyebrow">2. Prove it once</p>
+        <p>Use the matching exercise immediately after the lesson instead of bouncing to a different tool too early.</p>
+      </article>
+      <article class="subtle-panel route-card compact-card">
+        <p class="eyebrow">3. Choose one finish</p>
+        <p>Pick either a playful finish or a worksheet-style finish, not both, unless the pattern still feels shaky.</p>
+      </article>
+    </div>
+  </section>
+
   <section class="card-grid">
     {circuits.map((circuit) => (
-      <article class="panel content-prose">
+      <article class="panel content-prose route-card circuit-card">
         <p class="eyebrow">Circuit</p>
         <h2>{circuit.title}</h2>
         <p>{circuit.copy}</p>
+        <div class="subtle-panel circuit-best-for">
+          <strong>Best for</strong>
+          <p class="muted small">{circuit.bestFor}</p>
+        </div>
         <ol>
           <li>Read <strong>{circuit.lesson?.data.title || 'the level lesson'}</strong>.</li>
           <li>Try <strong>{circuit.exercise?.data.title || 'one matching exercise'}</strong> before revealing.</li>
-          <li>Finish with either a mini-game or worksheet while the idea is still fresh.</li>
+          <li>Finish with one calm reinforcement step while the idea is still fresh.</li>
         </ol>
-        <div class="button-row button-row-compact">
-          <a class="button" href={circuit.lesson ? `${base}lessons/${circuit.lesson.slug}` : `${base}lessons`}>Lesson step</a>
-          <a class="button button-secondary" href={circuit.exercise ? `${base}exercises/${circuit.exercise.slug}` : `${base}exercises`}>Exercise step</a>
-          <a class="button button-secondary" href={circuit.gameHref}>Interactive finish</a>
+        <div class="route-card-footer circuit-primary-footer">
+          <span class="muted small">Start here, then continue in order below.</span>
+          <a class="button" href={circuit.lesson ? `${base}lessons/${circuit.lesson.slug}` : `${base}lessons`}>Start circuit</a>
+        </div>
+        <div class="button-row button-row-compact circuit-secondary-actions">
+          <a class="button button-secondary" href={circuit.exercise ? `${base}exercises/${circuit.exercise.slug}` : `${base}exercises`}>Then open the exercise</a>
+          <a class="button button-secondary" href={circuit.finishHref}>{circuit.finishLabel}</a>
           <a class="button button-secondary" href={circuit.worksheetHref}>Worksheet finish</a>
         </div>
       </article>
     ))}
   </section>
+
+  <style>
+    .circuit-guide-panel,.circuit-card{background:linear-gradient(180deg, rgba(255,255,255,.82), rgba(248,242,233,.88))}
+    .circuit-guide-grid{margin-bottom:0}
+    .circuit-best-for{display:grid;gap:.2rem}
+    .circuit-best-for p{margin:0}
+    .circuit-primary-footer{margin-top:0}
+    .circuit-secondary-actions{margin-top:.25rem}
+  </style>
 </BaseLayout>

@@ -4,7 +4,8 @@ test('home prioritizes one calm next step', async ({ page }) => {
   await page.goto('');
 
   await expect(page.getByRole('heading', { level: 1, name: /choose one clear route/i })).toBeVisible();
-  await expect(page.getByRole('link', { name: /take the best next step/i }).first()).toBeVisible();
+  await expect(page.getByRole('link', { name: /take the best next step/i })).toHaveCount(1);
+  await expect(page.getByRole('link', { name: /take the best next step/i })).toBeVisible();
   await expect(page.getByRole('heading', { level: 2, name: /pick the route that fits the learner first/i })).toBeVisible();
 });
 
@@ -16,7 +17,7 @@ test('start here presents a small-session onboarding flow', async ({ page }) => 
   await expect(page.getByRole('link', { name: /follow the learning map/i })).toBeVisible();
 });
 
-test('practice keeps a single h1 and stacks mode cards on mobile', async ({ page }) => {
+test('practice keeps a single h1 and reveals stacked journeys on mobile', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('practice');
 
@@ -24,8 +25,10 @@ test('practice keeps a single h1 and stacks mode cards on mobile', async ({ page
   await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
   await expect(page.getByRole('heading', { level: 2, name: /choose one training mode and begin/i })).toBeVisible();
 
-  const cards = page.locator('.practice-options > .option-grid').first().locator('> .choice-card');
-  await expect(cards).toHaveCount(3);
+  await expect(page.locator('#start-practice-now')).toBeVisible();
+  await page.getByText('More ways to train').click();
+  const cards = page.locator('.practice-journey-grid > .choice-card');
+  await expect(cards).toHaveCount(5);
 
   const firstBox = await cards.nth(0).boundingBox();
   const secondBox = await cards.nth(1).boundingBox();
@@ -36,27 +39,36 @@ test('practice keeps a single h1 and stacks mode cards on mobile', async ({ page
   expect(secondBox.y).toBeGreaterThan(firstBox.y);
 });
 
-test('secondary routes keep the more-routes group visible when active', async ({ page }) => {
+test('secondary routes stay discoverable and expose current page', async ({ page }) => {
   await page.goto('paths/children');
 
   const moreRoutes = page.locator('.nav-more');
-  await expect(moreRoutes).toHaveAttribute('open', '');
+  await expect(moreRoutes).not.toHaveAttribute('open', '');
+  await moreRoutes.getByText('Explore more').click();
   await expect(page.getByRole('link', { name: /children/i }).first()).toHaveAttribute('aria-current', 'page');
+  await expect(page.getByRole('link', { name: /learn/i }).first()).toHaveAttribute('aria-current', 'location');
 });
 
-test('mobile header keeps the secondary route disclosure usable', async ({ page }) => {
+test('nested learning routes expose their current navigation location', async ({ page }) => {
+  await page.goto('lessons/l0/reading-a-single-digit');
+  await expect(page.getByRole('link', { name: /learn/i }).first()).toHaveAttribute('aria-current', 'location');
+  await page.getByText('Explore more').click();
+  await expect(page.getByRole('link', { name: /lessons/i }).first()).toHaveAttribute('aria-current', 'location');
+});
+
+test('mobile header is compact and keeps task navigation usable', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('');
 
   const moreRoutes = page.locator('.nav-more');
-  await expect(moreRoutes.getByText('More routes')).toBeVisible();
-  await expect(page.getByRole('link', { name: /by diego marinho/i })).toBeVisible();
+  await expect(moreRoutes.getByText('Explore more')).toBeVisible();
+  await expect(page.getByRole('link', { name: /start/i }).first()).toBeVisible();
+  await expect(page.getByRole('link', { name: /progress/i }).first()).toBeVisible();
 
-  const brandBox = await page.locator('.brand').boundingBox();
-  const bylineBox = await page.getByRole('link', { name: /by diego marinho/i }).boundingBox();
-  expect(brandBox).not.toBeNull();
-  expect(bylineBox).not.toBeNull();
-  expect(bylineBox.y).toBeGreaterThan(brandBox.y);
+  const headerBox = await page.locator('.site-header').boundingBox();
+  expect(headerBox).not.toBeNull();
+  expect(headerBox.height).toBeLessThanOrEqual(190);
+  await expect(page.locator('.site-header')).toHaveCSS('position', 'static');
 });
 
 test('curriculum uses lighter stage guidance and clear stage actions', async ({ page }) => {
@@ -81,14 +93,14 @@ test('progress prioritizes next move and weekly plan before milestone rewards', 
   expect(weeklyPlanTop.y).toBeLessThan(progressSummaryTop.y);
 });
 
-test('worksheets presents a guided generator with one dominant initial action', async ({ page }) => {
+test('worksheets presents a live preset flow with one dominant solve action', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('worksheets');
 
   await expect(page.getByRole('heading', { level: 1, name: /printable worksheet studio/i })).toBeVisible();
-  await expect(page.getByRole('heading', { level: 2, name: /choose a preset, adjust essentials, then generate/i })).toBeVisible();
-  await expect(page.locator('.worksheet-step-grid .worksheet-step-card')).toHaveCount(3);
-  await expect(page.getByRole('button', { name: /generate worksheet/i })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 2, name: /choose a preset; the sheet updates immediately/i })).toBeVisible();
+  await expect(page.getByRole('button', { name: /start solving current sheet/i })).toBeVisible();
+  await expect(page.getByRole('button', { name: /refresh questions/i })).toBeVisible();
   await expect(page.getByText(/after you generate/i)).toBeVisible();
 
   await page.getByText('More worksheet presets').click();
@@ -102,12 +114,12 @@ test('worksheets presents a guided generator with one dominant initial action', 
 test('placement self-check exposes clear selectable answers', async ({ page }) => {
   await page.goto('assessments');
 
-  const firstGroup = page.locator('[role="radiogroup"]').first();
+  const firstGroup = page.locator('#placement-questions fieldset').first();
   await expect(firstGroup).toBeVisible();
   await expect(page.getByRole('button', { name: /get my recommendation/i })).toBeDisabled();
 
-  await firstGroup.getByRole('radio', { name: 'Sometimes' }).click();
-  await expect(firstGroup.getByRole('radio', { name: 'Sometimes' })).toHaveAttribute('aria-checked', 'true');
+  await firstGroup.getByText('Sometimes', { exact: true }).click();
+  await expect(firstGroup.getByRole('radio', { name: 'Sometimes' })).toBeChecked();
 });
 
 test('mini-games keeps round controls inactive until a game starts', async ({ page }) => {

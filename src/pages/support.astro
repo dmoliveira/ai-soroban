@@ -3,7 +3,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
 ---
 
-<BaseLayout title="Support | Soroban Dojo">
+<BaseLayout title="Support | Soroban Dojo" description="Support Soroban Dojo through donations, feedback, and sharing so calmer soroban lessons, worksheets, and practice tools can keep improving.">
   <section class="support-studio-hero panel" style={`--support-mist:url('${base}graphics/worksheet-mist.svg')`}>
     <div class="support-studio-brand">
       <div class="support-studio-mark" aria-hidden="true"><img src={`${base}graphics/sakura-mark.svg`} alt="" /></div>
@@ -38,11 +38,43 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       <p class="eyebrow">Non-monetary support</p>
       <h2>You can help in other ways too</h2>
       <p>Share the dojo, send feedback on confusing spots, and keep pointing out where the learning flow can become clearer and calmer.</p>
+      <div class="hero-actions">
+        <a class="button button-secondary" href={`${base}about`}>Read the project direction</a>
+        <a class="button button-secondary" href={`${base}releases`}>See what changed recently</a>
+      </div>
     </article>
+  </section>
+
+  <section class="panel content-prose support-guide-panel">
+    <div class="section-head">
+      <div>
+        <p class="eyebrow">Best ways to help</p>
+        <h2>Pick the lightest useful contribution</h2>
+      </div>
+      <p class="muted">Money helps, but clarity helps too. The best support usually removes confusion for the next learner.</p>
+    </div>
+    <div class="card-grid">
+      <article class="subtle-panel route-card compact-card support-guide-card">
+        <p class="eyebrow">1. Share</p>
+        <h3>Send one learner to the right starting page</h3>
+        <p>Point new learners to Start here, placement, or the right level page instead of dropping them into the full site map.</p>
+      </article>
+      <article class="subtle-panel route-card compact-card support-guide-card">
+        <p class="eyebrow">2. Report friction</p>
+        <h3>Flag the page where the next step feels unclear</h3>
+        <p>The most helpful feedback usually names the exact page, missing transition, or confusing choice overload.</p>
+      </article>
+      <article class="subtle-panel route-card compact-card support-guide-card">
+        <p class="eyebrow">3. Fund deeper work</p>
+        <h3>Support new lessons and tooling</h3>
+        <p>Donations help add more worksheets, drills, and learner-friendly refinements without turning the site into a noisy product funnel.</p>
+      </article>
+    </div>
   </section>
 
   <style>
     .support-studio-hero{display:grid;gap:1rem;border:1px solid rgba(244,194,194,.55);box-shadow:0 18px 48px rgba(201,114,114,.08);background-image:linear-gradient(135deg, rgba(255,250,248,.95), rgba(255,244,246,.98)), var(--support-mist);background-size:cover;background-position:center bottom}
-    .support-studio-brand{display:flex;gap:1rem;align-items:flex-start}.support-studio-mark{width:4.5rem;height:4.5rem;border-radius:1.5rem;background:rgba(255,255,255,.8);display:grid;place-items:center;box-shadow:0 12px 32px rgba(201,114,114,.12);flex:0 0 auto}.support-studio-mark img{width:3.25rem;height:3.25rem}.support-studio-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.85rem}.support-studio-stat{display:grid;gap:.35rem}.support-studio-stat span{font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:#9a6c6c}@media (max-width:900px){.support-studio-stats{grid-template-columns:1fr}}
+    .support-studio-brand{display:flex;gap:1rem;align-items:flex-start}.support-studio-mark{width:4.5rem;height:4.5rem;border-radius:1.5rem;background:rgba(255,255,255,.8);display:grid;place-items:center;box-shadow:0 12px 32px rgba(201,114,114,.12);flex:0 0 auto}.support-studio-mark img{width:3.25rem;height:3.25rem}.support-studio-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.85rem}.support-studio-stat{display:grid;gap:.35rem}.support-studio-stat span{font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--accent)}@media (max-width:900px){.support-studio-stats{grid-template-columns:1fr}}
+    .support-guide-panel .card-grid{margin-bottom:0}.support-guide-card{background:linear-gradient(180deg, rgba(255,255,255,.82), rgba(248,242,233,.88))}.support-guide-card h3{margin:.1rem 0}
   </style>
 </BaseLayout>

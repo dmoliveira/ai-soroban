@@ -35,10 +35,18 @@ jobs:
         run: npm ci
 
       - name: Validate project
-        run: npm run check
+        run: |
+          npm run check
+          npm test
 
       - name: Build site
         run: npm run build
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Validate browser flows
+        run: npm run test:e2e
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

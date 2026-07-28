@@ -29,7 +29,40 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       { href: `${base}daily-drills`, label: 'Use a daily pack', secondary: true },
       { href: `${base}worksheets`, label: 'Print a worksheet instead', secondary: true },
     ]}
-    mistVar="--practice-mist"
   />
+
   <PracticeClient exercises={exercises} />
+
+  <section class="split-grid practice-guide-grid" aria-labelledby="practice-guide-title">
+    <article class="panel content-prose">
+      <p class="eyebrow">Use this after reading</p>
+      <h2 id="practice-guide-title">Bring one lesson or exercise into practice</h2>
+      <p>Practice works best after you already know the idea you want to reinforce. Start one short session, then open the deeper training options only if the next move still feels unclear.</p>
+      <div class="subtle-panel route-card practice-guide-card">
+        <p class="eyebrow">Best route</p>
+        <h3>Lesson → exercise → focused practice</h3>
+        <p>Read the concept first, prove it once with an exercise, then use focused practice to add repetition without losing the thread.</p>
+      </div>
+    </article>
+    <aside class="panel support-card practice-support-card">
+      <p class="eyebrow">When to use something else</p>
+      <h2>Choose the lightest tool that helps</h2>
+      <ul class="list-clean compact-library">
+        <li><strong>Stay with exercises</strong> if you still need one direct correctness check.</li>
+        <li><strong>Use practice</strong> when the idea is clear and you want repetition with guidance.</li>
+        <li><strong>Use worksheets or daily drills</strong> only when you want a broader pack instead of one focused run.</li>
+      </ul>
+      <div class="hero-actions">
+        <a class="button" href={`${base}exercises`}>Back to exercises</a>
+        <a class="button button-secondary" href={`${base}daily-drills`}>Open daily drills</a>
+      </div>
+    </aside>
+  </section>
+
+  <style>
+    .practice-guide-grid{align-items:start}
+    .practice-guide-card{background:linear-gradient(180deg, rgba(255,255,255,.82), rgba(248,242,233,.88))}
+    .practice-guide-card h3{margin:.1rem 0}
+    .practice-support-card{margin-top:0}
+  </style>
 </BaseLayout>

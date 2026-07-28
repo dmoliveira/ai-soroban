@@ -14,6 +14,9 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
           <p class="eyebrow">Today’s training · 印刷</p>
           <h1>Printable worksheet studio</h1>
           <p>Build one focused soroban worksheet with calm control over level, digit band, family mix, and drill complexity — then print, coach, or solve in place.</p>
+          <div class="button-row button-row-compact">
+            <button class="button start-solving-worksheet" type="button">Start solving current sheet</button>
+          </div>
         </div>
       </div>
       <div class="worksheet-hero-stats">
@@ -36,37 +39,19 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       <div class="worksheet-command-head">
         <div>
           <p class="eyebrow">Guided worksheet setup</p>
-          <h2>Choose a preset, adjust essentials, then generate</h2>
+          <h2>Choose a preset; the sheet updates immediately</h2>
         </div>
-        <p class="muted">The fastest path is one preset and one generate action. Open advanced controls only when you need a more precise training shape.</p>
-      </div>
-
-      <div class="card-grid worksheet-step-grid">
-        <article class="subtle-panel worksheet-step-card">
-          <p class="eyebrow">Step 1</p>
-          <h3>Pick a preset</h3>
-          <p class="muted small">Use a route below to load a good default instead of building from zero.</p>
-        </article>
-        <article class="subtle-panel worksheet-step-card">
-          <p class="eyebrow">Step 2</p>
-          <h3>Adjust only the essentials</h3>
-          <p class="muted small">Level, operation family, and digit band are enough for most first runs.</p>
-        </article>
-        <article class="subtle-panel worksheet-step-card">
-          <p class="eyebrow">Step 3</p>
-          <h3>Generate the sheet</h3>
-          <p class="muted small">Use scoring, reveal, timer, and print tools after the sheet is on the page.</p>
-        </article>
+        <p class="muted">Pick one preset, then start solving. Open the controls only when you need a more precise training shape.</p>
       </div>
 
       <div class="subtle-panel worksheet-quickstart-block">
         <strong>Quick start presets</strong>
         <p class="muted small">Recommended first choices for most learners and review sessions.</p>
         <div class="worksheet-preset-row worksheet-preset-row-primary">
-          <button class="button preset-button" data-preset="foundations-focus">Foundations</button>
-          <button class="button button-secondary preset-button" data-preset="complements">Complements</button>
-          <button class="button button-secondary preset-button" data-preset="mixed-fluency">Mixed fluency</button>
-          <button class="button button-secondary preset-button" data-preset="multiplication-focus">Multiplication</button>
+          <button class="button preset-button is-selected" data-preset="foundations-focus" aria-pressed="true">Foundations</button>
+          <button class="button button-secondary preset-button" data-preset="complements" aria-pressed="false">Complements</button>
+          <button class="button button-secondary preset-button" data-preset="mixed-fluency" aria-pressed="false">Mixed fluency</button>
+          <button class="button button-secondary preset-button" data-preset="multiplication-focus" aria-pressed="false">Multiplication</button>
         </div>
       </div>
 
@@ -87,7 +72,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       </div>
       </details>
 
-      <div class="ledger-controls worksheet-controls-shell">
+      <div class="ledger-controls worksheet-controls-shell" id="worksheet-controls">
       <div class="worksheet-controls-label-row">
         <strong>Essential controls</strong>
         <span class="muted small">Most first-time sheets only need these settings.</span>
@@ -229,11 +214,11 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
       <div class="worksheet-toolbar-actions">
         <div class="subtle-panel worksheet-generate-note">
-          <strong>Best next step</strong>
-          <p class="muted small">When the preset and essentials look right, generate the sheet first. Use checking, reveal, print, and teacher tools after the sheet appears.</p>
+          <strong>Need another set?</strong>
+          <p class="muted small">Preset and control changes update the sheet immediately. Refresh only when you want new questions with the same setup.</p>
         </div>
         <div class="button-row worksheet-action-row worksheet-action-row-primary">
-          <button class="button" id="generate-worksheet">Generate worksheet</button>
+          <button class="button button-secondary" id="generate-worksheet">Refresh questions</button>
         </div>
         <details class="worksheet-secondary-tools disclosure-block">
           <summary>After you generate</summary>
@@ -297,9 +282,9 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         </div>
 
         <div class="worksheet-current-setup subtle-panel">
-          <strong>Current setup</strong>
-          <div class="muted small">Mirror of the active worksheet configuration and focus.</div>
-          <div class="muted small">Use the summary cards above to scan the current setup quickly.</div>
+          <strong>Mode guide</strong>
+          <div class="muted small"><strong>Fixed sheet</strong> is best for one clean printable run with stable constraints.</div>
+          <div class="muted small"><strong>Dynamic or adaptive ledger</strong> is better when you want the sheet to respond to live choices or recent weak areas.</div>
         </div>
 
         <div class="subtle-panel worksheet-focus-guide">
@@ -427,7 +412,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       font-size: 0.75rem;
       text-transform: uppercase;
       letter-spacing: 0.06em;
-      color: #9a6c6c;
+      color: var(--accent);
     }
 
     .worksheet-hero-stat strong {
@@ -551,7 +536,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
     .worksheet-panel .badge {
       background: rgba(240, 98, 131, 0.08);
-      color: #d94f73;
+      color: var(--accent);
       border-color: rgba(240, 98, 131, 0.25);
     }
 
@@ -637,6 +622,11 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       .worksheet-insight-rail {
         position: static;
       }
+    }
+    @media (max-width: 600px) {
+      .worksheet-hero-mark { display:none; }
+      .worksheet-hero-copy > * { margin:.35rem 0; }
+      .worksheet-hero-copy h1 { font-size:1.8rem; line-height:1.15; }
     }
   </style>
 
@@ -998,9 +988,19 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       }
     };
 
+    const syncPresetSelection = (key) => {
+      document.querySelectorAll('[data-preset]').forEach((button) => {
+        const selected = button.dataset.preset === key;
+        button.setAttribute('aria-pressed', String(selected));
+        button.classList.toggle('is-selected', selected);
+        button.classList.toggle('button-secondary', !selected);
+      });
+    };
+
     const applyPreset = (key) => {
       const preset = presets[key];
       if (!preset) return;
+      syncPresetSelection(key);
       byId('worksheet-mode').value = preset.mode;
       byId('worksheet-level').value = preset.level;
       byId('worksheet-band').value = preset.band;
@@ -1472,6 +1472,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
               <small class="worksheet-feedback vertical-feedback" aria-live="polite"></small>
               <div class="worksheet-row-actions"><button type="button" class="mini-action" data-row-action="check">Check</button><button type="button" class="mini-action" data-row-action="reveal">Reveal</button></div>
             `;
+            row.querySelector('.worksheet-input')?.setAttribute('aria-label', `Answer for worksheet question ${absoluteIndex + 1}`);
             col.appendChild(row);
           });
           table.appendChild(col);
@@ -1487,6 +1488,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
             <small class="worksheet-feedback ledger-feedback" aria-live="polite"></small>
             <div class="worksheet-row-actions"><button type="button" class="mini-action" data-row-action="check">Check</button><button type="button" class="mini-action" data-row-action="reveal">Reveal</button></div>
           `;
+          row.querySelector('.worksheet-input')?.setAttribute('aria-label', `Answer for worksheet question ${index + 1}`);
           table.appendChild(row);
         });
       }
@@ -1710,6 +1712,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     });
     document.querySelectorAll('input[name="worksheet-family"]').forEach((node) => {
       node.addEventListener('change', () => {
+        syncPresetSelection(null);
         autoAlignOrientation();
         renderSheet();
       });
@@ -1738,10 +1741,14 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       if (nextInput instanceof HTMLInputElement) nextInput.focus();
     });
     document.querySelectorAll('#worksheet-mode, #worksheet-band, #worksheet-style, #worksheet-orientation, #worksheet-count, #worksheet-flow-mode, #worksheet-submode, #worksheet-print-mode, #worksheet-op-min, #worksheet-op-max').forEach((node) => {
-      node.addEventListener('change', renderSheet);
+      node.addEventListener('change', () => {
+        syncPresetSelection(null);
+        renderSheet();
+      });
     });
     ['worksheet-op-min', 'worksheet-op-max'].forEach((id) => {
       byId(id)?.addEventListener('change', () => {
+        syncPresetSelection(null);
         if (byId('worksheet-mode').value === 'fixed') {
           byId('worksheet-mode').value = 'dynamic';
         }
@@ -1752,9 +1759,15 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     if (initialPreset && presets[initialPreset]) {
       applyPreset(initialPreset);
     } else {
-      applyLevelDefaults();
-      renderSheet();
+      applyPreset('foundations-focus');
     }
+    document.querySelectorAll('.start-solving-worksheet').forEach((button) => {
+      button.addEventListener('click', () => {
+        const firstInput = document.querySelector('.worksheet-input');
+        firstInput?.scrollIntoView({ block: 'center' });
+        firstInput?.focus({ preventScroll: true });
+      });
+    });
     setPrintMode();
     setMetric('worksheet-time', '0s');
   </script>

@@ -9,7 +9,8 @@
   <div id="certificate-summary-list" class="session-list"></div>
 </section>
 
-<script is:inline>
+<script>
+  // @ts-nocheck
   const key = 'soroban-dojo:boss-certificates';
   const mount = document.getElementById('certificate-summary-list');
   const read = () => { try { return JSON.parse(localStorage.getItem(key) || '{}'); } catch { return {}; } };
@@ -27,7 +28,28 @@
       if (!entry) return;
       const card = document.createElement('article');
       card.className = 'reward-state-card';
-      card.innerHTML = `<div class="reward-state-head"><span class="reward-state-mark">✓</span><strong>${level} certificate</strong></div><div class="meta-row"><span>${entry.name}</span><span>${entry.date}</span></div><p class="muted small">${entry.name} cleared the ${level} boss round.</p>`;
+      const head = document.createElement('div');
+      head.className = 'reward-state-head';
+      const mark = document.createElement('span');
+      mark.className = 'reward-state-mark';
+      mark.textContent = '✓';
+      const title = document.createElement('strong');
+      title.textContent = `${level} certificate`;
+      head.append(mark, title);
+
+      const meta = document.createElement('div');
+      meta.className = 'meta-row';
+      const name = document.createElement('span');
+      name.textContent = entry.name;
+      const date = document.createElement('span');
+      date.textContent = entry.date;
+      meta.append(name, date);
+
+      const copy = document.createElement('p');
+      copy.className = 'muted small';
+      copy.textContent = `${entry.name} cleared the ${level} boss round.`;
+
+      card.append(head, meta, copy);
       mount.appendChild(card);
     });
   }

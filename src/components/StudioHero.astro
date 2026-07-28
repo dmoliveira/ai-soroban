@@ -32,6 +32,13 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       <p class="eyebrow">{eyebrow}</p>
       <h1>{title}</h1>
       <p>{summary}</p>
+      {actions.length > 0 && (
+        <div class="hero-actions">
+          {actions.map((action, index) => (
+            <a class={`button ${action.secondary || index > 0 ? 'button-secondary' : ''}`.trim()} href={action.href}>{action.label}</a>
+          ))}
+        </div>
+      )}
     </div>
   </div>
   <div class="studio-hero-stats">
@@ -42,13 +49,6 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       </article>
     ))}
   </div>
-  {actions.length > 0 && (
-    <div class="hero-actions">
-      {actions.map((action, index) => (
-        <a class={`button ${action.secondary || index > 0 ? 'button-secondary' : ''}`.trim()} href={action.href}>{action.label}</a>
-      ))}
-    </div>
-  )}
 </section>
 
 <style>
@@ -65,8 +65,11 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   .studio-hero-mark img { width:3.25rem; height:3.25rem; }
   .studio-hero-stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.85rem; }
   .studio-hero-stat { display:grid; gap:.35rem; }
-  .studio-hero-stat span { font-size:.75rem; text-transform:uppercase; letter-spacing:.06em; color:#9a6c6c; }
+  .studio-hero-stat span { font-size:.75rem; text-transform:uppercase; letter-spacing:.06em; color:var(--accent); }
   @media (max-width: 900px) {
     .studio-hero-stats { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 600px) {
+    .studio-hero-mark { display:none; }
   }
 </style>

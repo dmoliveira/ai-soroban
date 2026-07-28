@@ -15,13 +15,13 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       <div class="content-prose">
         <p class="eyebrow">Study plan · 学びの道</p>
         <h1>See why this week was chosen</h1>
-        <p>Your plan uses recent weak areas, current level signals, and one calm next step from lessons, exercises, and worksheets.</p>
+        <p>Your plan picks one calm next step from lessons, exercises, and worksheets based on recent weak areas.</p>
       </div>
     </div>
     <div class="study-plan-stats">
-      <article class="subtle-panel study-plan-stat"><span>Chosen from</span><strong>Recent weak areas</strong></article>
-      <article class="subtle-panel study-plan-stat"><span>Built from</span><strong>One lesson · one exercise · one worksheet</strong></article>
-      <article class="subtle-panel study-plan-stat"><span>Best use</span><strong>Follow the week in order</strong></article>
+      <article class="subtle-panel study-plan-stat"><span>Chosen from</span><strong>Weak areas</strong></article>
+      <article class="subtle-panel study-plan-stat"><span>Built from</span><strong>Lesson · exercise · worksheet</strong></article>
+      <article class="subtle-panel study-plan-stat"><span>Best use</span><strong>Follow in order</strong></article>
     </div>
   </section>
   <WeeklyStudyPlan lessons={lessons} exercises={exercises} />
@@ -33,7 +33,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     .study-plan-mark img { width:3.25rem; height:3.25rem; }
     .study-plan-stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.85rem; }
     .study-plan-stat { display:grid; gap:.35rem; }
-    .study-plan-stat span { font-size:.75rem; text-transform:uppercase; letter-spacing:.06em; color:#9a6c6c; }
-    @media (max-width:900px){ .study-plan-stats{ grid-template-columns:1fr; } }
+    .study-plan-stat span { font-size:.75rem; text-transform:uppercase; letter-spacing:.06em; color:var(--accent); }
+    @media (max-width:900px){ .study-plan-hero{gap:.75rem}.study-plan-stats{ grid-template-columns:repeat(2,minmax(0,1fr)); gap:.65rem; }.study-plan-stat:last-child{grid-column:1/-1} }
   </style>
 </BaseLayout>

@@ -19,9 +19,8 @@ const normalizePath = (path: string) => (path.endsWith('/') && path !== '/' ? pa
 const primaryNav = [
   { href: `${base}start-here`, english: 'Start', japanese: 'はじめ', matchPrefixes: [`${base}start-here`, `${base}assessments`] },
   { href: `${base}curriculum`, english: 'Learn', japanese: '道筋', matchPrefixes: [`${base}curriculum`, `${base}lessons`, `${base}levels`, `${base}paths/children`, `${base}paths/adults`] },
-  { href: `${base}practice`, english: 'Practice', japanese: '修練', matchPrefixes: [`${base}practice`, `${base}exercises`, `${base}worksheets`, `${base}daily-drills`, `${base}mini-games`, `${base}boss-rounds`] },
+  { href: `${base}practice`, english: 'Train', japanese: '修練', matchPrefixes: [`${base}practice`, `${base}exercises`, `${base}worksheets`, `${base}daily-drills`, `${base}mini-games`, `${base}boss-rounds`] },
   { href: `${base}progress`, english: 'Progress', japanese: '歩み', matchPrefixes: [`${base}progress`, `${base}study-plan`] },
-  { href: `${base}support`, english: 'Support', japanese: '支援', matchPrefixes: [`${base}support`, `${base}about`, `${base}privacy`, `${base}releases`] },
 ];
 const secondaryNav = [
   { href: `${base}paths/children`, english: 'Children', japanese: 'こども' },
@@ -32,6 +31,9 @@ const secondaryNav = [
   { href: `${base}mini-games`, english: 'Mini Games', japanese: '遊び' },
   { href: `${base}boss-rounds`, english: 'Boss Rounds', japanese: '試練' },
   { href: `${base}daily-drills`, english: 'Daily Drills', japanese: '日々' },
+  { href: `${base}support`, english: 'Support', japanese: '支援' },
+  { href: `${base}about`, english: 'About', japanese: '案内' },
+  { href: `${base}privacy`, english: 'Privacy', japanese: '安全' },
   { href: `${base}releases`, english: 'Releases', japanese: '更新' },
 ];
 const isActive = (href: string, matchPrefixes: string[] = [href]) => {
@@ -39,7 +41,6 @@ const isActive = (href: string, matchPrefixes: string[] = [href]) => {
   return matchPrefixes.some((prefix) => currentPath === prefix || (prefix !== base && currentPath.startsWith(prefix)));
 };
 const isCurrentPage = (href: string) => normalizePath(currentPath) === normalizePath(href);
-const hasActiveSecondary = secondaryNav.some((item) => isActive(item.href));
 ---
 
 <!doctype html>
@@ -69,7 +70,6 @@ const hasActiveSecondary = secondaryNav.some((item) => isActive(item.href));
     <header class="site-header">
       <div class="shell header-shell">
         <div class="header-meta-row">
-          <a class="author-link" href="https://dmoliveira.github.io/my-cv-public/cv/human/" target="_blank" rel="noreferrer">By <strong>Diego Marinho</strong></a>
           <a class="brand" href={base}>
             <span class="brand-mark">道</span>
             <span>
@@ -81,16 +81,16 @@ const hasActiveSecondary = secondaryNav.some((item) => isActive(item.href));
         <div class="nav-stack">
           <nav class="nav nav-row nav-primary" aria-label="Primary">
             {primaryNav.map((item) => (
-              <a href={item.href} class:list={{ 'nav-active': isActive(item.href, item.matchPrefixes) }} aria-current={isCurrentPage(item.href) ? 'page' : undefined} aria-label={`${item.english} · ${item.japanese}`}>
+               <a href={item.href} class:list={{ 'nav-active': isActive(item.href, item.matchPrefixes) }} aria-current={isCurrentPage(item.href) ? 'page' : isActive(item.href, item.matchPrefixes) ? 'location' : undefined} aria-label={`${item.english} · ${item.japanese}`}>
                 <JapaneseLabel english={item.english} japanese={item.japanese} />
               </a>
             ))}
           </nav>
-          <details class="nav-more nav-row disclosure-block" open={hasActiveSecondary}>
-            <summary>More routes</summary>
+          <details class="nav-more nav-row disclosure-block">
+            <summary>Explore more</summary>
             <nav class="nav nav-secondary" aria-label="More routes">
               {secondaryNav.map((item) => (
-                <a href={item.href} class:list={{ 'nav-active': isActive(item.href) }} aria-current={isCurrentPage(item.href) ? 'page' : undefined} aria-label={`${item.english} · ${item.japanese}`}>
+                 <a href={item.href} class:list={{ 'nav-active': isActive(item.href) }} aria-current={isCurrentPage(item.href) ? 'page' : isActive(item.href) ? 'location' : undefined} aria-label={`${item.english} · ${item.japanese}`}>
                   <JapaneseLabel english={item.english} japanese={item.japanese} />
                 </a>
               ))}

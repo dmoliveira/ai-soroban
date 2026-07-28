@@ -24,29 +24,12 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       </div>
       <span class="badge">Attempt first · 先に挑戦</span>
     </div>
-    <div class="option-grid option-grid-compact">
-      <article class="choice-card">
-        <p class="eyebrow">Recommended</p>
-        <h3>Focused practice</h3>
-        <p>Use a short, lesson-aligned list when you want the clearest next step.</p>
-      </article>
-      <article class="choice-card">
-        <p class="eyebrow">Generated</p>
-        <h3>Fresh drill set</h3>
-        <p>Create a replayable session when you want a clean sheet with its own pace.</p>
-      </article>
-      <article class="choice-card">
-        <p class="eyebrow">Review</p>
-        <h3>Resume from history</h3>
-        <p>Continue where you stopped, compare scores, or replay a past list with a fresh answer sheet.</p>
-      </article>
-    </div>
     <div class="subtle-panel practice-fast-start">
       <strong>Fast start</strong>
       <p class="muted small">Launch a recommended session immediately. Open the deeper training options only if the next move is still unclear.</p>
       <div class="button-row button-row-compact">
-        <button class="button" id="start-warmup-now">Start warm-up now</button>
-        <button class="button button-secondary" id="start-practice-now">Start focused practice</button>
+        <button class="button" id="start-practice-now">Start focused practice</button>
+        <button class="button button-secondary" id="start-warmup-now">Start warm-up</button>
         <a class="button button-secondary" href={`${base}worksheets`}>Print a worksheet instead</a>
       </div>
     </div>
@@ -58,8 +41,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         <h3>Build foundations</h3>
         <p>Short visual-first drills for reading, one-rod moves, and calm confidence.</p>
         <div class="button-row button-row-compact">
-          <button class="button button-secondary practice-journey-button" data-journey="foundations">Use journey</button>
-          <button class="button button-secondary practice-journey-start" data-journey="foundations">Start now</button>
+          <button class="button button-secondary practice-journey-button" data-journey="foundations" aria-label="Use foundations journey preset">Use foundations journey</button>
+          <button class="button button-secondary practice-journey-start" data-journey="foundations" aria-label="Start foundations journey now">Start foundations now</button>
         </div>
       </article>
       <article class="choice-card">
@@ -67,8 +50,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         <h3>Strengthen complements</h3>
         <p>Train five and ten complements until blocked moves feel cleaner and smaller.</p>
         <div class="button-row button-row-compact">
-          <button class="button button-secondary practice-journey-button" data-journey="complements">Use journey</button>
-          <button class="button button-secondary practice-journey-start" data-journey="complements">Start now</button>
+          <button class="button button-secondary practice-journey-button" data-journey="complements" aria-label="Use complements journey preset">Use complements journey</button>
+          <button class="button button-secondary practice-journey-start" data-journey="complements" aria-label="Start complements journey now">Start complements now</button>
         </div>
       </article>
       <article class="choice-card">
@@ -76,8 +59,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         <h3>Mixed fluency</h3>
         <p>Hold full numbers through short mixed sequences before pushing speed.</p>
         <div class="button-row button-row-compact">
-          <button class="button button-secondary practice-journey-button" data-journey="fluency">Use journey</button>
-          <button class="button button-secondary practice-journey-start" data-journey="fluency">Start now</button>
+          <button class="button button-secondary practice-journey-button" data-journey="fluency" aria-label="Use mixed fluency journey preset">Use mixed fluency journey</button>
+          <button class="button button-secondary practice-journey-start" data-journey="fluency" aria-label="Start mixed fluency journey now">Start mixed fluency now</button>
         </div>
       </article>
       <article class="choice-card">
@@ -85,8 +68,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         <h3>Multiply and divide</h3>
         <p>Work through table facts, place shifts, and quotient building in a steadier order.</p>
         <div class="button-row button-row-compact">
-          <button class="button button-secondary practice-journey-button" data-journey="muldiv">Use journey</button>
-          <button class="button button-secondary practice-journey-start" data-journey="muldiv">Start now</button>
+          <button class="button button-secondary practice-journey-button" data-journey="muldiv" aria-label="Use multiply and divide journey preset">Use mul/div journey</button>
+          <button class="button button-secondary practice-journey-start" data-journey="muldiv" aria-label="Start multiply and divide journey now">Start mul/div now</button>
         </div>
       </article>
       <article class="choice-card">
@@ -94,8 +77,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         <h3>Mental mastery</h3>
         <p>Use anzan-style sessions to stabilize mental totals, rhythm, and error recovery.</p>
         <div class="button-row button-row-compact">
-          <button class="button button-secondary practice-journey-button" data-journey="mastery">Use journey</button>
-          <button class="button button-secondary practice-journey-start" data-journey="mastery">Start now</button>
+          <button class="button button-secondary practice-journey-button" data-journey="mastery" aria-label="Use mental mastery journey preset">Use mental mastery journey</button>
+          <button class="button button-secondary practice-journey-start" data-journey="mastery" aria-label="Start mental mastery journey now">Start mental mastery now</button>
         </div>
       </article>
     </div>
@@ -105,8 +88,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         <h3>Bead match</h3>
         <p>Short L0 visual rounds that ask you to read the rod calmly before you answer.</p>
         <div class="button-row button-row-compact">
-          <button class="button button-secondary practice-challenge-button" data-challenge="bead-match">Use challenge</button>
-          <button class="button button-secondary practice-challenge-start" data-challenge="bead-match">Start now</button>
+          <button class="button button-secondary practice-challenge-button" data-challenge="bead-match" aria-label="Use bead match challenge preset">Use bead match</button>
+          <button class="button button-secondary practice-challenge-start" data-challenge="bead-match" aria-label="Start bead match challenge now">Start bead match</button>
         </div>
       </article>
       <article class="choice-card">
@@ -114,8 +97,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         <h3>Clean five</h3>
         <p>Short L1 visual rounds that help the clean five shape become easy to spot.</p>
         <div class="button-row button-row-compact">
-          <button class="button button-secondary practice-challenge-button" data-challenge="clean-five">Use challenge</button>
-          <button class="button button-secondary practice-challenge-start" data-challenge="clean-five">Start now</button>
+          <button class="button button-secondary practice-challenge-button" data-challenge="clean-five" aria-label="Use clean five challenge preset">Use clean five</button>
+          <button class="button button-secondary practice-challenge-start" data-challenge="clean-five" aria-label="Start clean five challenge now">Start clean five</button>
         </div>
       </article>
       <article class="choice-card">
@@ -123,8 +106,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         <h3>Streak sprint</h3>
         <p>Short timed arithmetic bursts that reward clean momentum more than brute length.</p>
         <div class="button-row button-row-compact">
-          <button class="button button-secondary practice-challenge-button" data-challenge="streak-sprint">Use challenge</button>
-          <button class="button button-secondary practice-challenge-start" data-challenge="streak-sprint">Start now</button>
+          <button class="button button-secondary practice-challenge-button" data-challenge="streak-sprint" aria-label="Use streak sprint challenge preset">Use streak sprint</button>
+          <button class="button button-secondary practice-challenge-start" data-challenge="streak-sprint" aria-label="Start streak sprint challenge now">Start streak sprint</button>
         </div>
       </article>
       <article class="choice-card">
@@ -132,8 +115,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         <h3>Sign switch relay</h3>
         <p>Keep your running total steady while addition and subtraction keep changing places.</p>
         <div class="button-row button-row-compact">
-          <button class="button button-secondary practice-challenge-button" data-challenge="sign-switch-relay">Use challenge</button>
-          <button class="button button-secondary practice-challenge-start" data-challenge="sign-switch-relay">Start now</button>
+          <button class="button button-secondary practice-challenge-button" data-challenge="sign-switch-relay" aria-label="Use sign switch relay challenge preset">Use sign switch relay</button>
+          <button class="button button-secondary practice-challenge-start" data-challenge="sign-switch-relay" aria-label="Start sign switch relay challenge now">Start sign switch relay</button>
         </div>
       </article>
       <article class="choice-card">
@@ -141,8 +124,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         <h3>Table ladder</h3>
         <p>Climb one multiplication family at a time instead of jumping randomly across facts.</p>
         <div class="button-row button-row-compact">
-          <button class="button button-secondary practice-challenge-button" data-challenge="table-ladder">Use challenge</button>
-          <button class="button button-secondary practice-challenge-start" data-challenge="table-ladder">Start now</button>
+          <button class="button button-secondary practice-challenge-button" data-challenge="table-ladder" aria-label="Use table ladder challenge preset">Use table ladder</button>
+          <button class="button button-secondary practice-challenge-start" data-challenge="table-ladder" aria-label="Start table ladder challenge now">Start table ladder</button>
         </div>
       </article>
       <article class="choice-card">
@@ -150,8 +133,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         <h3>Quotient chase</h3>
         <p>Train exact quotient finding quickly, then verify each result before moving on.</p>
         <div class="button-row button-row-compact">
-          <button class="button button-secondary practice-challenge-button" data-challenge="quotient-chase">Use challenge</button>
-          <button class="button button-secondary practice-challenge-start" data-challenge="quotient-chase">Start now</button>
+          <button class="button button-secondary practice-challenge-button" data-challenge="quotient-chase" aria-label="Use quotient chase challenge preset">Use quotient chase</button>
+          <button class="button button-secondary practice-challenge-start" data-challenge="quotient-chase" aria-label="Start quotient chase challenge now">Start quotient chase</button>
         </div>
       </article>
       <article class="choice-card">
@@ -159,17 +142,10 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         <h3>Anzan burst</h3>
         <p>Fast mental-only sequences that test sign changes, rhythm, and recovery in one run.</p>
         <div class="button-row button-row-compact">
-          <button class="button button-secondary practice-challenge-button" data-challenge="anzan-burst">Use challenge</button>
-          <button class="button button-secondary practice-challenge-start" data-challenge="anzan-burst">Start now</button>
+          <button class="button button-secondary practice-challenge-button" data-challenge="anzan-burst" aria-label="Use anzan burst challenge preset">Use anzan burst</button>
+          <button class="button button-secondary practice-challenge-start" data-challenge="anzan-burst" aria-label="Start anzan burst challenge now">Start anzan burst</button>
         </div>
       </article>
-    </div>
-    <div class="practice-preset-row">
-      <button class="button button-secondary practice-preset" data-preset="warmup">Warm-up</button>
-      <button class="button button-secondary practice-preset" data-preset="practice">Practice</button>
-      <button class="button button-secondary practice-preset" data-preset="review">Review</button>
-      <button class="button button-secondary practice-preset" data-preset="speed">Speed</button>
-      <button class="button button-secondary practice-preset" data-preset="mental">Mental</button>
     </div>
     <div class="subtle-panel practice-adaptive-next">
       <strong id="adaptive-next-title">Adaptive next move</strong>
@@ -297,7 +273,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       </div>
     </div>
     </details>
-    <div class="subtle-panel practice-current-setup">
+    <div class="subtle-panel practice-current-setup" role="status" aria-live="polite">
       <strong>Current setup</strong>
       <span id="practice-current-setup-copy" class="muted small">Format: single · Source: curated · Level: L0 · Questions: 10 · Style: mixed · Terms: auto · Timer: off</span>
     </div>
@@ -313,15 +289,10 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       <strong id="journey-mode-title">Journey mode</strong>
       <p id="journey-mode-copy" class="muted small">Pick a journey to switch from generic presets into a more distinct practice format.</p>
     </div>
-    <div class="practice-quick-paths">
-      <button class="button button-secondary practice-preset" data-preset="warmup">Quick warm-up</button>
-      <button class="button button-secondary practice-preset" data-preset="review">Review weak areas</button>
-      <a class="button button-secondary" href={`${base}worksheets`}>Open worksheet</a>
-    </div>
   </section>
 
   <div class="practice-grid practice-main-grid">
-    <section class="panel question-shell">
+    <section class="panel question-shell" id="practice-session" tabindex="-1">
       <div class="section-head">
         <div>
           <p class="eyebrow">Current session</p>
@@ -347,32 +318,18 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         </div>
       </div>
 
-      <div id="visual-mount" class="subtle-panel visual-stage" hidden></div>
       <div id="single-session-view" class="subtle-panel question-stage">
         <p class="eyebrow">Question</p>
         <h3 id="question-title">Choose a session to begin.</h3>
         <p id="question-prompt" class="muted">Curated lists follow the lessons; generated lists create replayable arithmetic practice.</p>
+        <div id="visual-mount" class="subtle-panel visual-stage" hidden></div>
         <div class="practice-empty-note" id="practice-empty-note">
           <strong>Recommended start</strong>
           <p class="muted">Pick a preset above, then start one short session before moving into longer sheets.</p>
           <div class="button-row button-row-compact">
-            <button class="button" id="empty-warmup">Use warm-up preset</button>
-            <a class="button button-secondary" href={`${base}worksheets`}>Open worksheets</a>
-          </div>
-        </div>
-        <pre id="question-ledger" class="worksheet-ledger" hidden></pre>
-        <div class="practice-next-strip">
-          <strong>Quick path</strong>
-          <div class="button-row button-row-compact">
-            <button class="button button-secondary practice-preset" data-preset="practice">Use focused practice preset</button>
+            <button class="button" id="empty-warmup">Start focused practice</button>
             <button class="button button-secondary practice-preset" data-preset="review">Review weak areas</button>
-            <button class="button button-secondary practice-preset" data-preset="mental">Mental mode</button>
           </div>
-        </div>
-        <div class="question-flow-note">
-          <span class="review-chip">1. Solve first</span>
-          <span class="review-chip">2. Write your response</span>
-          <span class="review-chip">3. Verify or reveal the answer</span>
         </div>
         <label class="stack-sm answer-stack">
           <span>Your response · 記入</span>
@@ -384,6 +341,20 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
           <button class="button button-secondary" id="reveal-final">Reveal answer</button>
           <button class="button button-secondary" id="reveal-steps">Reveal method</button>
           <button class="button button-secondary" id="next-question">Save and continue</button>
+        </div>
+        <div class="question-flow-note">
+          <span class="review-chip">1. Solve first</span>
+          <span class="review-chip">2. Write your response</span>
+          <span class="review-chip">3. Verify or reveal the answer</span>
+        </div>
+        <pre id="question-ledger" class="worksheet-ledger" hidden></pre>
+        <div class="practice-next-strip">
+          <strong>Quick path</strong>
+          <div class="button-row button-row-compact">
+            <button class="button button-secondary practice-preset" data-preset="practice">Focused practice preset</button>
+            <button class="button button-secondary practice-preset" data-preset="review">Review weak areas</button>
+            <a class="button button-secondary" href={`${base}worksheets`}>Open worksheet</a>
+          </div>
         </div>
       </div>
 
@@ -480,6 +451,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   const EXERCISE_STATE_KEY = 'soroban-dojo:exercise-states';
   let currentSession = null;
   let selectedJourneyKey = null;
+  let selectedSkillKey = null;
   let timerInterval = null;
   let questionStartedAt = null;
   let activeTimerKey = null;
@@ -526,12 +498,14 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   const readSessions = () => {
     try { return JSON.parse(localStorage.getItem(SESSION_KEY) || '[]'); } catch { return []; }
   };
-  const writeSessions = (sessions) => localStorage.setItem(SESSION_KEY, JSON.stringify(sessions));
+  const writeSessions = (sessions) => {
+    try { localStorage.setItem(SESSION_KEY, JSON.stringify(sessions)); } catch {}
+  };
   const appendTimer = (entry) => {
     try {
       const current = JSON.parse(localStorage.getItem(TIMER_KEY) || '[]');
       current.push(entry);
-      localStorage.setItem(TIMER_KEY, JSON.stringify(current));
+      localStorage.setItem(TIMER_KEY, JSON.stringify(current.slice(-200)));
     } catch {}
   };
   const readExerciseStates = () => {
@@ -594,6 +568,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
   const resolveAdaptiveTarget = () => {
     const weak = readWeakAreas();
+    if (Object.values(weak).every((count) => count === 0)) return 'arithmetic';
     return ['mental', 'division', 'multiplication', 'complements', 'arithmetic']
       .sort((a, b) => weak[b] - weak[a])[0];
   };
@@ -646,7 +621,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
   const describeAdaptivePractice = (level) => {
     const weak = readWeakAreas();
-    if (level === 'L5' || weak.mental >= weak.arithmetic) return 'Adaptive focus: mental / anzan recovery';
+    if (level === 'L5' || weak.mental > Math.max(0, weak.arithmetic)) return 'Adaptive focus: mental / anzan recovery';
     if ((weak.multiplication > weak.arithmetic || weak.division > weak.arithmetic) && level === 'L4') return 'Adaptive focus: multiplication / division repair';
     if (weak.complements > weak.arithmetic && level === 'L2') return 'Adaptive focus: complements and balancing';
     return 'Adaptive focus: arithmetic rhythm and accuracy';
@@ -659,7 +634,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   const resolveAdaptiveStyle = (level, questionStyle) => {
       if (questionStyle !== 'adaptive') return questionStyle;
       const weak = readWeakAreas();
-      if (level === 'L5' || weak.mental >= weak.arithmetic) return 'mental';
+      if (level === 'L5' || weak.mental > Math.max(0, weak.arithmetic)) return 'mental';
       if (weak.multiplication > weak.arithmetic && level === 'L4') return 'mixed';
       if (weak.complements > weak.arithmetic && level === 'L2') return 'mixed';
       return 'visual';
@@ -693,7 +668,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     return { ops, total };
   };
 
-  const buildGeneratedQuestion = (level, index, rng, questionStyle = 'mixed', termCount = 'auto') => {
+  const buildGeneratedQuestion = (level, index, rng, questionStyle = 'mixed', termCount = 'auto', skill = null) => {
     const effectiveStyle = resolveAdaptiveStyle(level, questionStyle);
     const terms = resolveTermCount(level, termCount);
     if (level === 'L0') {
@@ -740,7 +715,13 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       }
       const a = Math.floor(rng() * 8) + 1;
       const b = Math.floor(rng() * (9 - a)) + 1;
-      const subtract = effectiveStyle === 'mental' ? false : rng() > 0.5;
+      const subtract = skill === 'subtraction'
+        ? true
+        : skill === 'addition'
+          ? false
+          : effectiveStyle === 'mental'
+            ? false
+            : rng() > 0.5;
       if (subtract) {
         const start = a + b;
         return {
@@ -780,7 +761,11 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       };
     }
     if (level === 'L4') {
-      const multiplication = rng() > 0.5;
+      const multiplication = skill === 'multiplication'
+        ? true
+        : skill === 'division'
+          ? false
+          : rng() > 0.5;
       if (multiplication) {
         const multiplicand = Math.floor(rng() * 90) + 10;
         const multiplier = Math.floor(rng() * 7) + 2;
@@ -838,7 +823,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   };
 
   const buildCuratedQuestions = (level, length, sessionId) => {
-    const allowed = curatedBank.filter((item) => item.level === level || (level === 'L2' && ['L0', 'L1', 'L2'].includes(item.level)) || (level === 'L1' && ['L0', 'L1'].includes(item.level)) || (level === 'L5' && ['L2','L3','L4','L5'].includes(item.level)));
+    const matching = curatedBank.filter((item) => item.level === level || (level === 'L2' && ['L0', 'L1', 'L2'].includes(item.level)) || (level === 'L1' && ['L0', 'L1'].includes(item.level)) || (level === 'L5' && ['L2','L3','L4','L5'].includes(item.level)));
+    const allowed = matching.length ? matching : curatedBank.filter((item) => item.level !== 'L5');
     const rng = createRng(sessionId);
     return Array.from({ length }, (_, index) => {
       const source = pick(rng, allowed);
@@ -846,9 +832,9 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     });
   };
 
-  const buildGeneratedQuestions = (level, length, sessionId, questionStyle, termCount) => {
+  const buildGeneratedQuestions = (level, length, sessionId, questionStyle, termCount, skill = null) => {
     const rng = createRng(sessionId);
-    return Array.from({ length }, (_, index) => buildGeneratedQuestion(level, index, rng, questionStyle, termCount));
+    return Array.from({ length }, (_, index) => buildGeneratedQuestion(level, index, rng, questionStyle, termCount, skill));
   };
 
   const buildJourneyQuestions = (journeyKey, length, sessionId) => {
@@ -929,7 +915,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
   const presets = {
     warmup: { format: 'single', type: 'curated', level: 'L0', length: '5', checkMode: 'final', timerMode: 'off', questionStyle: 'visual', termCount: '2' },
-    practice: { format: 'single', type: 'generated', level: 'L2', length: '10', checkMode: 'verify', timerMode: 'off', questionStyle: 'mixed', termCount: '3' },
+    practice: { format: 'single', type: 'generated', level: 'L0', length: '5', checkMode: 'final', timerMode: 'off', questionStyle: 'visual', termCount: '2' },
     review: { format: 'sheet', type: 'generated', level: 'L2', length: '10', checkMode: 'steps', timerMode: 'off', questionStyle: 'adaptive', termCount: '3' },
     speed: { format: 'single', type: 'generated', level: 'L3', length: '20', checkMode: 'verify', timerMode: 'on', questionStyle: 'mixed', termCount: '3' },
     mental: { format: 'single', type: 'generated', level: 'L5', length: '10', checkMode: 'steps', timerMode: 'off', questionStyle: 'mental', termCount: '4' },
@@ -966,7 +952,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     const adaptiveExercise = byId('adaptive-next-exercise');
     const adaptiveWorksheet = byId('adaptive-next-worksheet');
     if (!target) return;
-    target.textContent = `Format: ${byId('session-format').value} · Source: ${byId('session-type').value} · Level: ${byId('session-level').value} · Questions: ${byId('session-length').value} · Style: ${byId('question-style').value} · Terms: ${byId('term-count').value} · Timer: ${byId('timer-mode').value}`;
+    target.textContent = `Format: ${byId('session-format').value} · Source: ${byId('session-type').value} · Level: ${byId('session-level').value}${selectedSkillKey ? ` · Focus: ${selectedSkillKey.replace(/-/g, ' ')}` : ''} · Questions: ${byId('session-length').value} · Style: ${byId('question-style').value} · Terms: ${byId('term-count').value} · Timer: ${byId('timer-mode').value}`;
     if (!guideTitle || !guideCopy || !purposeCopy) return;
     const format = byId('session-format').value;
     const style = byId('question-style').value;
@@ -1006,6 +992,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
   const applyPreset = (key) => {
     selectedJourneyKey = null;
+    selectedSkillKey = null;
     const preset = presets[key];
     if (!preset) return;
     byId('session-format').value = preset.format;
@@ -1023,6 +1010,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     const journey = journeys[key];
     if (!journey) return;
     selectedJourneyKey = key;
+    selectedSkillKey = null;
     byId('session-format').value = journey.format;
     byId('session-type').value = journey.type;
     byId('session-level').value = journey.level;
@@ -1046,6 +1034,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
   const applyChallenge = (key) => {
     selectedJourneyKey = null;
+    selectedSkillKey = null;
     const challenge = challenges[key];
     if (!challenge) return;
     byId('session-format').value = challenge.format;
@@ -1062,6 +1051,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   const syncControlsFromSession = (session) => {
     if (!session) return;
     selectedJourneyKey = session.journeyKey || null;
+    selectedSkillKey = session.skill || null;
     byId('session-format').value = session.format;
     byId('session-type').value = session.type;
     byId('session-level').value = session.level;
@@ -1078,7 +1068,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     byId('start-session')?.click();
   };
 
-  const createSession = ({ type, level, length, checkMode, timerEnabled, format, questionStyle, termCount, journeyKey }) => {
+  const createSession = ({ type, level, length, checkMode, timerEnabled, format, questionStyle, termCount, journeyKey, skill }) => {
     const sessionId = makeId();
     const worksheetProfile = createWorksheetProfile({
       digitRange: byId('worksheet-digit-range')?.value,
@@ -1094,7 +1084,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
           ...question,
           progressKey: `generated-${simpleSlug(`${question.answer}-${question.id}`)}`,
       }))
-        : buildGeneratedQuestions(level, length, sessionId, questionStyle, termCount);
+        : buildGeneratedQuestions(level, length, sessionId, questionStyle, termCount, skill);
     return {
       id: sessionId,
       type,
@@ -1108,6 +1098,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       termCount,
       journeyKey: journeyKey || null,
       journeyTitle: journeyKey ? journeys[journeyKey]?.title || null : null,
+      skill: skill || null,
       createdAt: new Date().toISOString(),
       currentIndex: 0,
       completed: false,
@@ -1124,6 +1115,38 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     if (existingIndex >= 0) sessions.splice(existingIndex, 1);
     sessions.unshift(currentSession);
     writeSessions(sessions.slice(0, 12));
+  };
+
+  const replaySession = (session) => {
+    if (!session) return;
+    stopTimer();
+    currentSession = {
+      ...session,
+      id: makeId(),
+      createdAt: new Date().toISOString(),
+      currentIndex: 0,
+      completed: false,
+      responses: {},
+      finalScore: null,
+    };
+    syncControlsFromSession(currentSession);
+    persistCurrent();
+    renderHistory();
+    renderSession();
+    focusCurrentQuestion();
+  };
+
+  const focusCurrentQuestion = () => {
+    window.requestAnimationFrame(() => {
+      const session = byId('practice-session');
+      const stage = currentSession?.format === 'sheet' ? byId('sheet-session-view') : byId('single-session-view');
+      const target = currentSession?.format === 'sheet'
+        ? document.querySelector('#sheet-list .input')
+        : byId('answer-input');
+      stage?.scrollIntoView({ block: 'start' });
+      if (!currentSession?.completed && target instanceof HTMLElement) target.focus({ preventScroll: true });
+      else session?.focus({ preventScroll: true });
+    });
   };
 
   const applyWriteCellShortcut = (event) => {
@@ -1182,10 +1205,11 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     activeTimerKey = null;
   };
 
-  const syncExerciseProgress = () => {
+  const syncExerciseProgress = (questionIndex = currentSession?.currentIndex) => {
     if (!currentSession) return;
-    const question = currentSession.questions[currentSession.currentIndex];
-    const response = responseForCurrent();
+    const question = currentSession.questions[questionIndex];
+    const response = currentSession.responses?.[questionIndex];
+    if (!question || !response?.verified) return;
     const existing = readExerciseStates();
     existing[question.progressKey || question.id] = {
       status: response.correct ? 'got-it' : 'needs-review',
@@ -1280,10 +1304,15 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     mount.replaceChildren();
     if (value === undefined || value === null) {
       mount.hidden = true;
+      mount.removeAttribute('role');
+      mount.removeAttribute('aria-label');
       return;
     }
+    mount.setAttribute('role', 'img');
+    mount.setAttribute('aria-label', `Soroban rods showing ${value}.`);
     const board = document.createElement('div');
     board.className = 'soroban-board';
+    board.setAttribute('aria-hidden', 'true');
     String(value).split('').forEach((digitText) => {
       const digit = Number(digitText);
       const rod = document.createElement('div');
@@ -1323,7 +1352,11 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       const card = document.createElement('article');
       card.className = 'session-card';
       const title = document.createElement('strong');
-      title.textContent = session.journeyTitle ? `Journey · ${session.journeyTitle}` : `${session.type === 'curated' ? 'Curated' : 'Generated'} · ${session.level}`;
+      title.textContent = session.journeyTitle
+        ? `Journey · ${session.journeyTitle}`
+        : session.skill
+          ? `${session.skill.replace(/-/g, ' ')} · ${session.level}`
+          : `${session.type === 'curated' ? 'Curated' : 'Generated'} · ${session.level}`;
       const meta = document.createElement('p');
       meta.className = 'muted small';
       meta.textContent = `${session.id} · ${session.completed ? session.questions.length : session.currentIndex}/${session.questions.length} complete`;
@@ -1342,23 +1375,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       const replay = document.createElement('button');
       replay.className = 'button button-secondary';
       replay.textContent = 'Replay list';
-      replay.addEventListener('click', () => {
-        stopTimer();
-        const copy = {
-          ...session,
-          id: makeId(),
-          createdAt: new Date().toISOString(),
-          currentIndex: 0,
-          completed: false,
-          responses: {},
-          finalScore: null,
-        };
-        currentSession = copy;
-        syncControlsFromSession(copy);
-        persistCurrent();
-        renderHistory();
-        renderSession();
-      });
+      replay.addEventListener('click', () => replaySession(session));
       actions.append(resume, replay);
       card.append(title, meta, profile, score, actions);
       historyList.appendChild(card);
@@ -1416,12 +1433,22 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
     const question = currentSession.questions[currentSession.currentIndex];
     const response = responseForCurrent();
-    title.textContent = currentSession.journeyTitle ? `${currentSession.journeyTitle} journey` : `${currentSession.type === 'curated' ? 'Curated' : 'Generated'} ${currentSession.level} session`;
+    title.textContent = currentSession.journeyTitle
+      ? `${currentSession.journeyTitle} journey`
+      : currentSession.skill
+        ? `${currentSession.skill.replace(/-/g, ' ')} · ${currentSession.level} session`
+        : `${currentSession.type === 'curated' ? 'Curated' : 'Generated'} ${currentSession.level} session`;
     sessionIdLabel.textContent = currentSession.id;
     progress.textContent = `Question ${currentSession.currentIndex + 1} / ${currentSession.questions.length}`;
     score.textContent = `Score ${(currentSession.completed ? currentSession.finalScore : computeSessionScore(currentSession)) || 0}/100`;
     timer.textContent = currentSession.timerEnabled ? 'Timer on' : 'Timer off';
-    adaptiveNote.textContent = currentSession.journeyTitle ? `${currentSession.journeyTitle} path` : currentSession.questionStyle === 'adaptive' ? describeAdaptivePractice(currentSession.level) : 'Standard session';
+    adaptiveNote.textContent = currentSession.journeyTitle
+      ? `${currentSession.journeyTitle} path`
+      : currentSession.skill
+        ? `Focused skill: ${currentSession.skill.replace(/-/g, ' ')}`
+        : currentSession.questionStyle === 'adaptive'
+          ? describeAdaptivePractice(currentSession.level)
+          : 'Standard session';
     profile.textContent = currentSession.journeyTitle ? `Profile ${currentSession.journeyTitle} mode` : `Profile ${currentSession.worksheetProfile ? buildWorksheetProfileLabel(currentSession.worksheetProfile) : 'Lesson-aligned'}`;
     questionTitle.textContent = currentSession.completed
       ? 'Session completed'
@@ -1451,12 +1478,16 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         row.className = 'sheet-row';
         const prompt = document.createElement('div');
         prompt.className = 'sheet-prompt';
-        prompt.innerHTML = `<strong>${index + 1}.</strong> ${entry.prompt}`;
+        const number = document.createElement('strong');
+        number.textContent = `${index + 1}. `;
+        const promptText = document.createTextNode(String(entry.prompt || 'Practice question'));
+        prompt.append(number, promptText);
         const input = document.createElement('input');
         input.className = 'input';
         input.type = 'text';
         input.inputMode = 'numeric';
         input.placeholder = 'Answer';
+        input.setAttribute('aria-label', `Answer for question ${index + 1}: ${entry.prompt || 'practice question'}`);
         input.value = currentSession.responses[index]?.input || '';
         input.addEventListener('input', () => {
           currentSession.responses[index] = {
@@ -1548,9 +1579,11 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         questionStyle: byId('question-style').value,
         termCount: byId('term-count').value,
         journeyKey: selectedJourneyKey,
+        skill: selectedSkillKey,
       });
     persistCurrent();
     renderSession();
+    focusCurrentQuestion();
   });
 
   byId('resume-latest')?.addEventListener('click', () => {
@@ -1560,10 +1593,13 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     currentSession = latest;
     syncControlsFromSession(latest);
     renderSession();
+    focusCurrentQuestion();
   });
 
   byId('session-level')?.addEventListener('change', (event) => {
+    selectedSkillKey = null;
     applyPracticeLevelDefaults(event.target.value);
+    syncPracticeSetupCopy();
   });
 
   byId('resume-by-id')?.addEventListener('click', () => {
@@ -1580,6 +1616,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     currentSession = match;
     syncControlsFromSession(match);
     renderSession();
+    focusCurrentQuestion();
   });
 
   byId('verify-answer')?.addEventListener('click', () => {
@@ -1666,6 +1703,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         correct,
       };
       if (correct) correctCount += 1;
+      syncExerciseProgress(index);
     });
     currentSession.finalScore = Math.round((correctCount / currentSession.questions.length) * 100);
     currentSession.completed = true;
@@ -1718,7 +1756,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     }
     button.addEventListener('click', () => applyChallenge(button.dataset.challenge));
   });
-  byId('empty-warmup')?.addEventListener('click', () => applyPreset('warmup'));
+  byId('empty-warmup')?.addEventListener('click', () => startFromPreset('practice'));
   byId('start-warmup-now')?.addEventListener('click', () => startFromPreset('warmup'));
   byId('start-practice-now')?.addEventListener('click', () => startFromPreset('practice'));
   document.querySelectorAll('#session-format, #session-type, #session-level, #session-length, #question-style, #term-count, #timer-mode').forEach((node) => {
@@ -1726,9 +1764,23 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   });
 
   renderHistory();
-  applyPracticeLevelDefaults(byId('session-level')?.value || 'L0');
+  const query = new URLSearchParams(window.location.search);
+  const requestedLevel = String(query.get('level') || '').toUpperCase();
+  const requestedSkill = String(query.get('skill') || '').toLowerCase();
+  const supportedSkills = new Set(['addition', 'subtraction', 'complements', 'mixed-operations', 'multiplication', 'division', 'anzan', 'mastery', 'number-reading', 'number-setting', 'place-value', 'abacus-orientation']);
+  const hasRequestedLevel = /^L[0-5]$/.test(requestedLevel);
+  if (hasRequestedLevel) {
+    applyPreset('practice');
+    selectedSkillKey = supportedSkills.has(requestedSkill) ? requestedSkill : null;
+    byId('session-level').value = requestedLevel;
+    applyPracticeLevelDefaults(requestedLevel);
+    byId('session-type').value = 'generated';
+  } else {
+    applyPracticeLevelDefaults(byId('session-level')?.value || 'L0');
+  }
   syncPracticeSetupCopy();
   renderSession();
+  if (hasRequestedLevel && query.get('start') === '1') byId('start-session')?.click();
 </script>
 
 <style>

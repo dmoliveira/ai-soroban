@@ -58,10 +58,17 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     <div class="subtle-panel daily-drill-guidance">
       <strong id="daily-guidance-title">Today’s route</strong>
       <p id="daily-guidance-copy" class="muted small">Finish the unfinished weekly-plan step first, then use the supporting drills below.</p>
-      <div class="button-row button-row-compact">
-        <a class="button button-secondary" id="daily-link-lesson" href={`${base}lessons`}>Lesson step</a>
-        <a class="button button-secondary" id="daily-link-exercise" href={`${base}exercises`}>Exercise step</a>
-        <a class="button button-secondary" id="daily-link-worksheet" href={`${base}worksheets`}>Worksheet step</a>
+      <div class="route-card-footer daily-guidance-primary">
+        <span class="muted small" id="daily-guidance-primary-copy">Continue the unfinished route first, then use the alternates only if you still need more support.</span>
+        <a class="button" id="daily-link-primary" href={`${base}lessons`}>Continue unfinished lesson</a>
+      </div>
+      <div class="daily-guidance-alternates">
+        <span class="muted small">Other ways to extend today</span>
+        <div class="button-row button-row-compact">
+          <a class="button button-secondary" id="daily-link-lesson" href={`${base}lessons`}>Lesson route</a>
+          <a class="button button-secondary" id="daily-link-exercise" href={`${base}exercises`}>Exercise route</a>
+          <a class="button button-secondary" id="daily-link-worksheet" href={`${base}worksheets`}>Worksheet route</a>
+        </div>
       </div>
     </div>
   </section>
@@ -129,12 +136,15 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   }
 
   .daily-drill-stat { display: grid; gap: 0.35rem; }
-  .daily-drill-stat span { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: #9a6c6c; }
+  .daily-drill-stat span { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent); }
 
   .daily-drill-command-head { display:flex; gap:1rem; align-items:end; justify-content:space-between; margin-bottom:1rem; }
   .daily-drill-command-head p:last-child { margin:0; max-width:30rem; }
 
   .daily-drill-summary-card { display:grid; gap:0.5rem; }
+  .daily-guidance-primary { margin-top: 0; }
+  .daily-guidance-alternates { display:grid; gap:0.5rem; margin-top:0.5rem; }
+  .daily-guidance-alternates > span { text-transform:none; letter-spacing:0; }
 
   .daily-drill-board .section-head { margin-bottom: 1rem; }
 
@@ -143,18 +153,11 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   }
 </style>
 
-<script is:inline>
-  const base = document.querySelector('.daily-drill-studio')?.dataset.base || '/';
-  const exerciseKey = 'soroban-dojo:exercise-states';
-  const weeklyPlanKey = 'soroban-dojo:weekly-study-plan';
+<script>
+  // @ts-nocheck
+  import { STORAGE_KEYS, firstIncompletePlanStep, readStoredJson } from '../lib/storage.js';
 
-  const read = (key, fallback) => {
-    try {
-      return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback));
-    } catch {
-      return fallback;
-    }
-  };
+  const base = document.querySelector('.daily-drill-studio')?.dataset.base || '/';
 
   const hashSeed = (value) => Array.from(value).reduce((acc, char) => ((acc * 31) + char.charCodeAt(0)) >>> 0, 7);
   const createRng = (seedText) => {
@@ -173,8 +176,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     return copy;
   };
 
-  const planState = read(weeklyPlanKey, {});
-  const exerciseStates = read(exerciseKey, {});
+  const planState = readStoredJson(localStorage, STORAGE_KEYS.weeklyStudyPlan, {});
+  const exerciseStates = readStoredJson(localStorage, STORAGE_KEYS.exerciseStates, {});
   const weakness = Object.values(exerciseStates).reduce((acc, entry) => {
     if (entry?.status !== 'needs-review') return acc;
     const skill = entry.skill || '';
@@ -185,8 +188,14 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     else acc.arithmetic += 1;
     return acc;
   }, { arithmetic: 0, complements: 0, multiplication: 0, division: 0, mental: 0 });
+  const weaknessTotal = Object.values(weakness).reduce((sum, count) => sum + count, 0);
 
-  const defaultTarget = planState.target || ['mental', 'division', 'multiplication', 'complements', 'arithmetic'].sort((a, b) => weakness[b] - weakness[a])[0];
+  const storedTarget = ['arithmetic', 'complements', 'multiplication', 'division', 'mental'].includes(planState.target)
+    ? planState.target
+    : null;
+  const defaultTarget = storedTarget || (weaknessTotal === 0
+    ? 'arithmetic'
+    : ['mental', 'division', 'multiplication', 'complements', 'arithmetic'].sort((a, b) => weakness[b] - weakness[a])[0]);
   const targetOptionsByLevel = {
     L0: ['arithmetic'],
     L1: ['arithmetic'],
@@ -224,6 +233,20 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
           title: 'Arithmetic rhythm today',
           archetype: 'Rhythm day',
           copy: 'Finish the arithmetic step you left open, then steady the running total with short mixed drills.',
+          drillsByLevel: {
+            L0: [
+              () => ({ prompt: 'Read this number: 7', answer: 7 }),
+              () => ({ prompt: 'Read this number: 4', answer: 4 }),
+              () => ({ prompt: 'Set this number: 9', answer: 9 }),
+              () => ({ prompt: 'Read this number: 2', answer: 2 }),
+            ],
+            L1: [
+              () => ({ prompt: '2 + 3', answer: 5 }),
+              () => ({ prompt: '7 - 2', answer: 5 }),
+              () => ({ prompt: '4 + 4', answer: 8 }),
+              () => ({ prompt: '9 - 3', answer: 6 }),
+            ],
+          },
           drills: [
             () => { const a = 24; const b = 7; const c = 1; return { prompt: `${a} + ${b} + ${c}`, answer: a + b + c }; },
             () => { const a = 38; const b = 12; return { prompt: `${a} - ${b}`, answer: a - b }; },
@@ -235,6 +258,20 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
           title: 'Arithmetic repair today',
           archetype: 'Recovery day',
           copy: 'Repair the running total carefully and finish with smaller recovery drills before speed returns.',
+          drillsByLevel: {
+            L0: [
+              () => ({ prompt: 'Fix this result: 7 = 6', answer: 7 }),
+              () => ({ prompt: 'Fix this result: 4 = 5', answer: 4 }),
+              () => ({ prompt: 'Fix this result: 9 = 8', answer: 9 }),
+              () => ({ prompt: 'Fix this result: 2 = 3', answer: 2 }),
+            ],
+            L1: [
+              () => ({ prompt: 'Fix this result: 2 + 3 = 4', answer: 5 }),
+              () => ({ prompt: 'Fix this result: 7 - 2 = 6', answer: 5 }),
+              () => ({ prompt: 'Fix this result: 4 + 4 = 7', answer: 8 }),
+              () => ({ prompt: 'Fix this result: 9 - 3 = 5', answer: 6 }),
+            ],
+          },
           drills: [
             () => ({ prompt: 'Fix this result: 24 + 7 + 1 = 30', answer: 32 }),
             () => ({ prompt: 'Fix this result: 46 - 8 + 12 = 49', answer: 50 }),
@@ -367,7 +404,12 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   };
 
   const byId = (id) => document.getElementById(id);
-  const unfinishedStep = ['lesson', 'exercise', 'worksheet'].find((step) => !planState[step]?.done) || 'lesson';
+  const unfinishedStep = firstIncompletePlanStep(planState);
+  const routeLabels = {
+    lesson: 'lesson',
+    exercise: 'exercise',
+    worksheet: 'worksheet',
+  };
   const makeSeed = (level, target, archetype) => `${level}-${target}-${archetype}-${new Date().toISOString().slice(0, 10)}`;
 
   const resolveTargetForLevel = (level) => {
@@ -397,8 +439,9 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     };
   };
 
-  const buildDailyItems = (archetype, rng, count = 8) => {
-    const factories = shuffle(archetype.drills, rng);
+  const buildDailyItems = (archetype, rng, selectedLevel, count = 8) => {
+    const source = archetype.drillsByLevel?.[selectedLevel] || archetype.drills;
+    const factories = shuffle(source, rng);
     return Array.from({ length: count }, (_, index) => factories[index % factories.length]());
   };
 
@@ -417,20 +460,42 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     });
   };
 
+  const initialLevel = packs[defaultTarget]?.level || 'L3';
+  if (byId('daily-level')) {
+    byId('daily-level').value = initialLevel;
+  }
+
   const renderPack = () => {
     const { selectedLevel, target, content, archetype, rng, seed } = resolvePack();
+    const routeLinks = { lesson: content.lesson, exercise: content.exercise, worksheet: content.worksheet };
+    const primaryStep = unfinishedStep || 'exercise';
+    const primaryHref = routeLinks[primaryStep];
     byId('daily-pack-id').textContent = `Pack ${seed}`;
     byId('daily-pack-archetype').textContent = `Archetype: ${archetype.archetype}`;
-    byId('daily-drill-focus').textContent = `Adaptive focus: ${target} · First unfinished step: ${unfinishedStep}`;
+    byId('daily-drill-focus').textContent = unfinishedStep
+      ? `Adaptive focus: ${target} · First unfinished step: ${unfinishedStep}`
+      : `Adaptive focus: ${target} · Weekly plan complete`;
     byId('daily-guidance-title').textContent = archetype.title;
     byId('daily-guidance-copy').textContent = archetype.copy;
+    byId('daily-guidance-primary-copy').textContent = unfinishedStep
+      ? `Continue the unfinished ${routeLabels[unfinishedStep]} first, then use the alternates only if you still need more support.`
+      : 'Your weekly plan is complete. Use this drill as optional review, not as another required step.';
+    byId('daily-link-primary').href = primaryHref;
+    byId('daily-link-primary').textContent = unfinishedStep
+      ? `Continue unfinished ${routeLabels[unfinishedStep]}`
+      : 'Open optional exercise review';
     byId('daily-link-lesson').href = content.lesson;
     byId('daily-link-exercise').href = content.exercise;
     byId('daily-link-worksheet').href = content.worksheet;
-    byId('daily-drill-copy').textContent = `This pack is centered on ${target} work at ${selectedLevel} and starts by pointing you back to the unfinished ${unfinishedStep} step from your weekly plan. Try each prompt before revealing the answer.`;
+    byId('daily-link-lesson').textContent = unfinishedStep === 'lesson' ? 'Lesson route' : `Use the ${routeLabels.lesson} route`;
+    byId('daily-link-exercise').textContent = unfinishedStep === 'exercise' ? 'Exercise route' : `Use the ${routeLabels.exercise} route`;
+    byId('daily-link-worksheet').textContent = unfinishedStep === 'worksheet' ? 'Worksheet route' : `Use the ${routeLabels.worksheet} route`;
+    byId('daily-drill-copy').textContent = unfinishedStep
+      ? `This pack is centered on ${target} work at ${selectedLevel} and starts by pointing you back to the unfinished ${unfinishedStep} step from your weekly plan. Try each prompt before revealing the answer.`
+      : `This optional ${target} pack at ${selectedLevel} keeps recent skills warm after a completed weekly plan. Try each prompt before revealing the answer.`;
     const list = byId('daily-drill-list');
     list.replaceChildren();
-    buildDailyItems(archetype, rng).forEach((item, index) => {
+    buildDailyItems(archetype, rng, selectedLevel).forEach((item, index) => {
       const li = document.createElement('li');
       const strong = document.createElement('strong');
       strong.textContent = `${index + 1}. ${item.prompt}`;

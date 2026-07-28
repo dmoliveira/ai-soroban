@@ -4,7 +4,7 @@ import LevelGrid from '../../components/LevelGrid.astro';
 const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
 ---
 
-<BaseLayout title="Levels | Soroban Dojo">
+<BaseLayout title="Levels | Soroban Dojo" description="Choose the soroban level that feels stable today, then continue into the matching lesson path, exercise flow, and calm follow-up practice.">
   <section class="levels-studio-hero panel" style={`--levels-mist:url('${base}graphics/worksheet-mist.svg')`}>
     <div class="levels-studio-brand">
       <div class="levels-studio-mark" aria-hidden="true">
@@ -41,6 +41,11 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         <p class="muted small">Move upward after one clean session, not just one lucky answer.</p>
       </article>
     </div>
+    <div class="hero-actions">
+      <a class="button" href={`${base}levels/l0`}>Start with Foundations</a>
+      <a class="button button-secondary" href={`${base}assessments`}>Take a placement self-check</a>
+      <a class="button button-secondary" href={`${base}curriculum`}>See the full curriculum</a>
+    </div>
     <LevelGrid />
   </section>
 
@@ -54,7 +59,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     .levels-studio-mark img { width:3.25rem; height:3.25rem; }
     .levels-studio-stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.85rem; }
     .levels-studio-stat { display:grid; gap:.35rem; }
-    .levels-studio-stat span { font-size:.75rem; text-transform:uppercase; letter-spacing:.06em; color:#9a6c6c; }
+    .levels-studio-stat span { font-size:.75rem; text-transform:uppercase; letter-spacing:.06em; color:var(--accent); }
     .levels-chooser-strip { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1rem; margin:1rem 0 1.5rem; }
     @media (max-width:900px){ .levels-studio-stats,.levels-chooser-strip{ grid-template-columns:1fr; } }
   </style>
