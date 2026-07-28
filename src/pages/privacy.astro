@@ -28,7 +28,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         <li>Path, lesson, exercise, placement, and weekly-plan state</li>
         <li>Practice, timer, worksheet, and mini-game history</li>
         <li>Boss progress, medals, badges, and certificates</li>
-        <li>A display preference such as the selected theme</li>
+        <li>One display theme: Washi, Sakura, or Sumi</li>
       </ul>
     </article>
     <article class="panel content-prose route-card compact-card">
@@ -41,7 +41,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   <section class="panel content-prose route-card compact-card">
     <p class="eyebrow">Reset control</p>
     <h2>Clearing progress is local to this browser</h2>
-    <p>If you reset progress, Soroban Dojo clears every learning and reward record stored on this device, including placement, weekly-plan, game, worksheet, practice, and boss data. Display preferences and unrelated browser data remain untouched.</p>
+    <p>If you reset progress, Soroban Dojo clears every learning and reward record stored on this device, including placement, weekly-plan, game, worksheet, practice, and boss data. Your selected theme and unrelated browser data remain untouched. If that preference is missing or unavailable, the site safely uses Washi.</p>
     <div class="route-card-footer">
       <span class="muted small">Best next step: use Progress when you want to review or clear local study data.</span>
       <a class="button button-secondary" href={`${base}progress`}>Open progress controls</a>

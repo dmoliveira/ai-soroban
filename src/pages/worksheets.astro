@@ -8,7 +8,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     <section class="worksheet-hero panel no-print" style={`--worksheet-mist:url('${base}graphics/worksheet-mist.svg')`}>
       <div class="worksheet-hero-brand">
         <div class="worksheet-hero-mark" aria-hidden="true">
-          <img src={`${base}graphics/sakura-mark.svg`} alt="" />
+          <img class="theme-decoration" src={`${base}graphics/sakura-mark.svg`} alt="" />
         </div>
         <div class="worksheet-hero-copy">
           <p class="eyebrow">Today’s training · 印刷</p>
@@ -326,9 +326,9 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     .worksheet-insight-rail > .subtle-panel,
     .worksheet-progress-card,
     .worksheet-score-grid .stat-card {
-      border: 1px solid rgba(244, 194, 194, 0.55);
-      box-shadow: 0 18px 48px rgba(201, 114, 114, 0.08);
-      background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,251,249,0.96));
+      border: 1px solid color-mix(in srgb, var(--hero-border) 55%, transparent);
+      box-shadow: 0 18px 48px color-mix(in srgb, var(--accent) 8%, transparent);
+      background: linear-gradient(180deg, color-mix(in srgb, var(--panel-raised) 96%, transparent), color-mix(in srgb, var(--panel) 96%, transparent));
     }
 
     .worksheet-step-grid { margin: 0 0 1rem; }
@@ -346,7 +346,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
       overflow: hidden;
       position: relative;
-      background-image: linear-gradient(135deg, rgba(255,250,248,0.95), rgba(255,244,246,0.98)), var(--worksheet-mist);
+      background-image: var(--hero-overlay), var(--worksheet-mist);
       background-size: cover;
       background-position: center bottom;
     }
@@ -357,7 +357,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       inset: auto -2rem -2rem auto;
       width: 14rem;
       height: 14rem;
-      background: radial-gradient(circle, rgba(255,182,199,0.18), rgba(255,182,199,0));
+      background: radial-gradient(circle, color-mix(in srgb, var(--accent) 18%, transparent), color-mix(in srgb, var(--accent) 0%, transparent));
       pointer-events: none;
     }
 
@@ -373,10 +373,10 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       width: 4.5rem;
       height: 4.5rem;
       border-radius: 1.5rem;
-      background: rgba(255,255,255,0.8);
+      background: color-mix(in srgb, var(--panel-raised) 80%, transparent);
       display: grid;
       place-items: center;
-      box-shadow: 0 12px 32px rgba(201, 114, 114, 0.12);
+      box-shadow: 0 12px 32px color-mix(in srgb, var(--accent) 12%, transparent);
       flex: 0 0 auto;
     }
 
@@ -468,7 +468,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       height: 12rem;
       margin: 0 auto;
       border-radius: 999px;
-      background: conic-gradient(#f06283 0deg, #f06283 180deg, #f6e7df 180deg 360deg);
+      background: conic-gradient(var(--accent) 0deg, var(--accent) 180deg, var(--accent-soft) 180deg 360deg);
       display: grid;
       place-items: center;
     }
@@ -477,12 +477,12 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       width: 8.5rem;
       height: 8.5rem;
       border-radius: 999px;
-      background: rgba(255,255,255,0.97);
+      background: color-mix(in srgb, var(--panel-raised) 97%, transparent);
       display: grid;
       place-items: center;
       text-align: center;
       gap: 0.2rem;
-      box-shadow: inset 0 0 0 1px rgba(244, 194, 194, 0.4);
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--hero-border) 40%, transparent);
     }
 
     .worksheet-progress-ring-inner strong {
@@ -491,7 +491,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     }
 
     .worksheet-progress-ring-inner span {
-      color: #8b6b6b;
+      color: var(--muted);
       font-size: 0.85rem;
     }
 
@@ -535,9 +535,9 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     }
 
     .worksheet-panel .badge {
-      background: rgba(240, 98, 131, 0.08);
+      background: color-mix(in srgb, var(--accent) 8%, transparent);
       color: var(--accent);
-      border-color: rgba(240, 98, 131, 0.25);
+      border-color: color-mix(in srgb, var(--accent) 25%, transparent);
     }
 
     .worksheet-controls-shell {
@@ -602,7 +602,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
     .worksheet-answer-label {
       font-size: 0.75rem;
-      color: var(--muted, #6b7280);
+      color: var(--muted);
       text-transform: uppercase;
       letter-spacing: 0.04em;
     }

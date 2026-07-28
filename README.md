@@ -25,8 +25,9 @@ Astro serves the project at `http://localhost:4321/soroban-dojo/`.
 
 ```bash
 npm run check       # Astro, TypeScript, and content schemas
-npm test            # worksheet, storage, and content-graph unit tests
+npm test            # domain, storage, content-graph, and theme unit tests
 npm run build       # production static export
+npm run test:theme-build # production theme-bootstrap ordering
 npm run test:e2e    # local Chromium flow tests; starts Astro automatically
 ```
 
@@ -52,7 +53,11 @@ Use `npm run test:e2e:live` only for an explicit smoke test of the deployed GitH
 
 ## Local data
 
-Soroban Dojo stores lesson completion, exercise state, practice/timer/worksheet history, weekly-plan and placement state, mini-game scores and medals, boss progress and certificates, and a selected learner path. The Progress page can clear all learning records while preserving display preferences. See `docs/specs/privacy-and-data.md` for the exact contract.
+Soroban Dojo stores lesson completion, exercise state, practice/timer/worksheet history, weekly-plan and placement state, mini-game scores and medals, boss progress and certificates, a selected learner path, and the selected display theme. The Progress page can clear all learning records while preserving display preferences. See `docs/specs/privacy-and-data.md` for the exact contract.
+
+## Display themes
+
+Use the header selector to choose Washi, Sakura, or Sumi. Washi is the default; a valid selection is saved only in the current browser and applied before the page styles load to avoid a theme flash. Invalid or unavailable browser storage safely falls back to Washi without affecting study progress.
 
 ## Contributing content
 

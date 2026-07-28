@@ -1,6 +1,6 @@
 {
   "name": "soroban-dojo",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -11,11 +11,13 @@
     "lint": "astro check",
     "check": "astro check",
     "test": "node --test tests/**/*.test.mjs",
+    "test:theme-build": "node --test tests/theme-build-check.mjs",
     "test:e2e": "playwright test",
     "test:e2e:smoke": "playwright test tests/e2e/ui-redesign-smoke.spec.js",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:install": "playwright install chromium",
-    "test:e2e:live": "PLAYWRIGHT_BASE_URL=https://dmoliveira.github.io/soroban-dojo playwright test"
+    "test:e2e:live": "PLAYWRIGHT_BASE_URL=https://dmoliveira.github.io/soroban-dojo playwright test",
+    "test:e2e:theme-preview": "npm run build && PLAYWRIGHT_SERVER_MODE=preview playwright test tests/e2e/theme-persistence.spec.js --grep 'production prepaint' --project=chromium --reporter=line --workers=1 --retries=0"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.8",

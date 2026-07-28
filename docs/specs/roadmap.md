@@ -10,19 +10,16 @@
 - responsive task navigation and local-first pull-request browser testing
 - deterministic certified challenges with measured targets across save, resume, replay, history, and progress
 - finite Number Bond, table, Flash Anzan, and error-repair games with score/time completion summaries
+- persistent accessible Washi, Sakura, and Sumi themes with prepaint restoration and local preference storage
 
-## Current modernization
+## Delivered modernization
 
 - simplify time-to-practice and preserve lesson/exercise context
 - keep storage/reset and adaptive recommendations coherent
 - validate content IDs, relationships, skills, and worksheet profiles
 - improve responsive, keyboard, touch, and assistive feedback
 - make release, privacy, and developer documentation match behavior
-
-## Next experience release
-
-- persistent accessible display themes
-- final cross-theme responsive and accessibility verification
+- validate responsive headers, high-risk learner routes, print output, and theme persistence across all three themes
 
 ## Durable follow-ups
 

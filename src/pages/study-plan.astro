@@ -11,7 +11,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 <BaseLayout title="Study Plan | Soroban Dojo">
   <section class="study-plan-hero panel" style={`--study-mist:url('${base}graphics/worksheet-mist.svg')`}>
     <div class="study-plan-brand">
-      <div class="study-plan-mark" aria-hidden="true"><img src={`${base}graphics/sakura-mark.svg`} alt="" /></div>
+      <div class="study-plan-mark" aria-hidden="true"><img class="theme-decoration" src={`${base}graphics/sakura-mark.svg`} alt="" /></div>
       <div class="content-prose">
         <p class="eyebrow">Study plan · 学びの道</p>
         <h1>See why this week was chosen</h1>
@@ -27,9 +27,9 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   <WeeklyStudyPlan lessons={lessons} exercises={exercises} />
 
   <style>
-    .study-plan-hero { display:grid; gap:1rem; border:1px solid rgba(244,194,194,.55); box-shadow:0 18px 48px rgba(201,114,114,.08); background-image:linear-gradient(135deg, rgba(255,250,248,.95), rgba(255,244,246,.98)), var(--study-mist); background-size:cover; background-position:center bottom; }
+    .study-plan-hero { display:grid; gap:1rem; border:1px solid color-mix(in srgb, var(--hero-border) 55%, transparent); box-shadow:0 18px 48px color-mix(in srgb, var(--accent) 8%, transparent); background-image:var(--hero-overlay), var(--study-mist); background-size:cover; background-position:center bottom; }
     .study-plan-brand { display:flex; gap:1rem; align-items:flex-start; }
-    .study-plan-mark { width:4.5rem; height:4.5rem; border-radius:1.5rem; background:rgba(255,255,255,.8); display:grid; place-items:center; box-shadow:0 12px 32px rgba(201,114,114,.12); flex:0 0 auto; }
+    .study-plan-mark { width:4.5rem; height:4.5rem; border-radius:1.5rem; background:color-mix(in srgb, var(--panel-raised) 80%, transparent); display:grid; place-items:center; box-shadow:0 12px 32px color-mix(in srgb, var(--accent) 12%, transparent); flex:0 0 auto; }
     .study-plan-mark img { width:3.25rem; height:3.25rem; }
     .study-plan-stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.85rem; }
     .study-plan-stat { display:grid; gap:.35rem; }

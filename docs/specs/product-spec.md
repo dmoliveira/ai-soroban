@@ -21,6 +21,7 @@ Provide a calm, practical Soroban dojo that helps children, adult self-learners,
 5. **Inclusive delivery:** keyboard, touch, reduced motion, mobile layout, print, and readable status feedback are release requirements.
 6. **Static reliability:** every public route must work from the GitHub Pages base path.
 7. **Calm dojo tone:** playful modes may add challenge, but not shame, urgency traps, or noisy reward loops.
+8. **Theme continuity:** Washi, Sakura, and Sumi must retain readable contrast, responsive layouts, and the learner's current task state.
 
 ## Current product surface
 
@@ -31,7 +32,8 @@ Provide a calm, practical Soroban dojo that helps children, adult self-learners,
 - configurable/certified worksheets with print and answer-key modes
 - mini-games, boss rounds, badges, and certificates
 - placement and local progress recommendations
+- persistent Washi, Sakura, and Sumi display themes, with Washi as the safe default
 
 ## Release quality bar
 
-A release is complete only when content checks, unit tests, static build, local browser flows, responsive checks, and the GitHub Pages base path are green. Promised game mechanics must match their implemented rules.
+A release is complete only when content checks, unit tests, static build, local browser flows, responsive and cross-theme checks, production bootstrap ordering, and the GitHub Pages base path are green. Promised game mechanics must match their implemented rules.

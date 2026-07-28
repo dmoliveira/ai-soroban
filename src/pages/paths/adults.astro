@@ -6,7 +6,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 <BaseLayout title="Adult Path | Soroban Dojo" description="Follow a structured soroban self-study path for adults with practical first-week rhythm, confidence checks, and steady next steps.">
   <section class="path-studio-hero panel" style={`--path-mist:url('${base}graphics/worksheet-mist.svg')`}>
     <div class="path-studio-brand">
-      <div class="path-studio-mark" aria-hidden="true"><img src={`${base}graphics/sakura-mark.svg`} alt="" /></div>
+      <div class="path-studio-mark" aria-hidden="true"><img class="theme-decoration" src={`${base}graphics/sakura-mark.svg`} alt="" /></div>
       <div class="content-prose">
         <p class="eyebrow">Adult path · おとな</p>
         <h1>Structured self-study with practical rhythm</h1>
@@ -36,8 +36,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   </section>
 
   <style>
-    .path-studio-hero{display:grid;gap:1rem;border:1px solid rgba(244,194,194,.55);box-shadow:0 18px 48px rgba(201,114,114,.08);background-image:linear-gradient(135deg, rgba(255,250,248,.95), rgba(255,244,246,.98)), var(--path-mist);background-size:cover;background-position:center bottom}
-    .path-studio-brand{display:flex;gap:1rem;align-items:flex-start}.path-studio-mark{width:4.5rem;height:4.5rem;border-radius:1.5rem;background:rgba(255,255,255,.8);display:grid;place-items:center;box-shadow:0 12px 32px rgba(201,114,114,.12);flex:0 0 auto}.path-studio-mark img{width:3.25rem;height:3.25rem}.path-studio-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.85rem}.path-studio-stat{display:grid;gap:.35rem}.path-studio-stat span{font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--accent)}@media (max-width:900px){.path-studio-stats{grid-template-columns:1fr}}
+    .path-studio-hero{display:grid;gap:1rem;border:1px solid color-mix(in srgb, var(--hero-border) 55%, transparent);box-shadow:0 18px 48px color-mix(in srgb, var(--accent) 8%, transparent);background-image:var(--hero-overlay), var(--path-mist);background-size:cover;background-position:center bottom}
+    .path-studio-brand{display:flex;gap:1rem;align-items:flex-start}.path-studio-mark{width:4.5rem;height:4.5rem;border-radius:1.5rem;background:color-mix(in srgb, var(--panel-raised) 80%, transparent);display:grid;place-items:center;box-shadow:0 12px 32px color-mix(in srgb, var(--accent) 12%, transparent);flex:0 0 auto}.path-studio-mark img{width:3.25rem;height:3.25rem}.path-studio-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.85rem}.path-studio-stat{display:grid;gap:.35rem}.path-studio-stat span{font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--accent)}@media (max-width:900px){.path-studio-stats{grid-template-columns:1fr}}
   </style>
 
   <section class="split-grid">

@@ -265,7 +265,7 @@ const bestFor = exercise.data.type === 'visual-check'
 <style>
   .exercise-checkpoint-card { gap: 0.75rem; }
   .exercise-state-strip { display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:0.65rem; }
-  .exercise-state-card { display:grid; gap:0.18rem; padding:0.7rem 0.8rem; border-radius:14px; background:rgba(255,255,255,0.5); border:1px solid rgba(217,204,190,0.9); }
+  .exercise-state-card { display:grid; gap:0.18rem; padding:0.7rem 0.8rem; border-radius:14px; background:color-mix(in srgb, var(--panel-raised) 50%, transparent); border:1px solid color-mix(in srgb, var(--line) 90%, transparent); }
   .exercise-state-card small { color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
   .exercise-support-actions { margin-top: 0.2rem; }
   @media (max-width: 860px) {
@@ -275,9 +275,9 @@ const bestFor = exercise.data.type === 'visual-check'
   .worksheet-ledger {
     margin: 1rem 0;
     padding: 0.9rem 1rem;
-    border: 1px dashed color-mix(in srgb, var(--border) 78%, white 22%);
+    border: 1px dashed color-mix(in srgb, var(--border) 78%, var(--panel-raised) 22%);
     border-radius: 1rem;
-    background: color-mix(in srgb, white 86%, var(--surface) 14%);
+    background: color-mix(in srgb, var(--panel-raised) 86%, var(--surface) 14%);
     font: 600 1.05rem/1.7 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     white-space: pre-wrap;
   }
