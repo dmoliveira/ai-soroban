@@ -8,6 +8,8 @@
 - configurable certified worksheet generation
 - daily drills, weekly plans, mini-games, boss rounds, badges, and certificates
 - responsive task navigation and local-first pull-request browser testing
+- deterministic certified challenges with measured targets across save, resume, replay, history, and progress
+- finite Number Bond, table, Flash Anzan, and error-repair games with score/time completion summaries
 
 ## Current modernization
 
@@ -17,12 +19,10 @@
 - improve responsive, keyboard, touch, and assistive feedback
 - make release, privacy, and developer documentation match behavior
 
-## Next gameplay release
+## Next experience release
 
-- deterministic challenge-specific generators and rules
-- finite mini-game runs with honest completion feedback
 - persistent accessible display themes
-- challenge identity in save, resume, replay, history, and progress
+- final cross-theme responsive and accessibility verification
 
 ## Durable follow-ups
 

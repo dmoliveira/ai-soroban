@@ -11,6 +11,8 @@ interface Props {
   exercises: ExerciseSummary[];
 }
 
+import { CHALLENGE_LIST } from '../lib/challenges.js';
+
 const { exercises } = Astro.props;
 const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
 ---
@@ -83,69 +85,19 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       </article>
     </div>
     <div class="option-grid option-grid-compact practice-challenge-grid">
-      <article class="choice-card">
-        <p class="eyebrow">Challenge</p>
-        <h3>Bead match</h3>
-        <p>Short L0 visual rounds that ask you to read the rod calmly before you answer.</p>
-        <div class="button-row button-row-compact">
-          <button class="button button-secondary practice-challenge-button" data-challenge="bead-match" aria-label="Use bead match challenge preset">Use bead match</button>
-          <button class="button button-secondary practice-challenge-start" data-challenge="bead-match" aria-label="Start bead match challenge now">Start bead match</button>
-        </div>
-      </article>
-      <article class="choice-card">
-        <p class="eyebrow">Challenge</p>
-        <h3>Clean five</h3>
-        <p>Short L1 visual rounds that help the clean five shape become easy to spot.</p>
-        <div class="button-row button-row-compact">
-          <button class="button button-secondary practice-challenge-button" data-challenge="clean-five" aria-label="Use clean five challenge preset">Use clean five</button>
-          <button class="button button-secondary practice-challenge-start" data-challenge="clean-five" aria-label="Start clean five challenge now">Start clean five</button>
-        </div>
-      </article>
-      <article class="choice-card">
-        <p class="eyebrow">Challenge</p>
-        <h3>Streak sprint</h3>
-        <p>Short timed arithmetic bursts that reward clean momentum more than brute length.</p>
-        <div class="button-row button-row-compact">
-          <button class="button button-secondary practice-challenge-button" data-challenge="streak-sprint" aria-label="Use streak sprint challenge preset">Use streak sprint</button>
-          <button class="button button-secondary practice-challenge-start" data-challenge="streak-sprint" aria-label="Start streak sprint challenge now">Start streak sprint</button>
-        </div>
-      </article>
-      <article class="choice-card">
-        <p class="eyebrow">Challenge</p>
-        <h3>Sign switch relay</h3>
-        <p>Keep your running total steady while addition and subtraction keep changing places.</p>
-        <div class="button-row button-row-compact">
-          <button class="button button-secondary practice-challenge-button" data-challenge="sign-switch-relay" aria-label="Use sign switch relay challenge preset">Use sign switch relay</button>
-          <button class="button button-secondary practice-challenge-start" data-challenge="sign-switch-relay" aria-label="Start sign switch relay challenge now">Start sign switch relay</button>
-        </div>
-      </article>
-      <article class="choice-card">
-        <p class="eyebrow">Challenge</p>
-        <h3>Table ladder</h3>
-        <p>Climb one multiplication family at a time instead of jumping randomly across facts.</p>
-        <div class="button-row button-row-compact">
-          <button class="button button-secondary practice-challenge-button" data-challenge="table-ladder" aria-label="Use table ladder challenge preset">Use table ladder</button>
-          <button class="button button-secondary practice-challenge-start" data-challenge="table-ladder" aria-label="Start table ladder challenge now">Start table ladder</button>
-        </div>
-      </article>
-      <article class="choice-card">
-        <p class="eyebrow">Challenge</p>
-        <h3>Quotient chase</h3>
-        <p>Train exact quotient finding quickly, then verify each result before moving on.</p>
-        <div class="button-row button-row-compact">
-          <button class="button button-secondary practice-challenge-button" data-challenge="quotient-chase" aria-label="Use quotient chase challenge preset">Use quotient chase</button>
-          <button class="button button-secondary practice-challenge-start" data-challenge="quotient-chase" aria-label="Start quotient chase challenge now">Start quotient chase</button>
-        </div>
-      </article>
-      <article class="choice-card">
-        <p class="eyebrow">Challenge</p>
-        <h3>Anzan burst</h3>
-        <p>Fast mental-only sequences that test sign changes, rhythm, and recovery in one run.</p>
-        <div class="button-row button-row-compact">
-          <button class="button button-secondary practice-challenge-button" data-challenge="anzan-burst" aria-label="Use anzan burst challenge preset">Use anzan burst</button>
-          <button class="button button-secondary practice-challenge-start" data-challenge="anzan-burst" aria-label="Start anzan burst challenge now">Start anzan burst</button>
-        </div>
-      </article>
+      {CHALLENGE_LIST.map((challenge) => (
+        <article class="choice-card" data-challenge-card={challenge.key}>
+          <p class="eyebrow">Challenge</p>
+          <h3>{challenge.title}</h3>
+          <p>{challenge.summary}</p>
+          <p class="muted small"><strong>Target:</strong> {challenge.target}</p>
+          <p class="muted small"><strong>Rule:</strong> {challenge.rule}</p>
+          <div class="button-row button-row-compact">
+            <button class="button button-secondary practice-challenge-button" data-challenge={challenge.key} aria-label={`Use ${challenge.title} challenge preset`}>Use {challenge.title}</button>
+            <button class="button button-secondary practice-challenge-start" data-challenge={challenge.key} aria-label={`Start ${challenge.title} challenge now`}>Start {challenge.title}</button>
+          </div>
+        </article>
+      ))}
     </div>
     <div class="subtle-panel practice-adaptive-next">
       <strong id="adaptive-next-title">Adaptive next move</strong>
@@ -308,6 +260,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         <div class="subtle-panel practice-meta-card"><strong>Session ID:</strong><span id="session-id" class="muted small">—</span></div>
         <div class="subtle-panel practice-meta-card"><strong>Adaptive focus:</strong><span id="session-adaptive-note" class="muted small">—</span></div>
         <div class="subtle-panel practice-meta-card"><strong>Profile:</strong><span id="session-profile" class="muted small">—</span></div>
+        <div class="subtle-panel practice-meta-card" id="session-challenge-summary" hidden><strong>Challenge:</strong><span id="session-challenge-copy" class="muted small">—</span></div>
       </div>
       <div class="practice-learning-strip">
         <strong>Learning path</strong>
@@ -342,6 +295,11 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
           <button class="button button-secondary" id="reveal-steps">Reveal method</button>
           <button class="button button-secondary" id="next-question">Save and continue</button>
         </div>
+        <div id="feedback-panel" class="reveal-panel" hidden role="status" aria-live="polite" tabindex="-1"></div>
+        <div id="session-complete-actions" class="button-row button-row-compact session-complete-actions" hidden>
+          <button class="button button-secondary session-replay-current" id="session-replay-current">Replay this list</button>
+          <button class="button session-start-fresh" id="session-start-fresh">Start fresh</button>
+        </div>
         <div class="question-flow-note">
           <span class="review-chip">1. Solve first</span>
           <span class="review-chip">2. Write your response</span>
@@ -372,9 +330,13 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
           <button class="button button-secondary" id="reveal-sheet-answers">Reveal sheet answers</button>
           <button class="button button-secondary" id="save-sheet">Save sheet progress</button>
         </div>
+        <div id="sheet-feedback-panel" class="reveal-panel" hidden role="status" aria-live="polite" tabindex="-1"></div>
+        <div id="sheet-session-complete-actions" class="button-row button-row-compact session-complete-actions" hidden>
+          <button class="button button-secondary session-replay-current">Replay this list</button>
+          <button class="button session-start-fresh">Start fresh</button>
+        </div>
       </div>
 
-      <div id="feedback-panel" class="reveal-panel" hidden role="status" aria-live="polite"></div>
       <div id="steps-panel" class="reveal-panel" hidden aria-live="polite"></div>
       <div id="recovery-panel" class="subtle-panel practice-recovery-panel" hidden>
         <p class="eyebrow">Recovery mode</p>
@@ -441,6 +403,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
 <script>
   // @ts-nocheck
+  import { CHALLENGE_DEFINITIONS, buildChallengeQuestions, canonicalizeChallengeSession, certifyChallengeQuestions, evaluateChallengeOutcome, formatChallengeOutcome } from '../lib/challenges.js';
+  import { normalizeStoredArray, normalizeStoredRecord, readStoredJson, writeStoredJson } from '../lib/storage.js';
   import { buildGeneratedWorksheetQuestions, buildWorksheetProfileLabel, createRng, createWorksheetProfile } from '../lib/worksheet.js';
 
   const root = document.querySelector('.practice-stack');
@@ -452,6 +416,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   let currentSession = null;
   let selectedJourneyKey = null;
   let selectedSkillKey = null;
+  let selectedChallengeKey = null;
   let timerInterval = null;
   let questionStartedAt = null;
   let activeTimerKey = null;
@@ -495,23 +460,36 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   ];
 
   const byId = (id) => document.getElementById(id);
+  const feedbackForCurrent = () => currentSession?.format === 'sheet'
+    ? byId('sheet-feedback-panel')
+    : byId('feedback-panel');
+  const normalizePracticeSession = (entry) => {
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry) || !Array.isArray(entry.questions)) return null;
+    const normalized = {
+      ...entry,
+      responses: normalizeStoredRecord(entry.responses),
+    };
+    return canonicalizeChallengeSession(normalized);
+  };
   const readSessions = () => {
-    try { return JSON.parse(localStorage.getItem(SESSION_KEY) || '[]'); } catch { return []; }
+    try {
+      return normalizeStoredArray(readStoredJson(localStorage, SESSION_KEY, []))
+        .map(normalizePracticeSession)
+        .filter(Boolean);
+    } catch { return []; }
   };
-  const writeSessions = (sessions) => {
-    try { localStorage.setItem(SESSION_KEY, JSON.stringify(sessions)); } catch {}
-  };
+  const writeSessions = (sessions) => writeStoredJson(localStorage, SESSION_KEY, normalizeStoredArray(sessions));
   const appendTimer = (entry) => {
     try {
-      const current = JSON.parse(localStorage.getItem(TIMER_KEY) || '[]');
+      const current = normalizeStoredArray(readStoredJson(localStorage, TIMER_KEY, []));
       current.push(entry);
-      localStorage.setItem(TIMER_KEY, JSON.stringify(current.slice(-200)));
+      writeStoredJson(localStorage, TIMER_KEY, current.slice(-200));
     } catch {}
   };
   const readExerciseStates = () => {
-    try { return JSON.parse(localStorage.getItem(EXERCISE_STATE_KEY) || '{}'); } catch { return {}; }
+    try { return normalizeStoredRecord(readStoredJson(localStorage, EXERCISE_STATE_KEY, {})); } catch { return {}; }
   };
-  const writeExerciseStates = (state) => localStorage.setItem(EXERCISE_STATE_KEY, JSON.stringify(state));
+  const writeExerciseStates = (state) => writeStoredJson(localStorage, EXERCISE_STATE_KEY, normalizeStoredRecord(state));
   const readWeakAreas = () => {
     const states = readExerciseStates();
     return Object.values(states).reduce((acc, entry) => {
@@ -929,16 +907,6 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     mastery: { title: 'Mental mastery', modeCopy: 'Mental ladder with fixed anzan-style sequences and recovery rhythm.', format: 'single', type: 'generated', level: 'L5', length: '10', checkMode: 'steps', timerMode: 'off', questionStyle: 'mental', termCount: '4' },
   };
 
-  const challenges = {
-    'bead-match': { format: 'single', type: 'generated', level: 'L0', length: '10', checkMode: 'final', timerMode: 'off', questionStyle: 'visual-read', termCount: '2' },
-    'clean-five': { format: 'single', type: 'generated', level: 'L1', length: '10', checkMode: 'final', timerMode: 'off', questionStyle: 'visual-five', termCount: '2' },
-    'streak-sprint': { format: 'single', type: 'generated', level: 'L3', length: '15', checkMode: 'verify', timerMode: 'on', questionStyle: 'mixed', termCount: '3' },
-    'sign-switch-relay': { format: 'sheet', type: 'generated', level: 'L3', length: '10', checkMode: 'verify', timerMode: 'off', questionStyle: 'mixed', termCount: '4' },
-    'table-ladder': { format: 'sheet', type: 'generated', level: 'L4', length: '15', checkMode: 'verify', timerMode: 'off', questionStyle: 'mixed', termCount: '3' },
-    'quotient-chase': { format: 'sheet', type: 'generated', level: 'L4', length: '15', checkMode: 'verify', timerMode: 'on', questionStyle: 'mixed', termCount: '3' },
-    'anzan-burst': { format: 'single', type: 'generated', level: 'L5', length: '10', checkMode: 'steps', timerMode: 'on', questionStyle: 'mental', termCount: '4' },
-  };
-
   const syncPracticeSetupCopy = () => {
     const target = byId('practice-current-setup-copy');
     const guideTitle = byId('practice-guide-title');
@@ -952,7 +920,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     const adaptiveExercise = byId('adaptive-next-exercise');
     const adaptiveWorksheet = byId('adaptive-next-worksheet');
     if (!target) return;
-    target.textContent = `Format: ${byId('session-format').value} · Source: ${byId('session-type').value} · Level: ${byId('session-level').value}${selectedSkillKey ? ` · Focus: ${selectedSkillKey.replace(/-/g, ' ')}` : ''} · Questions: ${byId('session-length').value} · Style: ${byId('question-style').value} · Terms: ${byId('term-count').value} · Timer: ${byId('timer-mode').value}`;
+    const selectedChallenge = selectedChallengeKey ? CHALLENGE_DEFINITIONS[selectedChallengeKey] : null;
+    target.textContent = `${selectedChallenge ? `Challenge: ${selectedChallenge.title} · ` : ''}Format: ${byId('session-format').value} · Source: ${byId('session-type').value} · Level: ${byId('session-level').value}${selectedSkillKey ? ` · Focus: ${selectedSkillKey.replace(/-/g, ' ')}` : ''} · Questions: ${byId('session-length').value} · Style: ${byId('question-style').value} · Terms: ${byId('term-count').value} · Timer: ${byId('timer-mode').value}`;
     if (!guideTitle || !guideCopy || !purposeCopy) return;
     const format = byId('session-format').value;
     const style = byId('question-style').value;
@@ -993,6 +962,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   const applyPreset = (key) => {
     selectedJourneyKey = null;
     selectedSkillKey = null;
+    selectedChallengeKey = null;
     const preset = presets[key];
     if (!preset) return;
     byId('session-format').value = preset.format;
@@ -1011,6 +981,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     if (!journey) return;
     selectedJourneyKey = key;
     selectedSkillKey = null;
+    selectedChallengeKey = null;
     byId('session-format').value = journey.format;
     byId('session-type').value = journey.type;
     byId('session-level').value = journey.level;
@@ -1035,16 +1006,17 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   const applyChallenge = (key) => {
     selectedJourneyKey = null;
     selectedSkillKey = null;
-    const challenge = challenges[key];
+    const challenge = CHALLENGE_DEFINITIONS[key];
     if (!challenge) return;
-    byId('session-format').value = challenge.format;
-    byId('session-type').value = challenge.type;
-    byId('session-level').value = challenge.level;
-    byId('session-length').value = challenge.length;
-    byId('check-mode').value = challenge.checkMode;
-    byId('timer-mode').value = challenge.timerMode;
-    byId('question-style').value = challenge.questionStyle;
-    byId('term-count').value = challenge.termCount;
+    selectedChallengeKey = key;
+    byId('session-format').value = challenge.config.format;
+    byId('session-type').value = challenge.config.type;
+    byId('session-level').value = challenge.config.level;
+    byId('session-length').value = String(challenge.config.length);
+    byId('check-mode').value = challenge.config.checkMode;
+    byId('timer-mode').value = challenge.config.timerMode;
+    byId('question-style').value = challenge.config.questionStyle;
+    byId('term-count').value = challenge.config.termCount;
     syncPracticeSetupCopy();
   };
 
@@ -1052,6 +1024,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     if (!session) return;
     selectedJourneyKey = session.journeyKey || null;
     selectedSkillKey = session.skill || null;
+    selectedChallengeKey = session.challengeKey || null;
     byId('session-format').value = session.format;
     byId('session-type').value = session.type;
     byId('session-level').value = session.level;
@@ -1068,23 +1041,30 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     byId('start-session')?.click();
   };
 
-  const createSession = ({ type, level, length, checkMode, timerEnabled, format, questionStyle, termCount, journeyKey, skill }) => {
+  const createSession = ({ type, level, length, checkMode, timerEnabled, format, questionStyle, termCount, journeyKey, skill, challengeKey }) => {
     const sessionId = makeId();
     const worksheetProfile = createWorksheetProfile({
       digitRange: byId('worksheet-digit-range')?.value,
       operationRange: byId('worksheet-operation-range')?.value,
       operatorMode: byId('worksheet-operator-mode')?.value,
     });
-    const questions = journeyKey
-      ? buildJourneyQuestions(journeyKey, length, sessionId)
-      : type === 'curated'
-        ? buildCuratedQuestions(level, length, sessionId)
-        : level === 'L3' && format === 'sheet'
-          ? buildGeneratedWorksheetQuestions({ level, length, sessionId, profile: worksheetProfile }).map((question) => ({
-          ...question,
-          progressKey: `generated-${simpleSlug(`${question.answer}-${question.id}`)}`,
-      }))
-        : buildGeneratedQuestions(level, length, sessionId, questionStyle, termCount, skill);
+    const challenge = challengeKey ? CHALLENGE_DEFINITIONS[challengeKey] : null;
+    const questions = challenge
+      ? buildChallengeQuestions({ challengeKey, seed: sessionId })
+      : journeyKey
+        ? buildJourneyQuestions(journeyKey, length, sessionId)
+        : type === 'curated'
+          ? buildCuratedQuestions(level, length, sessionId)
+          : level === 'L3' && format === 'sheet'
+            ? buildGeneratedWorksheetQuestions({ level, length, sessionId, profile: worksheetProfile }).map((question) => ({
+            ...question,
+            progressKey: `generated-${simpleSlug(`${question.answer}-${question.id}`)}`,
+        }))
+          : buildGeneratedQuestions(level, length, sessionId, questionStyle, termCount, skill);
+    if (challenge) {
+      const certification = certifyChallengeQuestions(challengeKey, questions);
+      if (!certification.valid) throw new Error(`Challenge certification failed: ${certification.errors.join('; ')}`);
+    }
     return {
       id: sessionId,
       type,
@@ -1099,6 +1079,13 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       journeyKey: journeyKey || null,
       journeyTitle: journeyKey ? journeys[journeyKey]?.title || null : null,
       skill: skill || null,
+      challengeKey: challengeKey || null,
+      challengeTitle: challenge?.title || null,
+      challengeTarget: challenge?.target || null,
+      challengeRule: challenge?.rule || null,
+      challengeRuleVersion: challenge ? 1 : null,
+      challengeSeed: challenge ? sessionId : null,
+      challengeOutcome: null,
       createdAt: new Date().toISOString(),
       currentIndex: 0,
       completed: false,
@@ -1118,16 +1105,18 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   };
 
   const replaySession = (session) => {
-    if (!session) return;
+    const source = normalizePracticeSession(session);
+    if (!source) return;
     stopTimer();
     currentSession = {
-      ...session,
+      ...source,
       id: makeId(),
       createdAt: new Date().toISOString(),
       currentIndex: 0,
       completed: false,
       responses: {},
       finalScore: null,
+      challengeOutcome: null,
     };
     syncControlsFromSession(currentSession);
     persistCurrent();
@@ -1177,6 +1166,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     recoveryAnswer: null,
     recoveryMode: false,
     recoveryUsed: false,
+    attempts: 0,
   };
 
   const computeQuestionScore = (response) => {
@@ -1253,12 +1243,27 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     };
   };
 
+  const verificationFeedback = (response, question) => {
+    if (currentSession?.challengeKey) {
+      if (response.revealedSteps) return `Method revealed. The answer is ${question.answer}; this question does not count toward the first-check target.`;
+      if (response.revealedFinal) return `Answer revealed: ${question.answer}. This question does not count toward the first-check target.`;
+      if (response.correct && response.attempts === 1 && !response.recoveryUsed) return 'Correct on the first check. This counts toward the challenge target.';
+      if (response.correct) return 'Correction is right, but it does not count toward the first-check target.';
+      if (response.attempts === 1) return 'First check missed. A correction can build skill, but it will not count toward the first-check target.';
+      return 'Not correct yet. Keep repairing the answer; first-check credit is no longer available for this question.';
+    }
+    if (response.correct && !response.revealedFinal && !response.revealedSteps) return 'Correct. Keep your hands calm and move to the next question when ready.';
+    if (response.revealedSteps) return `Final number: ${question.answer}. The full step method is open below.`;
+    if (response.revealedFinal) return `Final number: ${question.answer}. Use this when you only want a quick result check.`;
+    return 'Not correct yet. You can try again, reveal the final number, or open the steps.';
+  };
+
   const verifyCurrentAnswer = () => {
     if (!currentSession || currentSession.completed) return false;
     const question = currentSession.questions[currentSession.currentIndex];
     const currentResponse = responseForCurrent();
     const input = byId('answer-input').value.trim();
-    const feedback = byId('feedback-panel');
+    const feedback = feedbackForCurrent();
     if (!input) {
       feedback.hidden = false;
       feedback.textContent = 'Write your response first, or choose to reveal the answer or method.';
@@ -1269,23 +1274,23 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       ? currentResponse.recoveryAnswer
       : question.answer;
     const correct = input !== '' && !Number.isNaN(numericInput) && numericInput === answerTarget;
-    updateCurrentResponse({ input, verified: true, correct, recoveryUsed: currentResponse.recoveryUsed || currentResponse.recoveryMode, recoveryMode: correct ? false : currentResponse.recoveryMode });
+    updateCurrentResponse({
+      input,
+      verified: true,
+      correct,
+      attempts: (currentResponse.attempts || 0) + 1,
+      recoveryUsed: currentResponse.recoveryUsed || currentResponse.recoveryMode,
+      recoveryMode: correct ? false : currentResponse.recoveryMode,
+    });
     feedback.hidden = false;
     playTone(correct ? 'success' : 'error');
-    if (correct && currentResponse.recoveryMode) {
-      feedback.textContent = 'Recovered. Your repair answer is correct. Continue when you are ready.';
-    } else if (correct) {
-      feedback.textContent = 'Correct. Your response matches the answer. You may continue or reveal the method to study it.';
-    } else {
+    if (!correct) {
       const recovery = currentResponse.recoveryPrompt ? currentResponse : buildRecoveryPrompt(question, currentSession.level, input);
       updateCurrentResponse({
         recoveryPrompt: recovery.recoveryPrompt || recovery.prompt,
         recoveryAnswer: recovery.recoveryAnswer ?? recovery.answer,
         recoveryMode: currentResponse.recoveryMode,
       });
-      feedback.textContent = currentResponse.recoveryMode
-        ? 'Not correct yet. Stay with the repair prompt, revise your response, and verify again.'
-        : 'Not correct yet. Revise your response, or switch into recovery mode for one calmer repair prompt.';
     }
 
     if (correct && (currentSession.checkMode === 'final' || currentSession.checkMode === 'steps')) {
@@ -1352,20 +1357,30 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       const card = document.createElement('article');
       card.className = 'session-card';
       const title = document.createElement('strong');
-      title.textContent = session.journeyTitle
-        ? `Journey · ${session.journeyTitle}`
-        : session.skill
-          ? `${session.skill.replace(/-/g, ' ')} · ${session.level}`
-          : `${session.type === 'curated' ? 'Curated' : 'Generated'} · ${session.level}`;
+      title.textContent = session.challengeTitle
+        ? `Challenge · ${session.challengeTitle}`
+        : session.journeyTitle
+          ? `Journey · ${session.journeyTitle}`
+          : session.skill
+            ? `${session.skill.replace(/-/g, ' ')} · ${session.level}`
+            : `${session.type === 'curated' ? 'Curated' : 'Generated'} · ${session.level}`;
       const meta = document.createElement('p');
       meta.className = 'muted small';
       meta.textContent = `${session.id} · ${session.completed ? session.questions.length : session.currentIndex}/${session.questions.length} complete`;
       const score = document.createElement('div');
       score.className = 'score-band';
-      score.textContent = session.completed ? `${session.finalScore}/100` : 'In progress';
+      score.textContent = session.completed
+        ? `${session.finalScore}/100${session.challengeOutcome ? ` · ${formatChallengeOutcome(session.challengeOutcome)}` : ''}`
+        : 'In progress';
       const profile = document.createElement('p');
       profile.className = 'muted small';
-      profile.textContent = session.journeyTitle ? `${session.journeyTitle} mode` : session.worksheetProfile ? buildWorksheetProfileLabel(session.worksheetProfile) : 'Lesson-aligned profile';
+      profile.textContent = session.challengeTitle
+        ? `Target: ${session.challengeTarget}`
+        : session.journeyTitle
+          ? `${session.journeyTitle} mode`
+          : session.worksheetProfile
+            ? buildWorksheetProfileLabel(session.worksheetProfile)
+            : 'Lesson-aligned profile';
       const actions = document.createElement('div');
       actions.className = 'button-row';
       const resume = document.createElement('button');
@@ -1390,11 +1405,17 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     const timer = byId('session-timer');
     const adaptiveNote = byId('session-adaptive-note');
     const profile = byId('session-profile');
+    const challengeSummary = byId('session-challenge-summary');
+    const challengeCopy = byId('session-challenge-copy');
+    const singleCompleteActions = byId('session-complete-actions');
+    const sheetCompleteActions = byId('sheet-session-complete-actions');
     const questionTitle = byId('question-title');
     const questionPrompt = byId('question-prompt');
     const questionLedger = byId('question-ledger');
     const answerInput = byId('answer-input');
-    const feedback = byId('feedback-panel');
+    const singleFeedback = byId('feedback-panel');
+    const sheetFeedback = byId('sheet-feedback-panel');
+    let feedback = singleFeedback;
     const stepsPanel = byId('steps-panel');
     const recoveryPanel = byId('recovery-panel');
     const recoveryTitle = byId('recovery-title');
@@ -1405,7 +1426,10 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     const sheetList = byId('sheet-list');
     const emptyNote = byId('practice-empty-note');
     const controls = ['answer-input', 'verify-answer', 'reveal-final', 'reveal-steps', 'next-question'];
-    feedback.hidden = true;
+    singleFeedback.hidden = true;
+    sheetFeedback.hidden = true;
+    singleCompleteActions.hidden = true;
+    sheetCompleteActions.hidden = true;
     stepsPanel.hidden = true;
     if (recoveryPanel) recoveryPanel.hidden = true;
 
@@ -1417,6 +1441,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       timer.textContent = 'Timer off';
       adaptiveNote.textContent = '—';
       profile.textContent = 'Profile —';
+      if (challengeSummary) challengeSummary.hidden = true;
+      if (challengeCopy) challengeCopy.textContent = '—';
       questionTitle.textContent = 'Choose a session to begin.';
       questionPrompt.textContent = 'Curated lists follow the lessons; generated lists create replayable arithmetic practice.';
       questionLedger.hidden = true;
@@ -1433,30 +1459,44 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
     const question = currentSession.questions[currentSession.currentIndex];
     const response = responseForCurrent();
-    title.textContent = currentSession.journeyTitle
-      ? `${currentSession.journeyTitle} journey`
-      : currentSession.skill
-        ? `${currentSession.skill.replace(/-/g, ' ')} · ${currentSession.level} session`
-        : `${currentSession.type === 'curated' ? 'Curated' : 'Generated'} ${currentSession.level} session`;
+    title.textContent = currentSession.challengeTitle
+      ? `${currentSession.challengeTitle} challenge`
+      : currentSession.journeyTitle
+        ? `${currentSession.journeyTitle} journey`
+        : currentSession.skill
+          ? `${currentSession.skill.replace(/-/g, ' ')} · ${currentSession.level} session`
+          : `${currentSession.type === 'curated' ? 'Curated' : 'Generated'} ${currentSession.level} session`;
     sessionIdLabel.textContent = currentSession.id;
     progress.textContent = `Question ${currentSession.currentIndex + 1} / ${currentSession.questions.length}`;
     score.textContent = `Score ${(currentSession.completed ? currentSession.finalScore : computeSessionScore(currentSession)) || 0}/100`;
     timer.textContent = currentSession.timerEnabled ? 'Timer on' : 'Timer off';
-    adaptiveNote.textContent = currentSession.journeyTitle
-      ? `${currentSession.journeyTitle} path`
-      : currentSession.skill
-        ? `Focused skill: ${currentSession.skill.replace(/-/g, ' ')}`
-        : currentSession.questionStyle === 'adaptive'
-          ? describeAdaptivePractice(currentSession.level)
-          : 'Standard session';
-    profile.textContent = currentSession.journeyTitle ? `Profile ${currentSession.journeyTitle} mode` : `Profile ${currentSession.worksheetProfile ? buildWorksheetProfileLabel(currentSession.worksheetProfile) : 'Lesson-aligned'}`;
+    adaptiveNote.textContent = currentSession.challengeTitle
+      ? (currentSession.challengeOutcome ? formatChallengeOutcome(currentSession.challengeOutcome) : currentSession.challengeTarget)
+      : currentSession.journeyTitle
+        ? `${currentSession.journeyTitle} path`
+        : currentSession.skill
+          ? `Focused skill: ${currentSession.skill.replace(/-/g, ' ')}`
+          : currentSession.questionStyle === 'adaptive'
+            ? describeAdaptivePractice(currentSession.level)
+            : 'Standard session';
+    profile.textContent = currentSession.challengeTitle
+      ? `Rule: ${currentSession.challengeRule}`
+      : currentSession.journeyTitle
+        ? `Profile ${currentSession.journeyTitle} mode`
+        : `Profile ${currentSession.worksheetProfile ? buildWorksheetProfileLabel(currentSession.worksheetProfile) : 'Lesson-aligned'}`;
+    if (challengeSummary && challengeCopy) {
+      challengeSummary.hidden = !currentSession.challengeTitle;
+      challengeCopy.textContent = currentSession.challengeOutcome
+        ? formatChallengeOutcome(currentSession.challengeOutcome)
+        : currentSession.challengeTarget || '—';
+    }
     questionTitle.textContent = currentSession.completed
       ? 'Session completed'
       : response.recoveryMode && response.recoveryPrompt
         ? 'Recovery prompt'
         : question.title;
     questionPrompt.textContent = currentSession.completed
-      ? 'Review your score, replay the same list, or start a fresh session with a new ID.'
+      ? `${currentSession.challengeOutcome ? `${formatChallengeOutcome(currentSession.challengeOutcome)}. ` : ''}Review your score, replay the same list, or start a fresh session with a new ID.`
       : response.recoveryMode && response.recoveryPrompt
         ? response.recoveryPrompt
         : question.prompt;
@@ -1464,10 +1504,17 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     questionLedger.textContent = question.promptLines?.join('\n') || '';
     answerInput.value = response.input || '';
     const isSheetMode = currentSession.format === 'sheet';
+    feedback = isSheetMode ? sheetFeedback : singleFeedback;
+    singleCompleteActions.hidden = isSheetMode || !currentSession.completed;
+    sheetCompleteActions.hidden = !isSheetMode || !currentSession.completed;
     singleView.hidden = isSheetMode;
     sheetView.hidden = !isSheetMode;
     emptyNote.hidden = currentSession !== null;
     controls.forEach((id) => { const node = byId(id); if (node) node.disabled = currentSession.completed; });
+    ['check-sheet', 'save-sheet'].forEach((id) => {
+      const node = byId(id);
+      if (node) node.disabled = currentSession.completed;
+    });
     const showVisual = !isSheetMode && String(currentSession.questionStyle || '').includes('visual');
     renderVisual(showVisual ? question.visualValue : null);
 
@@ -1487,6 +1534,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         input.type = 'text';
         input.inputMode = 'numeric';
         input.placeholder = 'Answer';
+        input.disabled = currentSession.completed;
         input.setAttribute('aria-label', `Answer for question ${index + 1}: ${entry.prompt || 'practice question'}`);
         input.value = currentSession.responses[index]?.input || '';
         input.addEventListener('input', () => {
@@ -1525,15 +1573,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
     if (response.verified) {
       feedback.hidden = false;
-      if (response.correct && !response.revealedFinal && !response.revealedSteps) {
-        feedback.textContent = 'Correct. Keep your hands calm and move to the next question when ready.';
-      } else if (response.revealedSteps) {
-        feedback.textContent = `Final number: ${question.answer}. The full step method is open below.`;
-      } else if (response.revealedFinal) {
-        feedback.textContent = `Final number: ${question.answer}. Use this when you only want a quick result check.`;
-      } else {
-        feedback.textContent = 'Not correct yet. You can try again, reveal the final number, or open the steps.';
-      }
+      feedback.textContent = verificationFeedback(response, question);
     }
     if (response.revealedSteps) {
       stepsPanel.hidden = false;
@@ -1567,9 +1607,33 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     persistCurrent();
   };
 
+  const completeCurrentSession = ({ finalScore = null, message }) => {
+    if (!currentSession || currentSession.completed) return;
+    currentSession.finalScore = finalScore ?? computeSessionScore(currentSession);
+    currentSession.completed = true;
+    currentSession.challengeOutcome = currentSession.challengeKey
+      ? evaluateChallengeOutcome({
+        challengeKey: currentSession.challengeKey,
+        questions: currentSession.questions,
+        responses: currentSession.responses,
+      })
+      : null;
+    persistCurrent();
+    renderSession();
+    const feedback = feedbackForCurrent();
+    feedback.hidden = false;
+    feedback.textContent = `${message} Final score: ${currentSession.finalScore}/100.${currentSession.challengeOutcome ? ` ${formatChallengeOutcome(currentSession.challengeOutcome)}.` : ''} Replay the same list or start fresh when you are ready.`;
+    renderHistory();
+    window.requestAnimationFrame(() => {
+      feedback.focus({ preventScroll: true });
+      feedback.scrollIntoView({ block: 'center', behavior: 'auto' });
+    });
+  };
+
   byId('start-session')?.addEventListener('click', () => {
     stopTimer();
-      currentSession = createSession({
+    try {
+      const nextSession = createSession({
         type: byId('session-type').value,
         level: byId('session-level').value,
         length: Number(byId('session-length').value),
@@ -1580,7 +1644,16 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         termCount: byId('term-count').value,
         journeyKey: selectedJourneyKey,
         skill: selectedSkillKey,
+        challengeKey: selectedChallengeKey,
       });
+      currentSession = nextSession;
+    } catch (error) {
+      const feedback = feedbackForCurrent();
+      feedback.hidden = false;
+      feedback.textContent = 'This session could not be certified. Choose the mode again and retry.';
+      console.error(error);
+      return;
+    }
     persistCurrent();
     renderSession();
     focusCurrentQuestion();
@@ -1598,6 +1671,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
   byId('session-level')?.addEventListener('change', (event) => {
     selectedSkillKey = null;
+    selectedChallengeKey = null;
     applyPracticeLevelDefaults(event.target.value);
     syncPracticeSetupCopy();
   });
@@ -1607,7 +1681,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     const requestedId = byId('session-id-input').value.trim();
     if (!requestedId) return;
     const match = readSessions().find((entry) => entry.id === requestedId);
-    const feedback = byId('feedback-panel');
+    const feedback = feedbackForCurrent();
     if (!match) {
       feedback.hidden = false;
       feedback.textContent = 'No saved session matched that ID on this device.';
@@ -1672,23 +1746,16 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       renderSession();
       return;
     }
-    currentSession.completed = true;
-    currentSession.finalScore = computeSessionScore(currentSession);
     syncExerciseProgress();
-    persistCurrent();
-    renderSession();
-    const feedback = byId('feedback-panel');
-    feedback.hidden = false;
-    feedback.textContent = `Session complete. Final score: ${currentSession.finalScore}/100. You can replay the same list from the history panel or start a fresh session.`;
-    renderHistory();
+    completeCurrentSession({ message: 'Session complete.' });
   });
-  byId('session-replay-current')?.addEventListener('click', () => {
+  document.querySelectorAll('.session-replay-current').forEach((button) => button.addEventListener('click', () => {
     if (!currentSession) return;
     replaySession(currentSession);
-  });
-  byId('session-start-fresh')?.addEventListener('click', () => {
+  }));
+  document.querySelectorAll('.session-start-fresh').forEach((button) => button.addEventListener('click', () => {
     byId('start-session')?.click();
-  });
+  }));
 
   byId('check-sheet')?.addEventListener('click', () => {
     if (!currentSession || currentSession.completed) return;
@@ -1701,22 +1768,29 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         input,
         verified: true,
         correct,
+        attempts: (currentSession.responses[index]?.attempts || 0) + 1,
       };
       if (correct) correctCount += 1;
       syncExerciseProgress(index);
     });
-    currentSession.finalScore = Math.round((correctCount / currentSession.questions.length) * 100);
-    currentSession.completed = true;
     playTone(correctCount === currentSession.questions.length ? 'success' : 'error');
-    persistCurrent();
-    const feedback = byId('feedback-panel');
-    feedback.hidden = false;
-    feedback.textContent = `Sheet checked. ${correctCount}/${currentSession.questions.length} correct. Current score ${currentSession.finalScore}/100.`;
-    renderSession();
+    completeCurrentSession({
+      finalScore: Math.round((correctCount / currentSession.questions.length) * 100),
+      message: `Sheet checked. ${correctCount}/${currentSession.questions.length} correct.`,
+    });
   });
 
   byId('reveal-sheet-answers')?.addEventListener('click', () => {
     if (!currentSession) return;
+    if (!currentSession.completed) {
+      currentSession.questions.forEach((_, index) => {
+        currentSession.responses[index] = {
+          ...(currentSession.responses[index] || {}),
+          revealedFinal: true,
+        };
+      });
+      persistCurrent();
+    }
     const stepsPanel = byId('steps-panel');
     stepsPanel.hidden = false;
     stepsPanel.replaceChildren();
@@ -1732,7 +1806,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   byId('save-sheet')?.addEventListener('click', () => {
     if (!currentSession) return;
     persistCurrent();
-    const feedback = byId('feedback-panel');
+    const feedback = feedbackForCurrent();
     feedback.hidden = false;
     feedback.textContent = 'Sheet progress saved. You can return later and continue where you left off.';
   });
@@ -1759,8 +1833,11 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   byId('empty-warmup')?.addEventListener('click', () => startFromPreset('practice'));
   byId('start-warmup-now')?.addEventListener('click', () => startFromPreset('warmup'));
   byId('start-practice-now')?.addEventListener('click', () => startFromPreset('practice'));
-  document.querySelectorAll('#session-format, #session-type, #session-level, #session-length, #question-style, #term-count, #timer-mode').forEach((node) => {
-    node.addEventListener('change', syncPracticeSetupCopy);
+  document.querySelectorAll('#session-format, #session-type, #session-level, #session-length, #check-mode, #question-style, #term-count, #timer-mode, #worksheet-digit-range, #worksheet-operation-range, #worksheet-operator-mode').forEach((node) => {
+    node.addEventListener('change', () => {
+      selectedChallengeKey = null;
+      syncPracticeSetupCopy();
+    });
   });
 
   renderHistory();
@@ -1793,5 +1870,17 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     color: var(--ink);
     font: 600 1.1rem/1.7 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     white-space: pre-wrap;
+  }
+
+  #feedback-panel:focus-visible,
+  #sheet-feedback-panel:focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 4px;
+  }
+
+  @media (max-width: 420px) {
+    .session-complete-actions > * {
+      width: 100%;
+    }
   }
 </style>

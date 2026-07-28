@@ -122,15 +122,18 @@ test('placement self-check exposes clear selectable answers', async ({ page }) =
   await expect(firstGroup.getByRole('radio', { name: 'Sometimes' })).toBeChecked();
 });
 
-test('mini-games keeps round controls inactive until a game starts', async ({ page }) => {
+test('mini-games keeps answer controls inactive until a finite game starts', async ({ page }) => {
   await page.goto('mini-games');
 
-  await expect(page.getByRole('button', { name: /next round/i })).toBeDisabled();
   await expect(page.getByRole('button', { name: /check answer/i })).toBeDisabled();
+  await expect(page.getByRole('button', { name: /stop session/i })).toBeDisabled();
   await expect(page.getByLabel('Answer')).toBeDisabled();
+  await expect(page.getByLabel('Questions')).toHaveValue('10');
+  await expect(page.getByLabel('Time limit')).toHaveValue('30');
 
   await page.getByRole('button', { name: /start selected game/i }).click();
-  await expect(page.getByRole('button', { name: /next round/i })).toBeEnabled();
   await expect(page.getByRole('button', { name: /check answer/i })).toBeEnabled();
+  await expect(page.getByRole('button', { name: /stop session/i })).toBeEnabled();
   await expect(page.getByLabel('Answer')).toBeEnabled();
+  await expect(page.getByLabel('Answer')).toBeFocused();
 });

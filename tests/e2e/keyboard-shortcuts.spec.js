@@ -115,8 +115,9 @@ test('practice challenge can launch anzan burst mode', async ({ page }) => {
   await page.getByText('More ways to train').click();
   await page.locator('.practice-challenge-start[data-challenge="anzan-burst"]').click();
 
-  await expect(page.locator('#session-title')).toContainText('Generated L5 session');
+  await expect(page.locator('#session-title')).toContainText('Anzan burst challenge');
   await expect(page.locator('#session-progress')).toContainText('Question 1 / 10');
+  await expect(page.locator('#session-challenge-copy')).toContainText('8 of 10');
 });
 
 test('practice adaptive next move updates from weakness history', async ({ page }) => {

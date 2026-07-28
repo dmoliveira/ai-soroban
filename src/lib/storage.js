@@ -44,6 +44,16 @@ export const readStoredJson = (storage, key, fallback) => (
   parseStoredJson(storage?.getItem(key), fallback)
 );
 
+export const normalizeStoredArray = (value) => Array.isArray(value) ? value : [];
+
+export const normalizeStoredRecord = (value) => (
+  value && typeof value === 'object' && !Array.isArray(value) ? value : {}
+);
+
+export const readStoredArray = (storage, key) => normalizeStoredArray(readStoredJson(storage, key, []));
+
+export const readStoredRecord = (storage, key) => normalizeStoredRecord(readStoredJson(storage, key, {}));
+
 export const writeStoredJson = (storage, key, value) => {
   try {
     storage?.setItem(key, JSON.stringify(value));

@@ -44,7 +44,7 @@ Use `npm run test:e2e:live` only for an explicit smoke test of the deployed GitH
 
 - `src/content/` — validated lesson, exercise, and reference content
 - `src/components/` — interactive local-first learning experiences
-- `src/lib/` — deterministic worksheet, storage, and shared domain helpers
+- `src/lib/` — certified challenge, finite mini-game, worksheet, storage, and shared domain helpers
 - `src/pages/` — static routes and route-level composition
 - `src/styles/` — shared responsive design system
 - `tests/` — Node unit tests and Playwright user-flow tests
