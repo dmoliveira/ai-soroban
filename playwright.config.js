@@ -4,6 +4,7 @@ const localBaseURL = 'http://127.0.0.1:4321/soroban-dojo/';
 const configuredBaseURL = process.env.PLAYWRIGHT_BASE_URL || localBaseURL;
 const baseURL = configuredBaseURL.endsWith('/') ? configuredBaseURL : `${configuredBaseURL}/`;
 const usesExternalServer = Boolean(process.env.PLAYWRIGHT_BASE_URL);
+const serverMode = process.env.PLAYWRIGHT_SERVER_MODE || 'dev';
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -12,7 +13,9 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   reporter: process.env.CI ? 'list' : 'html',
   webServer: usesExternalServer ? undefined : {
-    command: 'npm run dev -- --host 127.0.0.1 --port 4321',
+    command: serverMode === 'preview'
+      ? 'npm run preview -- --host 127.0.0.1 --port 4321'
+      : 'npm run dev -- --host 127.0.0.1 --port 4321',
     url: localBaseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

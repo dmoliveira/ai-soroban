@@ -5,6 +5,21 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
 const releases = [
   {
+    version: '0.3.0',
+    title: 'Persistent themes and finite challenge play',
+    date: '2026-07-29',
+    summary: 'Added three accessible display themes and made certified challenges and mini-games deterministic, finite, and honest about completion.',
+    tags: ['Themes', 'Games', 'Accessibility', 'Reliability'],
+    cta: { href: `${base}mini-games`, label: 'Play a finite game' },
+    secondaryCta: { href: `${base}practice`, label: 'Try a certified challenge' },
+    notes: [
+      'Added persistent Washi, Sakura, and Sumi themes with Washi as the safe default.',
+      'Applied saved themes before page styles load and kept browser color, responsive layouts, print output, and focus feedback coherent.',
+      'Certified seven deterministic challenge modes across save, resume, replay, history, and progress.',
+      'Gave Number Bond, table, Flash Anzan, and error-repair games finite rounds with score, time, stopping, and replay summaries.',
+    ],
+  },
+  {
     version: '0.2.0',
     title: 'Responsive learning-flow modernization',
     date: '2026-07-28',
@@ -45,7 +60,7 @@ const priorReleases = releases.slice(1);
     summary="See the newest study tools, calmer practice improvements, and which updated route is worth revisiting first."
     stats={[
       { label: 'Latest version', value: releases[0].version },
-      { label: 'Current focus', value: 'Clearer, safer learning flows' },
+      { label: 'Current focus', value: 'Accessible themes and honest play' },
       { label: 'Best use', value: 'See what changed recently' },
     ]}
   />
@@ -114,7 +129,7 @@ const priorReleases = releases.slice(1);
   )}
 
   <style>
-    .release-feature-card,.release-archive-card{background:linear-gradient(180deg, rgba(255,255,255,.82), rgba(248,242,233,.88))}
+    .release-feature-card,.release-archive-card{background:linear-gradient(180deg, color-mix(in srgb, var(--panel-raised) 82%, transparent), color-mix(in srgb, var(--panel-soft) 88%, transparent))}
     .release-feature-card .review-chip-row,.release-archive-card .review-chip-row{margin-bottom:.85rem}
     .release-feature-card .release-note-list,.release-archive-card .release-note-list{margin-top:0}
   </style>

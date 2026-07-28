@@ -31,7 +31,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   .placement-option{position:relative}
   .placement-option input{position:absolute;opacity:0;pointer-events:none}
   .placement-option label{display:inline-flex;align-items:center;justify-content:center;width:100%;min-height:3rem;text-align:center}
-  .placement-option input:checked + label{background:var(--accent, #8b5cf6);border-color:var(--accent, #8b5cf6);color:#fff;box-shadow:0 10px 24px rgba(139,92,246,.22)}
+  .placement-option input:checked + label{background:var(--accent);border-color:var(--accent);color:var(--on-accent);box-shadow:0 10px 24px color-mix(in srgb, var(--accent) 22%, transparent)}
   .placement-option input:focus-visible + label{outline:3px solid var(--focus);outline-offset:3px}
   .placement-result-card{display:grid;gap:1rem}
   .placement-result-card h3,.placement-result-card p{margin:0}

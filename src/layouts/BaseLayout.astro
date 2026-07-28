@@ -1,6 +1,8 @@
 ---
 import '../styles/global.css';
 import JapaneseLabel from '../components/JapaneseLabel.astro';
+import ThemeSelector from '../components/ThemeSelector.astro';
+import { DEFAULT_THEME_ID, THEME_BY_ID, buildThemeCss, themeBootstrapConfig } from '../lib/themes.js';
 
 interface Props {
   title: string;
@@ -41,16 +43,21 @@ const isActive = (href: string, matchPrefixes: string[] = [href]) => {
   return matchPrefixes.some((prefix) => currentPath === prefix || (prefix !== base && currentPath.startsWith(prefix)));
 };
 const isCurrentPage = (href: string) => normalizePath(currentPath) === normalizePath(href);
+const defaultTheme = THEME_BY_ID[DEFAULT_THEME_ID];
+const criticalThemeCss = `${buildThemeCss()}html,body{background:var(--bg);color:var(--ink);}`;
+const themeBootstrapScript = `(()=>{const config=${JSON.stringify(themeBootstrapConfig)};let id=config.defaultId;try{const stored=localStorage.getItem(config.storageKey);if(config.ids.includes(stored))id=stored;}catch{}const selected=config.metadata[id]||config.metadata[config.defaultId];const root=document.documentElement;root.dataset.theme=id;root.style.colorScheme=selected.colorScheme;const meta=document.querySelector('meta[name="theme-color"]');if(meta)meta.setAttribute('content',selected.themeColor);})();`;
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme={DEFAULT_THEME_ID}>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content={defaultTheme.themeColor} />
+    <script is:inline set:html={themeBootstrapScript}></script>
+    <style is:inline set:html={criticalThemeCss}></style>
     <title>{pageTitle}</title>
     <meta name="description" content={description} />
-    <meta name="theme-color" content="#f5efe4" />
     <meta name="robots" content="index,follow,max-image-preview:large" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Soroban Dojo" />
@@ -77,6 +84,7 @@ const isCurrentPage = (href: string) => normalizePath(currentPath) === normalize
               <small>Small steps, steady hands · そろばん道場</small>
             </span>
           </a>
+          <ThemeSelector />
         </div>
         <div class="nav-stack">
           <nav class="nav nav-row nav-primary" aria-label="Primary">

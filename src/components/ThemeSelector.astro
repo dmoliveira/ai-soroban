@@ -1,0 +1,114 @@
+---
+import { THEMES } from '../lib/themes.js';
+---
+
+<div class="theme-picker">
+  <label for="theme-selector">Theme</label>
+  <select id="theme-selector" class="select theme-select" aria-describedby="theme-status">
+    {THEMES.map((theme) => <option value={theme.id}>{theme.label}</option>)}
+  </select>
+  <p id="theme-status" class="theme-status" role="status" aria-live="polite" aria-atomic="true"></p>
+</div>
+
+<script>
+  // @ts-nocheck
+  import { THEME_BY_ID, THEME_STORAGE_KEY, applyTheme, normalizeThemeId } from '../lib/themes.js';
+
+  const selector = document.getElementById('theme-selector');
+  const status = document.getElementById('theme-status');
+  const syncSelector = (themeId) => {
+    const normalized = normalizeThemeId(themeId);
+    applyTheme(document, normalized);
+    if (selector) selector.value = normalized;
+    return THEME_BY_ID[normalized];
+  };
+
+  syncSelector(document.documentElement.dataset.theme);
+
+  selector?.addEventListener('change', () => {
+    const selected = syncSelector(selector.value);
+    selector.focus({ preventScroll: true });
+    let saved = true;
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, selected.id);
+    } catch {
+      saved = false;
+    }
+    if (status) {
+      status.textContent = saved
+        ? `${selected.label} theme applied and saved on this device.`
+        : `${selected.label} theme applied for this page; this browser could not save it.`;
+      status.dataset.visible = String(!saved);
+    }
+  });
+
+  window.addEventListener('storage', (event) => {
+    if (event.key !== THEME_STORAGE_KEY) return;
+    syncSelector(event.newValue);
+  });
+</script>
+
+<style>
+  .theme-picker {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 6.5rem;
+    align-items: center;
+    gap: 0.4rem;
+    width: 9.75rem;
+    min-width: 0;
+    flex: 0 0 auto;
+  }
+
+  .theme-picker label {
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+  }
+
+  .theme-select {
+    min-height: 44px;
+    width: 6.5rem;
+    padding: 0.45rem 1.7rem 0.45rem 0.65rem;
+    border-color: var(--control-line);
+    background: var(--panel-raised);
+  }
+
+  .theme-status {
+    position: absolute;
+    grid-column: 1 / -1;
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    padding: 0.55rem 0.7rem;
+    border: 1px solid var(--control-line);
+    border-radius: 12px;
+    background: var(--panel-raised);
+    color: var(--ink);
+    box-shadow: var(--shadow-soft);
+    font-size: 0.78rem;
+    overflow-wrap: anywhere;
+  }
+
+  .theme-status[data-visible="true"] {
+    position: static;
+  }
+
+  .theme-status:not([data-visible="true"]) {
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    border: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  @media (max-width: 380px) {
+    .theme-picker { grid-template-columns: minmax(0, 1fr) 5.75rem; width: 8.75rem; }
+    .theme-picker label { font-size: 0.72rem; }
+    .theme-select { width: 5.75rem; }
+  }
+</style>

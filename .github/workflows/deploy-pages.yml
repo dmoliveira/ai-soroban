@@ -42,8 +42,14 @@ jobs:
       - name: Build site
         run: npm run build
 
+      - name: Verify built theme bootstrap
+        run: npm run test:theme-build
+
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
+
+      - name: Verify production theme first paint
+        run: npm run test:e2e:theme-preview
 
       - name: Validate browser flows
         run: npm run test:e2e
