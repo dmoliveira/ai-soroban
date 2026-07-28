@@ -128,23 +128,27 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
 <script>
   // @ts-nocheck
-  import { STORAGE_KEYS, clearProgressStorage, readStoredJson } from '../lib/storage.js';
+  import { canonicalizeChallengeSession } from '../lib/challenges.js';
+  import { STORAGE_KEYS, clearProgressStorage, normalizeStoredRecord, readStoredArray, readStoredRecord } from '../lib/storage.js';
 
   const root = document.querySelector('.progress-panel');
   const base = root?.dataset.base || '/soroban-dojo/';
   const lessonMeta = JSON.parse(root?.dataset.lessons || '[]');
   const exerciseMeta = JSON.parse(root?.dataset.exercises || '[]');
 
-  const lessonData = readStoredJson(localStorage, STORAGE_KEYS.completedLessons, []);
-  const exerciseData = readStoredJson(localStorage, STORAGE_KEYS.exerciseStates, {});
-  const timerData = readStoredJson(localStorage, STORAGE_KEYS.timerHistory, []);
-  const sessionData = readStoredJson(localStorage, STORAGE_KEYS.practiceSessions, []);
-  const worksheetData = readStoredJson(localStorage, STORAGE_KEYS.worksheetSessions, []);
-  const bossData = readStoredJson(localStorage, STORAGE_KEYS.bossRounds, {});
+  const lessonData = readStoredArray(localStorage, STORAGE_KEYS.completedLessons);
+  const exerciseData = readStoredRecord(localStorage, STORAGE_KEYS.exerciseStates);
+  const timerData = readStoredArray(localStorage, STORAGE_KEYS.timerHistory);
+  const sessionData = readStoredArray(localStorage, STORAGE_KEYS.practiceSessions)
+    .filter((entry) => entry && typeof entry === 'object' && !Array.isArray(entry) && Array.isArray(entry.questions))
+    .map((entry) => canonicalizeChallengeSession({ ...entry, responses: normalizeStoredRecord(entry.responses) }))
+    .filter(Boolean);
+  const worksheetData = readStoredArray(localStorage, STORAGE_KEYS.worksheetSessions);
+  const bossData = readStoredRecord(localStorage, STORAGE_KEYS.bossRounds);
 
   const attempted = Object.values(exerciseData).filter(Boolean);
   const reviewItems = Object.values(exerciseData).filter((entry) => entry?.status === 'needs-review');
-  const totalSeconds = timerData.reduce((sum, entry) => sum + (entry.seconds || ((entry.minutes || 0) * 60)), 0);
+  const totalSeconds = timerData.reduce((sum, entry) => sum + (entry?.seconds || ((entry?.minutes || 0) * 60)), 0);
   const totalMinutes = Math.round(totalSeconds / 60);
   const finishedSessions = sessionData.filter((entry) => entry?.completed);
   const bestScore = finishedSessions.reduce((best, entry) => Math.max(best, entry.finalScore || 0), 0);

@@ -7,6 +7,8 @@ import {
   clearProgressStorage,
   firstIncompletePlanStep,
   normalizePlacementState,
+  normalizeStoredArray,
+  normalizeStoredRecord,
   parseStoredJson,
 } from '../src/lib/storage.js';
 
@@ -22,6 +24,15 @@ test('placement state accepts both legacy and current shapes', () => {
 test('malformed stored JSON falls back without throwing', () => {
   assert.deepEqual(parseStoredJson('{not-json', []), []);
   assert.deepEqual(parseStoredJson(null, {}), {});
+});
+
+test('valid JSON with the wrong storage shape normalizes safely', () => {
+  assert.deepEqual(normalizeStoredArray({ 0: 'not-an-array' }), []);
+  assert.deepEqual(normalizeStoredArray('not-an-array'), []);
+  assert.deepEqual(normalizeStoredArray([1, 2]), [1, 2]);
+  assert.deepEqual(normalizeStoredRecord(['not-a-record']), {});
+  assert.deepEqual(normalizeStoredRecord('not-a-record'), {});
+  assert.deepEqual(normalizeStoredRecord({ saved: true }), { saved: true });
 });
 
 test('weekly plan returns null only when every step is complete', () => {

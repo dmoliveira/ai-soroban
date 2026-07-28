@@ -11,7 +11,7 @@ for (const viewport of viewports) {
   test(`${viewport.name} keeps core routes inside the viewport`, async ({ page }) => {
     await page.setViewportSize(viewport);
 
-    for (const route of ['', 'practice', 'progress', 'worksheets']) {
+    for (const route of ['', 'practice', 'progress', 'worksheets', 'mini-games']) {
       await page.goto(route);
       const dimensions = await page.evaluate(() => ({
         clientWidth: document.documentElement.clientWidth,
@@ -70,6 +70,7 @@ test('core non-inline learning controls meet the 44px target', async ({ page }) 
     { path: 'worksheets', selector: '.operation-chip, .worksheet-input, .mini-action, .preset-button' },
     { path: 'lessons/l0/reading-a-single-digit', selector: '.detail-utility-row a, .lesson-nav-strip a, .button' },
     { path: 'exercises/l1/add-two-and-three', selector: '.detail-utility-row a, .button' },
+    { path: 'mini-games', selector: '.mini-game-playfield button, .mini-game-setting select, .mini-tier-picker select, #mini-game-answer' },
   ];
 
   for (const route of routes) {

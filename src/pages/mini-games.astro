@@ -4,7 +4,7 @@ import MiniGameClient from '../components/MiniGameClient.astro';
 const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
 ---
 
-<BaseLayout title="Soroban Mini Games" description="Play fast soroban mini-games for complements, tables, anzan, and error recovery with calm replay-friendly rounds.">
+<BaseLayout title="Soroban Mini Games" description="Play finite soroban rounds for number bonds, tables, Flash Anzan, and error recovery with configurable sessions and honest results.">
   <section class="mini-games-studio-hero panel" style={`--mini-mist:url('${base}graphics/worksheet-mist.svg')`}>
     <div class="mini-games-studio-brand">
       <div class="mini-games-studio-mark" aria-hidden="true">
@@ -12,13 +12,13 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       </div>
       <div class="content-prose">
         <p class="eyebrow">Mini games · 遊び</p>
-        <h1>Choose one fast game and begin with purpose</h1>
-        <p>These modes work best when you pick a single game, play one short round, and either replay with intent or return to deeper practice.</p>
+        <h1>Choose one finite game and finish with a clear result</h1>
+        <p>Configure one short round, stop safely whenever you need to, then review score and elapsed time before replaying or returning to deeper practice.</p>
       </div>
     </div>
     <div class="mini-games-studio-stats">
-      <article class="subtle-panel mini-games-studio-stat"><span>Best use</span><strong>One short playful round</strong></article>
-      <article class="subtle-panel mini-games-studio-stat"><span>Tracks</span><strong>Score · streak · medals</strong></article>
+      <article class="subtle-panel mini-games-studio-stat"><span>Defaults</span><strong>10 bonds · 20 flash terms</strong></article>
+      <article class="subtle-panel mini-games-studio-stat"><span>Results</span><strong>Score · time · Play Again</strong></article>
       <article class="subtle-panel mini-games-studio-stat"><span>Fallbacks</span><strong>Practice or daily drills</strong></article>
     </div>
     <div class="hero-actions">

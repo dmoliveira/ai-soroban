@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {
   CHALLENGE_DEFINITIONS,
   buildChallengeQuestions,
+  canonicalizeChallengeSession,
   certifyChallengeQuestions,
   evaluateChallengeOutcome,
 } from '../src/lib/challenges.js';
@@ -76,4 +77,27 @@ test('streak target passes and fails at the exact boundary', () => {
   );
   eight[3] = responseFor(questions[3], { input: '' });
   assert.equal(evaluateChallengeOutcome({ challengeKey: 'streak-sprint', questions, responses: eight }).met, false);
+});
+
+test('saved challenge sessions restore canonical questions and outcome from key and seed', () => {
+  const questions = buildChallengeQuestions({ challengeKey: 'bead-match', seed: 'saved-seed' });
+  const responses = Object.fromEntries(questions.slice(0, 8).map((question, index) => [index, responseFor(question)]));
+  const tampered = {
+    id: 'saved-id',
+    challengeKey: 'bead-match',
+    challengeSeed: 'saved-seed',
+    completed: true,
+    questions: questions.map((question) => ({ ...question, prompt: `Answer: ${question.answer}`, steps: [`Answer: ${question.answer}`] })),
+    responses,
+    challengeTitle: 'Forged title',
+    challengeTarget: 'Forged target',
+    challengeOutcome: { met: false, value: 0 },
+  };
+
+  const restored = canonicalizeChallengeSession(tampered);
+  assert.deepEqual(restored.questions, questions);
+  assert.equal(restored.questions.some((question) => question.prompt.startsWith('Answer:')), false);
+  assert.equal(restored.challengeTitle, CHALLENGE_DEFINITIONS['bead-match'].title);
+  assert.equal(restored.challengeOutcome.met, true);
+  assert.equal(restored.challengeOutcome.value, 8);
 });

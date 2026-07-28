@@ -16,7 +16,7 @@ Soroban Dojo may store:
 - practice sessions and bounded timer history
 - worksheet sessions and weekly study-plan state
 - placement answers and recommendation
-- mini-game scores and medals
+- naturally completed mini-game best scores and medals; session settings and stopped partial results are not persisted
 - boss-round, active boss-session, badge, and certificate state
 - a display-theme preference
 

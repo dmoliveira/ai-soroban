@@ -386,3 +386,37 @@ export const formatChallengeOutcome = (outcome) => {
     : `${outcome.value}/${outcome.total} first-check correct`;
   return `${outcome.met ? 'Target met' : 'Target not met yet'} · ${measure} · target ${outcome.threshold}`;
 };
+
+export const canonicalizeChallengeSession = (session) => {
+  if (!session || typeof session !== 'object' || Array.isArray(session)) return null;
+  if (!session.challengeKey) return session;
+  const definition = CHALLENGE_DEFINITIONS[session.challengeKey];
+  const seed = String(session.challengeSeed || session.id || '');
+  if (!definition || !seed) return null;
+  const questions = buildChallengeQuestions({ challengeKey: session.challengeKey, seed });
+  const canonical = {
+    ...session,
+    type: definition.config.type,
+    level: definition.config.level,
+    length: definition.config.length,
+    checkMode: definition.config.checkMode,
+    timerEnabled: definition.config.timerMode === 'on',
+    format: definition.config.format,
+    questionStyle: definition.config.questionStyle,
+    termCount: definition.config.termCount,
+    challengeTitle: definition.title,
+    challengeTarget: definition.target,
+    challengeRule: definition.rule,
+    challengeRuleVersion: CHALLENGE_RULE_VERSION,
+    challengeSeed: seed,
+    questions,
+  };
+  canonical.challengeOutcome = canonical.completed
+    ? evaluateChallengeOutcome({
+      challengeKey: canonical.challengeKey,
+      questions,
+      responses: canonical.responses || {},
+    })
+    : null;
+  return canonical;
+};
