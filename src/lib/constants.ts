@@ -20,10 +20,4 @@ export const PATHS = [
   },
 ];
 
-export const STORAGE_KEYS = {
-  path: 'soroban-dojo:path',
-  completedLessons: 'soroban-dojo:completed-lessons',
-  exerciseStates: 'soroban-dojo:exercise-states',
-  timerHistory: 'soroban-dojo:timer-history',
-  practiceSessions: 'soroban-dojo:practice-sessions',
-} as const;
+export { PROGRESS_STORAGE_KEYS, STORAGE_KEYS } from './storage.js';

@@ -10,6 +10,10 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     <span class="badge">No pressure</span>
   </div>
   <p class="muted">Answer honestly. This self-check does not grade you harshly; it simply recommends where to begin.</p>
+  <div class="route-card-footer placement-progress-row">
+    <span id="placement-progress-copy" class="muted small">0 of 6 questions answered.</span>
+    <span id="placement-progress-badge" class="badge">Keep going</span>
+  </div>
 
   <div id="placement-questions" class="session-list"></div>
 
@@ -21,8 +25,27 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   <div id="placement-result" class="reveal-panel" hidden role="status" aria-live="polite"></div>
 </section>
 
-<script is:inline>
-  const STORAGE_KEY = 'soroban-dojo:placement-result';
+<style is:global>
+  .placement-progress-row{margin:.25rem 0 1rem}
+  .placement-options{display:grid;gap:.65rem;grid-template-columns:repeat(auto-fit,minmax(10rem,1fr))}
+  .placement-option{position:relative}
+  .placement-option input{position:absolute;opacity:0;pointer-events:none}
+  .placement-option label{display:inline-flex;align-items:center;justify-content:center;width:100%;min-height:3rem;text-align:center}
+  .placement-option input:checked + label{background:var(--accent, #8b5cf6);border-color:var(--accent, #8b5cf6);color:#fff;box-shadow:0 10px 24px rgba(139,92,246,.22)}
+  .placement-option input:focus-visible + label{outline:3px solid var(--focus);outline-offset:3px}
+  .placement-result-card{display:grid;gap:1rem}
+  .placement-result-card h3,.placement-result-card p{margin:0}
+  .placement-result-actions{align-items:flex-start;justify-content:flex-start}
+  .placement-result-secondary{display:grid;gap:.75rem;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr))}
+  .placement-result-secondary .subtle-panel{display:grid;gap:.35rem}
+  .placement-result-secondary .text-link{margin-top:.15rem}
+</style>
+
+<script>
+  // @ts-nocheck
+  import { STORAGE_KEYS, normalizePlacementState, readStoredJson, writeStoredJson } from '../lib/storage.js';
+
+  const STORAGE_KEY = STORAGE_KEYS.placementResult;
   const base = document.querySelector('.placement-shell')?.dataset.base || '/soroban-dojo/';
   const questions = [
     {
@@ -88,17 +111,111 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     { max: 10, level: 'L3', title: 'Intermediate', reason: 'You can begin mixed operation fluency and first advanced drills.' },
     { max: 12, level: 'L4', title: 'Advanced', reason: 'You appear ready for first multiplication and division pattern work.' },
   ];
+  const followUps = {
+    L0: {
+      primary: { href: `${base}levels/l0`, label: 'Open Foundations' },
+      secondary: [
+        { href: `${base}lessons/l0/parts-of-the-soroban`, label: 'First lesson', copy: 'Start with parts of the soroban and reading beads.' },
+        { href: `${base}worksheets?preset=foundations-focus`, label: 'Foundations worksheet', copy: 'Use one short printable first-pass sheet.' },
+      ],
+    },
+    L1: {
+      primary: { href: `${base}levels/l1`, label: 'Open Beginner level' },
+      secondary: [
+        { href: `${base}lessons/l1/first-addition-on-one-rod`, label: 'First lesson', copy: 'Begin with one-rod addition before longer sessions.' },
+        { href: `${base}study-plan`, label: 'Study plan', copy: 'Use the plan if you want a steadier weekly rhythm.' },
+      ],
+    },
+    L2: {
+      primary: { href: `${base}levels/l2`, label: 'Open Basic Operations' },
+      secondary: [
+        { href: `${base}lessons/l2/complements-to-ten`, label: 'First lesson', copy: 'Strengthen complements before mixed review gets harder.' },
+        { href: `${base}worksheets?preset=complements&submode=complement-balance`, label: 'Complements worksheet', copy: 'Use a focused sheet for five and ten complements.' },
+      ],
+    },
+    L3: {
+      primary: { href: `${base}levels/l3`, label: 'Open Intermediate level' },
+      secondary: [
+        { href: `${base}lessons/l3/mixed-two-digit-fluency`, label: 'First lesson', copy: 'Move into mixed-operation fluency with one clear route.' },
+        { href: `${base}daily-drills`, label: 'Daily drill pack', copy: 'Use a short adaptive pack if you want guided follow-up.' },
+      ],
+    },
+    L4: {
+      primary: { href: `${base}levels/l4`, label: 'Open Advanced level' },
+      secondary: [
+        { href: `${base}lessons/l4/first-multiplication-patterns`, label: 'First lesson', copy: 'Start with multiplication and division patterns in order.' },
+        { href: `${base}study-plan`, label: 'Study plan', copy: 'Use the plan to pace advanced topics across shorter sessions.' },
+      ],
+    },
+  };
 
   const mount = document.getElementById('placement-questions');
   const result = document.getElementById('placement-result');
   const scoreButton = document.getElementById('score-placement');
+  const progressCopy = document.getElementById('placement-progress-copy');
+  const progressBadge = document.getElementById('placement-progress-badge');
+  let currentChoice = null;
 
-  const chosenButtons = () => Array.from(document.querySelectorAll('[role="radio"][aria-checked="true"]'));
+  const chosenInputs = () => Array.from(document.querySelectorAll('.placement-option input:checked'));
   const updateScoreButton = () => {
-    const complete = chosenButtons().length === questions.length;
+    const answered = chosenInputs().length;
+    const complete = answered === questions.length;
     scoreButton.disabled = !complete;
     scoreButton.setAttribute('aria-disabled', String(!complete));
+    progressCopy.textContent = `${answered} of ${questions.length} questions answered.`;
+    progressBadge.textContent = complete ? 'Ready' : `${questions.length - answered} left`;
   };
+
+  const renderResult = (choice) => {
+    const route = followUps[choice.level] || followUps.L0;
+    result.hidden = false;
+    result.replaceChildren();
+
+    const card = document.createElement('div');
+    card.className = 'placement-result-card';
+
+    const title = document.createElement('h3');
+    title.textContent = `Recommended start: ${choice.level} · ${choice.title}`;
+
+    const copy = document.createElement('p');
+    copy.className = 'muted';
+    copy.textContent = choice.reason;
+
+    const primaryRow = document.createElement('div');
+    primaryRow.className = 'button-row placement-result-actions';
+    const primary = document.createElement('a');
+    primary.className = 'button';
+    primary.href = route.primary.href;
+    primary.textContent = route.primary.label;
+    primaryRow.appendChild(primary);
+
+    const secondaryGrid = document.createElement('div');
+    secondaryGrid.className = 'placement-result-secondary';
+    route.secondary.forEach((item) => {
+      const panel = document.createElement('div');
+      panel.className = 'subtle-panel';
+      const label = document.createElement('strong');
+      label.textContent = item.label;
+      const panelCopy = document.createElement('p');
+      panelCopy.className = 'muted small';
+      panelCopy.textContent = item.copy;
+      const link = document.createElement('a');
+      link.className = 'text-link';
+      link.href = item.href;
+      link.textContent = `Open ${item.label.toLowerCase()} →`;
+      panel.append(label, panelCopy, link);
+      secondaryGrid.appendChild(panel);
+    });
+
+    card.append(title, copy, primaryRow, secondaryGrid);
+    result.appendChild(card);
+  };
+
+  const collectAnswers = () => Object.fromEntries(chosenInputs().map((input) => [input.name, input.id]));
+  const persistState = () => writeStoredJson(localStorage, STORAGE_KEY, {
+    choice: currentChoice,
+    answers: collectAnswers(),
+  });
 
   const renderQuestions = () => {
     questions.forEach((question) => {
@@ -107,34 +224,31 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       const prompt = document.createElement('legend');
       prompt.textContent = question.prompt;
       const row = document.createElement('div');
-      row.className = 'button-row';
-      row.setAttribute('role', 'radiogroup');
-      row.setAttribute('aria-label', question.prompt);
+      row.className = 'placement-options';
       const status = document.createElement('p');
       status.className = 'muted small';
       status.id = `${question.id}-status`;
       status.textContent = 'No answer selected yet.';
       question.options.forEach((option) => {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'button button-secondary';
-        button.textContent = option.label;
-        button.setAttribute('role', 'radio');
-        button.setAttribute('aria-checked', 'false');
-        button.setAttribute('aria-describedby', status.id);
-        button.dataset.question = question.id;
-        button.dataset.score = String(option.score);
-        button.addEventListener('click', () => {
-          document.querySelectorAll(`[data-question="${question.id}"]`).forEach((node) => {
-            node.classList.remove('is-selected');
-            node.setAttribute('aria-checked', 'false');
-          });
-          button.classList.add('is-selected');
-          button.setAttribute('aria-checked', 'true');
+        const wrapper = document.createElement('div');
+        wrapper.className = 'placement-option';
+        const input = document.createElement('input');
+        input.type = 'radio';
+        input.name = question.id;
+        input.id = `${question.id}-${option.label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+        input.dataset.score = String(option.score);
+        input.setAttribute('aria-describedby', status.id);
+        const label = document.createElement('label');
+        label.className = 'button button-secondary';
+        label.setAttribute('for', input.id);
+        label.textContent = option.label;
+        input.addEventListener('change', () => {
           status.textContent = `Selected: ${option.label}.`;
+          persistState();
           updateScoreButton();
         });
-        row.appendChild(button);
+        wrapper.append(input, label);
+        row.appendChild(wrapper);
       });
       card.append(prompt, row, status);
       mount.appendChild(card);
@@ -142,25 +256,23 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     updateScoreButton();
   };
 
-  const chosenScore = () => chosenButtons().reduce((sum, node) => sum + Number(node.dataset.score || 0), 0);
+  const chosenScore = () => chosenInputs().reduce((sum, node) => sum + Number(node.dataset.score || 0), 0);
 
   scoreButton?.addEventListener('click', () => {
     const score = chosenScore();
     const choice = recommendations.find((entry) => score <= entry.max) || recommendations[recommendations.length - 1];
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(choice));
-    result.hidden = false;
-    result.innerHTML = `<strong>Recommended start: ${choice.level} · ${choice.title}</strong><br/>${choice.reason}<br/><a class="text-link" href="${base}levels/${choice.level.toLowerCase()}">Open ${choice.level}</a>`;
+    currentChoice = choice;
+    persistState();
+    renderResult(choice);
   });
 
   document.getElementById('reset-placement')?.addEventListener('click', () => {
-    document.querySelectorAll('[role="radio"]').forEach((node) => {
-      node.classList.remove('is-selected');
-      node.setAttribute('aria-checked', 'false');
-    });
+    document.querySelectorAll('.placement-option input').forEach((node) => { node.checked = false; });
     questions.forEach((question) => {
       const status = document.getElementById(`${question.id}-status`);
       if (status) status.textContent = 'No answer selected yet.';
     });
+    currentChoice = null;
     localStorage.removeItem(STORAGE_KEY);
     result.hidden = true;
     result.replaceChildren();
@@ -168,4 +280,17 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   });
 
   renderQuestions();
+  const savedState = normalizePlacementState(readStoredJson(localStorage, STORAGE_KEY, null));
+  Object.entries(savedState.answers).forEach(([questionId, inputId]) => {
+    const input = document.getElementById(inputId);
+    if (!(input instanceof HTMLInputElement)) return;
+    input.checked = true;
+    const status = document.getElementById(`${questionId}-status`);
+    const label = document.querySelector(`label[for="${CSS.escape(input.id)}"]`);
+    if (status && label) status.textContent = `Selected: ${label.textContent}.`;
+  });
+  currentChoice = savedState.choice;
+  updateScoreButton();
+  if (currentChoice?.level && currentChoice?.title && currentChoice?.reason) renderResult(currentChoice);
+  if (currentChoice || Object.keys(savedState.answers).length) persistState();
 </script>

@@ -19,32 +19,25 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       <article class="subtle-panel path-studio-stat"><span>First win</span><strong>Read and set 31</strong></article>
     </div>
     <div class="hero-actions">
-      <a class="button" href={`${base}worksheets?preset=foundations-focus`}>Start with a worksheet</a>
-      <a class="button button-secondary" href={`${base}levels/l0`}>Start at Foundations</a>
+      <a class="button" href={`${base}lessons/l0/parts-of-the-soroban`}>Start the first lesson</a>
+      <a class="button button-secondary" href={`${base}levels/l0`}>Open Foundations</a>
       <a class="button button-secondary" href={`${base}daily-drills`}>Use a short daily pack</a>
     </div>
   </section>
 
-  <section class="panel content-prose">
-    <p class="eyebrow">Children path</p>
-    <h2>Simple order to follow</h2>
-    <ul>
-      <li>5–10 minute sessions</li>
-      <li>More visual descriptions and reminders</li>
-      <li>Gentle review instead of pressure</li>
-    </ul>
-    <ol>
-      <li>Learn the parts of the soroban.</li>
-      <li>Read and set small numbers.</li>
-      <li>Add and subtract on one rod.</li>
-      <li>Learn complements when direct moves get stuck.</li>
-      <li>Move into bigger numbers and short worksheets.</li>
-    </ol>
+  <section class="panel content-prose route-card compact-card">
+    <div class="section-head">
+      <div>
+        <p class="eyebrow">Who this route is best for</p>
+        <h2>Choose this path for shorter, warmer first sessions</h2>
+      </div>
+      <p class="muted">Use the adult path instead if the learner wants longer self-study blocks, more direct explanations, and a stronger study-plan rhythm.</p>
+    </div>
   </section>
 
   <style>
     .path-studio-hero{display:grid;gap:1rem;border:1px solid rgba(244,194,194,.55);box-shadow:0 18px 48px rgba(201,114,114,.08);background-image:linear-gradient(135deg, rgba(255,250,248,.95), rgba(255,244,246,.98)), var(--path-mist);background-size:cover;background-position:center bottom}
-    .path-studio-brand{display:flex;gap:1rem;align-items:flex-start}.path-studio-mark{width:4.5rem;height:4.5rem;border-radius:1.5rem;background:rgba(255,255,255,.8);display:grid;place-items:center;box-shadow:0 12px 32px rgba(201,114,114,.12);flex:0 0 auto}.path-studio-mark img{width:3.25rem;height:3.25rem}.path-studio-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.85rem}.path-studio-stat{display:grid;gap:.35rem}.path-studio-stat span{font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:#9a6c6c}@media (max-width:900px){.path-studio-stats{grid-template-columns:1fr}}
+    .path-studio-brand{display:flex;gap:1rem;align-items:flex-start}.path-studio-mark{width:4.5rem;height:4.5rem;border-radius:1.5rem;background:rgba(255,255,255,.8);display:grid;place-items:center;box-shadow:0 12px 32px rgba(201,114,114,.12);flex:0 0 auto}.path-studio-mark img{width:3.25rem;height:3.25rem}.path-studio-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.85rem}.path-studio-stat{display:grid;gap:.35rem}.path-studio-stat span{font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--accent)}@media (max-width:900px){.path-studio-stats{grid-template-columns:1fr}}
   </style>
 
   <section class="split-grid">
@@ -68,17 +61,18 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       <div class="hero-actions">
         <a class="button" href={`${base}lessons/l0/parts-of-the-soroban`}>Start first lesson</a>
         <a class="button button-secondary" href={`${base}exercises/l0/set-thirty-one`}>Try the first win</a>
+        <a class="button button-secondary" href={`${base}paths/adults`}>Compare the adult path</a>
       </div>
     </article>
   </section>
 
   <section class="panel content-prose">
     <p class="eyebrow">Best next steps</p>
-    <h2>When a session goes well</h2>
-    <div class="hero-actions">
-      <a class="button" href={`${base}daily-drills`}>Generate today’s short pack</a>
-      <a class="button button-secondary" href={`${base}boss-rounds`}>See milestone endings</a>
-      <a class="button button-secondary" href={`${base}paths/adults`}>Compare the adult path</a>
-    </div>
-  </section>
+      <h2>When a session goes well</h2>
+      <div class="hero-actions">
+        <a class="button" href={`${base}daily-drills`}>Generate today’s short pack</a>
+        <a class="button button-secondary" href={`${base}boss-rounds`}>See milestone endings</a>
+        <a class="button button-secondary" href={`${base}worksheets?preset=foundations-focus`}>Use the foundations worksheet</a>
+      </div>
+    </section>
 </BaseLayout>

@@ -14,7 +14,7 @@ test('3-4 digit sequence worksheet keeps every rendered operand in band', async 
   await page.selectOption('#worksheet-band', '3-4');
   await page.getByText('Advanced options').click();
   await page.selectOption('#worksheet-count', '40');
-  await page.getByRole('button', { name: 'Generate ledger' }).click();
+  await page.getByRole('button', { name: 'Refresh questions' }).click();
 
   await expect(page.locator('#worksheet-title')).toContainText('3-4 digit band');
   await expect(page.locator('.vertical-drill-row').first()).toBeVisible();
@@ -48,6 +48,11 @@ test('worksheet preset query opens focused multiplication drills', async ({ page
   await expect(page.locator('#worksheet-target-summary')).toContainText('Multiplication place shifts');
   await expect(page.locator('#worksheet-worked-title')).toContainText('Place-shift example');
   await expect(page.locator('#worksheet-worked-prompt')).toContainText('14 × 4');
+  await expect(page.getByRole('button', { name: 'Multiplication' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('button', { name: 'Foundations' })).toHaveAttribute('aria-pressed', 'false');
+  await page.getByRole('button', { name: 'Start solving current sheet' }).click();
+  await expect(page.locator('.worksheet-input').first()).toBeFocused();
+  await expect(page.locator('.worksheet-input').first()).toBeInViewport();
 });
 
 test('adaptive worksheet targets division weakness automatically', async ({ page }) => {
@@ -62,7 +67,7 @@ test('adaptive worksheet targets division weakness automatically', async ({ page
   await page.goto('worksheets');
   await page.selectOption('#worksheet-mode', 'adaptive');
   await page.selectOption('#worksheet-level', 'L4');
-  await page.getByRole('button', { name: 'Generate ledger' }).click();
+  await page.getByRole('button', { name: 'Refresh questions' }).click();
 
   await expect(page.locator('#worksheet-target-summary')).toContainText('Division quotient building');
   const prompts = await page.locator('.worksheet-input').evaluateAll((inputs) => inputs.map((input) => input.getAttribute('data-prompt') || ''));

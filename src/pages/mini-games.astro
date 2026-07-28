@@ -30,6 +30,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   <MiniGameClient />
 
   <style>
+    #mini-games-panel { scroll-margin-top: 8.5rem; }
     .mini-games-studio-hero {
       display: grid;
       gap: 1rem;
@@ -44,7 +45,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     .mini-games-studio-mark img { width:3.25rem; height:3.25rem; }
     .mini-games-studio-stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:0.85rem; }
     .mini-games-studio-stat { display:grid; gap:0.35rem; }
-    .mini-games-studio-stat span { font-size:0.75rem; text-transform:uppercase; letter-spacing:0.06em; color:#9a6c6c; }
-    @media (max-width: 900px) { .mini-games-studio-stats { grid-template-columns:1fr; } }
+    .mini-games-studio-stat span { font-size:0.75rem; text-transform:uppercase; letter-spacing:0.06em; color:var(--accent); }
+    @media (max-width: 900px) { #mini-games-panel { scroll-margin-top: 9.5rem; } .mini-games-studio-stats { grid-template-columns:1fr; } }
   </style>
 </BaseLayout>

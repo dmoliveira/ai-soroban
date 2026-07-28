@@ -6,19 +6,27 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 const releases = [
   {
     version: '0.2.0',
-    title: 'Placement and intermediate practice expansion',
-    date: '2026-04-15',
+    title: 'Responsive learning-flow modernization',
+    date: '2026-07-28',
+    summary: 'Simplified the route into practice, made local progress state coherent, and added stronger responsive, accessibility, content, and delivery checks.',
+    tags: ['Navigation', 'Practice', 'Accessibility', 'Reliability'],
+    cta: { href: `${base}practice`, label: 'Start focused practice' },
+    secondaryCta: { href: `${base}progress`, label: 'Review progress' },
     notes: [
-      'Added a placement self-check with calm level recommendations.',
-      'Expanded curriculum into L3 and L4 with mixed-operation, multiplication, and division starter lessons.',
-      'Added printable worksheets and daily drill generator pages.',
-      'Added a GitHub Pages deployment workflow for main.',
+      'Made task navigation compact on mobile and reduced sticky-header obstruction.',
+      'Preserved lesson and exercise level context when starting focused practice.',
+      'Fixed placement restoration, weekly-plan advancement, complete-plan daily guidance, and comprehensive local-data reset.',
+      'Added content-graph checks, local-first Playwright, and pull-request validation before Pages deployment.',
     ],
   },
   {
     version: '0.1.0',
     title: 'Initial Soroban Dojo foundation',
     date: '2026-04-15',
+    summary: 'Launched the first complete learner flow with lessons, exercises, guided practice, and local progress tracking.',
+    tags: ['Foundations', 'Exercises', 'Practice', 'Progress'],
+    cta: { href: `${base}start-here`, label: 'Open Start here' },
+    secondaryCta: { href: `${base}practice`, label: 'Open practice' },
     notes: [
       'Launched the Astro static Soroban learning site scaffold.',
       'Added lessons, exercises, local progress tracking, practice sessions, and Japanese-inspired UI details.',
@@ -26,23 +34,58 @@ const releases = [
     ],
   },
 ];
+const latestRelease = releases[0];
+const priorReleases = releases.slice(1);
 ---
 
-<BaseLayout title="Releases | Soroban Dojo">
+<BaseLayout title="Releases | Soroban Dojo" description="See what changed for learners, what tools were updated most recently, and where to jump back into Soroban Dojo next.">
   <StudioHero
     eyebrow="Releases · 更新"
-    title="Release notes"
-    summary="Track the dojo’s progress over time: new lessons, new drills, new review tools, and deployment milestones."
+    title="What’s new for learners"
+    summary="See the newest study tools, calmer practice improvements, and which updated route is worth revisiting first."
     stats={[
       { label: 'Latest version', value: releases[0].version },
-      { label: 'Current focus', value: 'Worksheets + practice polish' },
+      { label: 'Current focus', value: 'Clearer, safer learning flows' },
       { label: 'Best use', value: 'See what changed recently' },
     ]}
   />
 
-  <section class="session-list">
-    {releases.map((release) => (
-      <article class="panel route-card">
+  <section class="panel route-card release-feature-card">
+    <div class="section-head">
+      <div>
+        <p class="eyebrow">Latest update · Version {latestRelease.version}</p>
+        <h2>{latestRelease.title}</h2>
+      </div>
+      <span class="badge">{latestRelease.date}</span>
+    </div>
+    <p>{latestRelease.summary}</p>
+    <div class="review-chip-row">
+      {latestRelease.tags.map((tag) => <span class="review-chip">{tag}</span>)}
+    </div>
+    <ul class="list-clean release-note-list compact-library">
+      {latestRelease.notes.map((note) => <li class="library-card-item">{note}</li>)}
+    </ul>
+    <div class="route-card-footer">
+      <span class="muted small">Best next step: open the newest learner-facing update first.</span>
+      <div class="button-row button-row-compact">
+        <a class="button" href={latestRelease.cta.href}>{latestRelease.cta.label}</a>
+        <a class="button button-secondary" href={latestRelease.secondaryCta.href}>{latestRelease.secondaryCta.label}</a>
+      </div>
+    </div>
+  </section>
+
+  {priorReleases.length > 0 && (
+    <section class="panel content-prose">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Earlier updates</p>
+          <h2>Release archive</h2>
+        </div>
+        <p class="muted">Older versions stay here as a quick reminder of when the main learner routes first landed.</p>
+      </div>
+      <div class="session-list">
+        {priorReleases.map((release) => (
+          <article class="panel route-card release-archive-card">
         <div class="section-head">
           <div>
             <p class="eyebrow">Version {release.version}</p>
@@ -50,18 +93,29 @@ const releases = [
           </div>
           <span class="badge">{release.date}</span>
         </div>
-        <p class="muted small">Best for: revisit this if you want the newest training tools and cleaner practice flows.</p>
-        <ul class="list-clean release-note-list">
+            <p>{release.summary}</p>
+            <div class="review-chip-row">
+              {release.tags.map((tag) => <span class="review-chip">{tag}</span>)}
+            </div>
+        <ul class="list-clean release-note-list compact-library">
           {release.notes.map((note) => <li>{note}</li>)}
         </ul>
         <div class="route-card-footer">
-          <span class="muted small">Best next step: revisit the updated tools directly</span>
+          <span class="muted small">Best next step: revisit the route introduced in this version.</span>
           <div class="button-row button-row-compact">
-            <a class="button button-secondary" href={`${base}worksheets`}>Open worksheets</a>
-            <a class="button button-secondary" href={`${base}practice`}>Open practice</a>
+                <a class="button button-secondary" href={release.cta.href}>{release.cta.label}</a>
+                <a class="button button-secondary" href={release.secondaryCta.href}>{release.secondaryCta.label}</a>
           </div>
         </div>
       </article>
-    ))}
-  </section>
+        ))}
+      </div>
+    </section>
+  )}
+
+  <style>
+    .release-feature-card,.release-archive-card{background:linear-gradient(180deg, rgba(255,255,255,.82), rgba(248,242,233,.88))}
+    .release-feature-card .review-chip-row,.release-archive-card .review-chip-row{margin-bottom:.85rem}
+    .release-feature-card .release-note-list,.release-archive-card .release-note-list{margin-top:0}
+  </style>
 </BaseLayout>

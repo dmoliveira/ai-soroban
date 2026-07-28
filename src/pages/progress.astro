@@ -16,11 +16,11 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   <StudioHero
     eyebrow="Progress studio · 歩み"
     title="See the next move before everything else"
-    summary="Use this page to decide what to do next, keep the week on track, and only then review deeper progress signals and milestones."
+    summary="Choose the next step first, then review the rest of your progress."
     stats={[
       { label: 'Best use', value: 'Choose the next action' },
-      { label: 'Best follow-up', value: 'Continue the weekly plan' },
-      { label: 'Signals', value: 'Review · sessions · milestones' },
+      { label: 'Best follow-up', value: 'Continue this week' },
+      { label: 'Signals', value: 'Review + milestones' },
     ]}
     actions={[
       { href: `${base}practice`, label: 'Continue practice' },
@@ -35,4 +35,14 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     <BossBadgeSummary />
     <CertificateSummary />
   </section>
+
+  <style>
+    @media (max-width: 900px){
+      .studio-hero{gap:.75rem}
+      .studio-hero .content-prose p:last-child{margin-bottom:0}
+      .studio-hero-stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:.65rem}
+      .studio-hero-stat:last-child{grid-column:1/-1}
+      .studio-hero .hero-actions{gap:.5rem}
+    }
+  </style>
 </BaseLayout>

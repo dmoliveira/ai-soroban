@@ -37,28 +37,39 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     <p id="weekly-plan-copy" class="muted">The plan will adapt as you complete lessons and mark review items.</p>
   </div>
 
-  <div class="weekly-plan-grid" id="weekly-plan-grid"></div>
+  <div id="weekly-plan-current" aria-live="polite"></div>
+  <section class="panel weekly-plan-rest-panel">
+    <div class="section-head">
+      <div>
+        <p class="eyebrow">Rest of this week</p>
+        <h3>Keep the remaining steps light</h3>
+      </div>
+      <p class="muted">Once the current step is done, continue in order instead of opening every route at once.</p>
+    </div>
+    <div class="weekly-plan-grid" id="weekly-plan-grid"></div>
+  </section>
 </section>
 
-<script is:inline>
+<style>
+  .weekly-plan-current-card{display:grid;gap:1rem;margin-top:1rem;background:linear-gradient(180deg, rgba(255,255,255,.82), rgba(248,242,233,.88))}
+  .weekly-plan-current-card h3,.weekly-plan-card h3{margin:.1rem 0}
+  .weekly-plan-current-card .route-card-footer{margin-top:0}
+  .weekly-plan-rest-panel{margin-top:1rem}
+  .weekly-plan-grid{display:grid;gap:1rem;grid-template-columns:repeat(auto-fit,minmax(16rem,1fr))}
+  .weekly-plan-card{display:grid;gap:.85rem}
+</style>
+
+<script>
+  // @ts-nocheck
+  import { STORAGE_KEYS, firstIncompletePlanStep, readStoredJson, writeStoredJson } from '../lib/storage.js';
+
   const root = document.querySelector('.weekly-plan-panel');
   const lessons = JSON.parse(root?.dataset.lessons || '[]');
   const exercises = JSON.parse(root?.dataset.exercises || '[]');
   const base = root?.dataset.base || '/soroban-dojo/';
-  const exerciseKey = 'soroban-dojo:exercise-states';
-  const lessonKey = 'soroban-dojo:completed-lessons';
-  const weeklyPlanKey = 'soroban-dojo:weekly-study-plan';
-
-  const read = (key, fallback) => {
-    try {
-      return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback));
-    } catch {
-      return fallback;
-    }
-  };
-
-  const completedLessons = read(lessonKey, []);
-  const exerciseStates = read(exerciseKey, {});
+  const completedLessons = readStoredJson(localStorage, STORAGE_KEYS.completedLessons, []);
+  const exerciseStates = readStoredJson(localStorage, STORAGE_KEYS.exerciseStates, {});
+  const hasProgressHistory = completedLessons.length > 0 || Object.keys(exerciseStates).length > 0;
   const weakAreas = Object.values(exerciseStates).reduce((acc, entry) => {
     if (entry?.status !== 'needs-review') return acc;
     const skill = entry.skill || '';
@@ -69,9 +80,14 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     else acc.arithmetic += 1;
     return acc;
   }, { arithmetic: 0, complements: 0, multiplication: 0, division: 0, mental: 0 });
+  const weakAreaTotal = Object.values(weakAreas).reduce((sum, count) => sum + count, 0);
 
-  const target = ['mental', 'division', 'multiplication', 'complements', 'arithmetic']
-    .sort((a, b) => weakAreas[b] - weakAreas[a])[0];
+  const target = hasProgressHistory
+    ? (weakAreaTotal === 0
+        ? 'arithmetic'
+        : ['mental', 'division', 'multiplication', 'complements', 'arithmetic']
+            .sort((a, b) => weakAreas[b] - weakAreas[a])[0])
+    : 'arithmetic';
 
   const planByTarget = {
     arithmetic: {
@@ -79,6 +95,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       copy: 'Keep the total readable through mixed additions and subtractions before adding more speed.',
       lesson: 'lesson-l3-001',
       exercise: 'exercise-l3-001',
+      exerciseSlug: 'l3/mixed-two-digit-sequence',
       worksheet: `${base}worksheets?preset=mixed-fluency&submode=arithmetic-rhythm`,
     },
     complements: {
@@ -111,31 +128,43 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     },
   };
 
-  const plan = planByTarget[target];
-  const lesson = lessons.find((entry) => entry.id === plan.lesson) || lessons[0];
-  const exercise = exercises.find((entry) => entry.id === plan.exercise) || exercises[0];
-
-  const readPlanState = () => {
-    try {
-      return JSON.parse(localStorage.getItem(weeklyPlanKey) || '{}');
-    } catch {
-      return {};
-    }
+  const beginnerPlan = {
+    title: 'Foundations start week',
+    copy: 'Begin with one-rod reading and one direct beginner check before you open broader drills or harder review paths.',
+    lesson: 'lesson-l0-002',
+    exercise: 'exercise-l0-003',
+    worksheet: `${base}worksheets?preset=foundations-focus`,
   };
 
-  const writePlanState = (state) => localStorage.setItem(weeklyPlanKey, JSON.stringify(state));
+  const planId = hasProgressHistory ? target : 'foundations';
+  const plan = hasProgressHistory ? planByTarget[target] : beginnerPlan;
+  const lesson = lessons.find((entry) => entry.id === plan.lesson) || lessons[0];
+  const exercise = exercises.find((entry) => entry.slug === plan.exerciseSlug)
+    || exercises.find((entry) => entry.id === plan.exercise)
+    || exercises[0];
 
-  const currentPlanState = readPlanState();
-  const normalizedPlanState = currentPlanState.target === target
+  const writePlanState = (state) => writeStoredJson(localStorage, STORAGE_KEYS.weeklyStudyPlan, state);
+
+  const currentPlanState = readStoredJson(localStorage, STORAGE_KEYS.weeklyStudyPlan, {});
+  const matchesCurrentPlan = (state) => (state?.planId || state?.target) === planId
+    && state?.lesson?.id === lesson?.id
+    && state?.exercise?.id === exercise?.id
+    && state?.worksheet?.href === plan.worksheet;
+  const stateMatchesPlan = matchesCurrentPlan(currentPlanState);
+  const normalizedPlanState = stateMatchesPlan
     ? currentPlanState
     : {
+        planId,
         target,
         title: plan.title,
-        lesson: { id: plan.lesson, done: false },
-        exercise: { id: plan.exercise, done: false },
+        lesson: { id: lesson?.id || plan.lesson, done: completedLessons.includes(lesson?.id) },
+        exercise: { id: exercise?.id || plan.exercise, done: exerciseStates[exercise?.id]?.status === 'got-it' },
         worksheet: { href: plan.worksheet, done: false },
       };
-  writePlanState(normalizedPlanState);
+  const readPlanState = () => {
+    const latest = readStoredJson(localStorage, STORAGE_KEYS.weeklyStudyPlan, {});
+    return matchesCurrentPlan(latest) ? latest : normalizedPlanState;
+  };
 
   document.getElementById('weekly-plan-title').textContent = plan.title;
   document.getElementById('weekly-plan-copy').textContent = plan.copy;
@@ -144,6 +173,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     {
       eyebrow: 'Day 1-2',
       key: 'lesson',
+      stepLabel: 'lesson',
       title: lesson?.title || 'Lesson review',
       copy: completedLessons.includes(lesson?.id) ? 'You already completed this lesson once. Re-read it quickly, then move straight into the exercise.' : 'Start with the concept explanation and worked example before drilling.',
       href: `${base}lessons/${lesson?.slug}`,
@@ -152,6 +182,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     {
       eyebrow: 'Day 3-4',
       key: 'exercise',
+      stepLabel: 'exercise',
       title: exercise?.title || 'Exercise review',
       copy: 'Attempt the exercise first, then use the hint or reveal only if the structure is still unclear.',
       href: `${base}exercises/${exercise?.slug}`,
@@ -160,6 +191,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     {
       eyebrow: 'Day 5-7',
       key: 'worksheet',
+      stepLabel: 'worksheet',
       title: 'Focused worksheet set',
       copy: 'Use a printable or on-screen sheet that matches the same weak area and submode.',
       href: plan.worksheet,
@@ -168,25 +200,82 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   ];
 
   const grid = document.getElementById('weekly-plan-grid');
-  cards.forEach((card) => {
-    const article = document.createElement('article');
-    article.className = 'subtle-panel weekly-plan-card';
-    const done = normalizedPlanState[card.key]?.done;
-    article.innerHTML = `<p class="eyebrow">${card.eyebrow}</p><h3>${card.title}</h3><p class="muted">${card.copy}</p><div class="button-row button-row-compact"><a class="button button-secondary" href="${card.href}">${card.label}</a><button class="button button-secondary weekly-plan-toggle" type="button" data-step="${card.key}">${done ? 'Mark pending' : 'Mark done'}</button></div><p class="muted small weekly-plan-status">${done ? 'Completed for this week.' : 'Still active in this week\'s plan.'}</p>`;
-    grid.appendChild(article);
-  });
+  const currentMount = document.getElementById('weekly-plan-current');
 
-  grid.querySelectorAll('.weekly-plan-toggle').forEach((button) => {
-    button.addEventListener('click', () => {
-      const state = readPlanState();
-      const step = button.dataset.step;
-      if (!step) return;
-      state[step] = { ...(state[step] || {}), done: !state[step]?.done };
-      writePlanState(state);
-      const status = button.closest('.weekly-plan-card')?.querySelector('.weekly-plan-status');
-      const done = state[step]?.done;
-      button.textContent = done ? 'Mark pending' : 'Mark done';
-      if (status) status.textContent = done ? 'Completed for this week.' : 'Still active in this week\'s plan.';
+  const renderToggleText = (card, done) => done ? `Mark ${card.stepLabel} pending` : `Mark ${card.stepLabel} done`;
+  const renderStatusText = (done) => done ? 'Completed for this week.' : 'Still active in this week\'s plan.';
+
+  const appendText = (parent, tag, text, className = '') => {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    node.textContent = text;
+    parent.appendChild(node);
+    return node;
+  };
+
+  const renderPlan = ({ focusStep = null, focusCompletion = false } = {}) => {
+    const state = readPlanState();
+    const activeStep = firstIncompletePlanStep(state);
+    const currentIndex = activeStep ? cards.findIndex((card) => card.key === activeStep) : -1;
+    currentMount.replaceChildren();
+    grid.replaceChildren();
+
+    if (currentIndex === -1) {
+      const complete = document.createElement('article');
+      complete.className = 'panel route-card weekly-plan-card weekly-plan-current-card';
+      appendText(complete, 'p', 'Week complete', 'eyebrow');
+      const completeTitle = appendText(complete, 'h3', 'Every planned step is complete');
+      completeTitle.tabIndex = -1;
+      appendText(complete, 'p', 'Keep the win calm. Use a daily drill for optional review, or mark any step pending below if you want to revisit it.', 'muted');
+      const actions = document.createElement('div');
+      actions.className = 'button-row button-row-compact route-card-footer';
+      const dailyLink = document.createElement('a');
+      dailyLink.className = 'button';
+      dailyLink.href = `${base}daily-drills`;
+      dailyLink.textContent = 'Open optional daily drill';
+      actions.appendChild(dailyLink);
+      complete.appendChild(actions);
+      currentMount.appendChild(complete);
+    }
+
+    cards.forEach((card, index) => {
+      const isCurrent = index === currentIndex;
+      const done = Boolean(state[card.key]?.done);
+      const article = document.createElement('article');
+      article.className = isCurrent
+        ? 'panel route-card weekly-plan-card weekly-plan-current-card'
+        : 'subtle-panel weekly-plan-card';
+      appendText(article, 'p', isCurrent ? 'Current step' : card.eyebrow, 'eyebrow');
+      appendText(article, 'h3', card.title);
+      appendText(article, 'p', card.copy, 'muted');
+
+      const actions = document.createElement('div');
+      actions.className = `button-row button-row-compact${isCurrent ? ' route-card-footer' : ''}`;
+      const link = document.createElement('a');
+      link.className = isCurrent ? 'button' : 'button button-secondary';
+      link.href = card.href;
+      link.textContent = card.label;
+      const toggle = document.createElement('button');
+      toggle.className = 'button button-secondary weekly-plan-toggle';
+      toggle.type = 'button';
+      toggle.dataset.step = card.key;
+      toggle.textContent = renderToggleText(card, done);
+      toggle.addEventListener('click', () => {
+        const latest = readPlanState();
+        latest[card.key] = { ...(latest[card.key] || {}), done: !latest[card.key]?.done };
+        writePlanState(latest);
+        const nextStep = firstIncompletePlanStep(latest);
+        renderPlan({ focusStep: nextStep, focusCompletion: nextStep === null });
+      });
+      actions.append(link, toggle);
+      article.appendChild(actions);
+      appendText(article, 'p', renderStatusText(done), 'muted small weekly-plan-status');
+      (isCurrent ? currentMount : grid).appendChild(article);
     });
-  });
+
+    if (focusCompletion) currentMount.querySelector('h3')?.focus();
+    else if (focusStep) root.querySelector(`.weekly-plan-toggle[data-step="${focusStep}"]`)?.focus();
+  };
+
+  renderPlan();
 </script>

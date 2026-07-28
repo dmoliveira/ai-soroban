@@ -54,10 +54,48 @@ test('practice Enter verifies and advances on correct answer', async ({ page }) 
 test('practice fast start launches a warm-up session immediately', async ({ page }) => {
   await page.goto('practice');
 
-  await page.getByRole('button', { name: 'Start warm-up now' }).click();
+  await page.getByRole('button', { name: 'Start warm-up' }).click();
 
   await expect(page.locator('#session-title')).toContainText('Curated L0 session');
   await expect(page.locator('#session-progress')).toContainText('Question 1 / 5');
+});
+
+test('focused practice defaults new learners to foundations and focuses the answer', async ({ page }) => {
+  await page.goto('practice');
+
+  await page.locator('#start-practice-now').click();
+
+  await expect(page.locator('#session-title')).toContainText('Generated L0 session');
+  await expect(page.locator('#session-progress')).toContainText('Question 1 / 5');
+  await expect(page.locator('#answer-input')).toBeFocused();
+  await expect(page.locator('#question-prompt')).toBeInViewport();
+  await expect(page.locator('#answer-input')).toBeInViewport();
+  await expect(page.locator('#visual-mount')).toHaveAttribute('role', 'img');
+  await expect(page.locator('#visual-mount')).toHaveAttribute('aria-label', /showing \d+/);
+});
+
+test('lesson practice link preserves its level and starts immediately', async ({ page }) => {
+  await page.goto('lessons/l4/first-division-patterns');
+
+  await page.getByRole('link', { name: 'Practice this level' }).click();
+
+  await expect(page).toHaveURL(/practice\?level=L4&skill=division&start=1/);
+  await expect(page.locator('#session-title')).toContainText('division · L4 session');
+  await expect(page.locator('#sheet-list .input').first()).toBeFocused();
+  await expect(page.locator('#sheet-list .sheet-prompt').first()).toBeInViewport();
+  await expect(page.locator('#sheet-list .input').first()).toBeInViewport();
+  const divisionSession = await page.evaluate(() => JSON.parse(localStorage.getItem('soroban-dojo:practice-sessions') || '[]')[0]);
+  expect(divisionSession.skill).toBe('division');
+  expect(divisionSession.questions.every((question) => question.skill === 'division' && question.prompt.includes('÷'))).toBe(true);
+});
+
+test('contextual addition practice does not mix in subtraction', async ({ page }) => {
+  await page.goto('practice?level=L1&skill=addition&start=1');
+
+  await expect(page.locator('#session-title')).toContainText('addition · L1 session');
+  const session = await page.evaluate(() => JSON.parse(localStorage.getItem('soroban-dojo:practice-sessions') || '[]')[0]);
+  expect(session.skill).toBe('addition');
+  expect(session.questions.every((question) => question.prompt.includes('Add') && !question.prompt.includes('Subtract'))).toBe(true);
 });
 
 test('practice journey can launch multiplication and division training', async ({ page }) => {

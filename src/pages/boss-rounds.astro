@@ -125,10 +125,16 @@ const rounds = [
     <h2>Print your dojo certificate</h2>
     <p class="muted">When you finish a boss round, you can print a simple certificate that marks the cleared level and the day you earned it.</p>
     <div class="button-row button-row-compact">
-      <input id="certificate-name" class="input" type="text" placeholder="Student name" />
-      <select id="certificate-level" class="select">
-        {rounds.map((round) => <option value={round.level}>{round.level}</option>)}
-      </select>
+      <label class="stack-sm">
+        <span>Student name</span>
+        <input id="certificate-name" class="input" type="text" autocomplete="name" placeholder="Student name" />
+      </label>
+      <label class="stack-sm">
+        <span>Cleared level</span>
+        <select id="certificate-level" class="select">
+          {rounds.map((round) => <option value={round.level}>{round.level}</option>)}
+        </select>
+      </label>
       <button class="button button-secondary" id="print-certificate">Print certificate</button>
       <button class="button button-secondary" id="copy-certificate">Copy text</button>
     </div>
@@ -174,7 +180,7 @@ const rounds = [
           </label>
           <div class="button-row button-row-compact">
             <button class="button button-secondary boss-session-check" type="button">Check phase</button>
-            <button class="button button-secondary boss-session-reset" type="button">Reset boss</button>
+            <button class="button button-secondary boss-session-reset" type="button">Restart session</button>
           </div>
           <p class="muted small boss-session-tip">Tip will appear when you start the session.</p>
           <p class="muted small boss-session-feedback" aria-live="polite">Clear all three phases to earn the boss badge.</p>
@@ -409,11 +415,17 @@ const rounds = [
       const card = button.closest('.boss-round-card');
       const level = card?.dataset.level;
       if (!level) return;
-      sessions[level] = { index: 0, started: false, completed: false, replaying: false, message: '', tone: 'neutral' };
-      delete state[level];
-      revokeCertificate(level);
+      sessions[level] = {
+        index: 0,
+        started: false,
+        completed: false,
+        replaying: !!state[level],
+        message: state[level]
+          ? 'Boss session restarted. Your earned badge and certificate remain saved.'
+          : '',
+        tone: 'neutral',
+      };
       writeSessions(sessions);
-      write(state);
       sync();
     }));
     document.querySelectorAll('.boss-session-check').forEach((button) => button.addEventListener('click', () => {

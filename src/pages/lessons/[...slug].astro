@@ -23,6 +23,7 @@ const nextLessons = allLessons
 const recommendedNextLesson = nextLessons[0] ?? null;
 const recommendedExercise = relatedExercises[0] ?? null;
 const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
+const focusedPracticeHref = `${base}practice?level=${lesson.data.level}&skill=${encodeURIComponent(lesson.data.skill)}&start=1`;
 const worksheetPreset = lesson.data.level === 'L4' && lesson.data.skill === 'multiplication'
   ? 'multiplication-focus'
   : lesson.data.level === 'L4' && lesson.data.skill === 'division'
@@ -209,7 +210,7 @@ const bestFor = lesson.data.skill === 'abacus-orientation'
       <p class="eyebrow">Next step</p>
       <h2>Continue with guided practice</h2>
       <div class="button-row">
-        <a class="button" href={`${base}practice`}>Practice this level</a>
+        <a class="button" href={focusedPracticeHref}>Practice this level</a>
         <a class="button button-secondary" href={worksheetPreset ? `${base}worksheets?preset=${worksheetPreset}` : `${base}worksheets`}>Open worksheet</a>
         {worksheetActions.map((action) => <a class="button button-secondary" href={action.href}>{action.label}</a>)}
         {prerequisiteLesson && (
@@ -299,10 +300,22 @@ const bestFor = lesson.data.skill === 'abacus-orientation'
 </BaseLayout>
 
 <style>
+  #lesson-core,
+  #lesson-objectives,
+  #lesson-visual,
+  #lesson-content,
+  #lesson-next,
+  #lesson-exercises { scroll-margin-top: 8.5rem; }
   .lesson-complete-next { gap: 0.75rem; }
   .lesson-complete-actions { margin-top: 0.1rem; }
   .lesson-summary-panel .button-row { gap: 0.65rem; }
   @media (max-width: 860px) {
+    #lesson-core,
+    #lesson-objectives,
+    #lesson-visual,
+    #lesson-content,
+    #lesson-next,
+    #lesson-exercises { scroll-margin-top: 9.5rem; }
     .lesson-complete-actions { gap: 0.5rem; }
   }
 </style>

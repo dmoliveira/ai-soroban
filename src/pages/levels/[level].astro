@@ -15,11 +15,22 @@ const lessons = (await getCollection('lessons'))
   .sort((a, b) => a.data.id.localeCompare(b.data.id));
 const exercises = (await getCollection('exercises'))
   .filter((entry) => entry.data.level === level.id)
-  .sort((a, b) => a.data.id.localeCompare(b.data.id));
+  .sort((a, b) => a.data.difficulty - b.data.difficulty || a.data.estimatedMinutes - b.data.estimatedMinutes || a.data.title.localeCompare(b.data.title));
+const normalizeSkill = (value = '') => value.toLowerCase().replace(/[^a-z0-9]+/g, '');
+const pickExerciseForLesson = (lesson: (typeof lessons)[number] | null | undefined, fallbackIndex = 0) => {
+  if (!lesson) return exercises[fallbackIndex] || null;
+  const lessonSkill = normalizeSkill(lesson.data.skill);
+  return exercises.find((exercise) => lesson.data.relatedExercises.includes(exercise.data.id) && normalizeSkill(exercise.data.skill) === lessonSkill)
+    || exercises.find((exercise) => normalizeSkill(exercise.data.skill) === lessonSkill)
+    || exercises[fallbackIndex]
+    || null;
+};
+const recommendedLesson = lessons[0] ?? null;
+const recommendedExercise = pickExerciseForLesson(recommendedLesson, 0);
 const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
 ---
 
-<BaseLayout title={`${level.id} ${level.name} | Soroban Dojo`}>
+<BaseLayout title={`${level.id} ${level.name} | Soroban Dojo`} description={`Follow the ${level.id} ${level.name} soroban route with one clear lesson-first practice sequence, recommended next steps, and calm reinforcement options.`}>
   <StudioHero
     eyebrow={`${level.id} · ${levelKanji(level.id)}`}
     title={level.name}
@@ -27,26 +38,27 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     stats={[
       { label: 'Study first', value: `${lessons.length} lesson${lessons.length === 1 ? '' : 's'}` },
       { label: 'Practice next', value: `${exercises.length} exercise${exercises.length === 1 ? '' : 's'}` },
-      { label: 'Best route', value: 'Circuits + boss rounds' },
+      { label: 'Best route', value: 'Lesson → exercise → circuits' },
     ]}
     actions={[
-      { href: `${base}levels/${level.id.toLowerCase()}/circuits`, label: 'Open dojo circuits' },
-      { href: `${base}boss-rounds`, label: 'Open boss rounds', secondary: true },
-      { href: `${base}mini-games`, label: 'Open mini games', secondary: true },
+      { href: recommendedLesson ? `${base}lessons/${recommendedLesson.slug}` : `${base}curriculum`, label: recommendedLesson ? 'Start with the first lesson' : 'Open the curriculum map' },
+      { href: recommendedExercise ? `${base}exercises/${recommendedExercise.slug}` : `${base}practice`, label: recommendedExercise ? 'Try the first exercise' : 'Open structured practice', secondary: true },
+      { href: `${base}levels/${level.id.toLowerCase()}/circuits`, label: 'Use circuits after that', secondary: true },
     ]}
   />
 
-  <section class="split-grid">
-    <article class="panel">
+  <section class="split-grid level-library-grid">
+    <article class="panel content-prose">
       <p class="eyebrow">Lessons</p>
       <h2>Study first</h2>
       {lessons.length ? (
-        <ul class="list-clean">
-          {lessons.map((lesson) => (
-            <li>
+        <ul class="list-clean compact-library">
+          {lessons.map((lesson, index) => (
+            <li class="library-card-item">
+              <p class="eyebrow">{index === 0 ? 'Start here' : 'Then continue'}</p>
               <strong>{lesson.data.title}</strong>
               <p>{lesson.data.summary}</p>
-              <a class="text-link" href={`${base}lessons/${lesson.slug}`}>Open lesson →</a>
+              <a class="library-action-link" href={`${base}lessons/${lesson.slug}`} aria-label={`Open lesson: ${lesson.data.title}`}>Open lesson →</a>
             </li>
           ))}
         </ul>
@@ -54,16 +66,17 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         <p class="muted">This level scaffold is ready, but lesson content for this band is still being added.</p>
       )}
     </article>
-    <article class="panel">
+    <article class="panel content-prose">
       <p class="eyebrow">Exercises</p>
       <h2>Practice next</h2>
       {exercises.length ? (
-        <ul class="list-clean">
-          {exercises.map((exercise) => (
-            <li>
+        <ul class="list-clean compact-library">
+          {exercises.map((exercise, index) => (
+            <li class="library-card-item">
+              <p class="eyebrow">{index === 0 ? 'Try first' : 'Keep going'}</p>
               <strong>{exercise.data.title}</strong>
-              <p>{exercise.data.explanation}</p>
-              <a class="text-link" href={`${base}exercises/${exercise.slug}`}>Open exercise →</a>
+              <p>{exercise.data.hint}</p>
+              <a class="library-action-link" href={`${base}exercises/${exercise.slug}`} aria-label={`Open exercise: ${exercise.data.title}`}>Open exercise →</a>
             </li>
           ))}
         </ul>
@@ -72,4 +85,26 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       )}
     </article>
   </section>
+
+  <aside class="panel support-card level-reinforce-panel">
+    <p class="eyebrow">After the core path</p>
+    <h2>Reinforce without losing the thread</h2>
+    <p>Once the first lesson and exercise feel clear, use repetition and challenge tools to deepen rhythm instead of replacing the main route.</p>
+    <ul class="list-clean compact-library">
+      <li><strong>Dojo circuits</strong> are best for one more calm repetition block inside this level.</li>
+      <li><strong>Boss rounds</strong> work better after the core pattern already feels readable under light pressure.</li>
+      <li><strong>Mini games</strong> are a playful reset, not the default first move for new material.</li>
+    </ul>
+    <div class="hero-actions">
+      <a class="button" href={`${base}levels/${level.id.toLowerCase()}/circuits`}>Open dojo circuits</a>
+      <a class="button button-secondary" href={`${base}boss-rounds`}>See boss rounds</a>
+      <a class="button button-secondary" href={`${base}mini-games`}>Open mini games</a>
+    </div>
+  </aside>
+
+  <style>
+    .level-reinforce-panel{background:linear-gradient(180deg, rgba(255,255,255,.82), rgba(248,242,233,.88))}
+    .level-library-grid{margin-bottom:var(--space-4)}
+    .level-reinforce-panel{margin-top:0}
+  </style>
 </BaseLayout>

@@ -47,11 +47,28 @@ test('weekly study plan adapts to multiplication weakness', async ({ page }) => 
 test('weekly study plan steps can be marked done', async ({ page }) => {
   await page.goto('study-plan');
 
-  const firstToggle = page.locator('.weekly-plan-toggle').first();
+  const firstToggle = page.locator('#weekly-plan-current .weekly-plan-toggle');
   await firstToggle.click();
 
-  await expect(page.getByText('Completed for this week.').first()).toBeVisible();
-  await expect(firstToggle).toContainText('Mark pending');
+  await expect(page.locator('#weekly-plan-current')).toContainText('Current step');
+  await expect(page.locator('#weekly-plan-current')).toContainText(/exercise/i);
+  await expect(page.locator('#weekly-plan-current .weekly-plan-toggle')).toBeFocused();
+  await expect(page.getByRole('button', { name: 'Mark lesson pending' })).toBeVisible();
+});
+
+test('weekly study plan keeps keyboard focus through all-complete and reopen states', async ({ page }) => {
+  await page.goto('study-plan');
+
+  for (let index = 0; index < 3; index += 1) {
+    const toggle = page.locator('#weekly-plan-current .weekly-plan-toggle');
+    await toggle.focus();
+    await toggle.press('Space');
+  }
+
+  await expect(page.getByRole('heading', { name: 'Every planned step is complete' })).toBeFocused();
+  await page.getByRole('button', { name: 'Mark lesson pending' }).click();
+  await expect(page.locator('#weekly-plan-current .weekly-plan-toggle')).toBeFocused();
+  await expect(page.locator('#weekly-plan-current')).toContainText('Reading a Single Digit');
 });
 
 test('boss certificate preview updates after boss completion', async ({ page }) => {

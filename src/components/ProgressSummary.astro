@@ -21,7 +21,6 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       <h2>Decide the next move first</h2>
       <p class="muted">This page keeps the action path at the top, then shows deeper progress signals only after the next step is clear.</p>
     </div>
-    <button class="button button-secondary" id="reset-progress">Reset progress</button>
   </div>
 
   <section class="panel ink-panel progress-next-panel">
@@ -63,80 +62,85 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     <article class="stat-card stat-card-soft"><small>Best score:</small><span id="best-score">0</span></article>
   </div>
 
-  <section class="panel ink-panel progress-links-strip">
-    <strong>Quick links</strong>
-    <div class="button-row button-row-compact">
-      <a class="button button-secondary" href={`${base}practice`}>Practice</a>
-      <a class="button button-secondary" href={`${base}worksheets`}>Worksheets</a>
-      <a class="button button-secondary" href={`${base}study-plan`}>Study plan</a>
-      <a class="button button-secondary" href={`${base}lessons`}>Lessons</a>
-      <a class="button button-secondary" href={`${base}exercises`}>Exercises</a>
-      <a class="button button-secondary" href={`${base}daily-drills`}>Daily drills</a>
-    </div>
-  </section>
+  <details class="panel progress-more disclosure-block">
+    <summary>More progress, history, and rewards</summary>
+    <div class="progress-more-content">
+      <section class="panel ink-panel progress-links-strip">
+        <strong>Quick links</strong>
+        <div class="button-row button-row-compact">
+          <a class="button button-secondary" href={`${base}practice`}>Practice</a>
+          <a class="button button-secondary" href={`${base}worksheets`}>Worksheets</a>
+          <a class="button button-secondary" href={`${base}study-plan`}>Study plan</a>
+          <a class="button button-secondary" href={`${base}lessons`}>Lessons</a>
+          <a class="button button-secondary" href={`${base}exercises`}>Exercises</a>
+          <a class="button button-secondary" href={`${base}daily-drills`}>Daily drills</a>
+        </div>
+      </section>
 
-  <div class="progress-hero-grid">
-    <section class="panel ink-panel">
-      <p class="eyebrow">Milestones</p>
-      <div class="milestone-row" id="milestone-row"></div>
-    </section>
+      <div class="progress-hero-grid">
+        <section class="panel ink-panel">
+          <p class="eyebrow">Milestones</p>
+          <div class="milestone-row" id="milestone-row"></div>
+        </section>
 
-    <section class="panel ink-panel">
-      <p class="eyebrow">Recent sessions</p>
-      <div id="recent-sessions" class="session-list"></div>
-    </section>
-  </div>
-
-  <section class="panel ink-panel">
-    <p class="eyebrow">Skill map</p>
-    <h3>Mastery by practice area</h3>
-    <div id="skill-map" class="skill-map"></div>
-  </section>
-
-  <section class="panel ink-panel">
-    <p class="eyebrow">Worksheet submodes</p>
-    <h3>Mastery by worksheet focus</h3>
-    <div id="worksheet-focus-map" class="skill-map"></div>
-  </section>
-
-  <section class="panel ink-panel">
-    <p class="eyebrow">Today’s reflection</p>
-    <div class="reflection-grid">
-      <div>
-        <h3 id="reflection-title">Keep the next step calm</h3>
-        <p id="reflection-copy" class="muted">Your progress stays in this browser unless you clear it.</p>
+        <section class="panel ink-panel">
+          <p class="eyebrow">Recent sessions</p>
+          <div id="recent-sessions" class="session-list"></div>
+        </section>
       </div>
-      <div class="review-chip-row" id="reflection-chips"></div>
+
+      <section class="panel ink-panel">
+        <p class="eyebrow">Skill map</p>
+        <h3>Mastery by practice area</h3>
+        <div id="skill-map" class="skill-map"></div>
+      </section>
+
+      <section class="panel ink-panel">
+        <p class="eyebrow">Worksheet submodes</p>
+        <h3>Mastery by worksheet focus</h3>
+        <div id="worksheet-focus-map" class="skill-map"></div>
+      </section>
+
+      <section class="panel ink-panel">
+        <p class="eyebrow">Today’s reflection</p>
+        <div class="reflection-grid">
+          <div>
+            <h3 id="reflection-title">Keep the next step calm</h3>
+            <p id="reflection-copy" class="muted">Your progress stays in this browser unless you clear it.</p>
+          </div>
+          <div class="review-chip-row" id="reflection-chips"></div>
+        </div>
+      </section>
+    </div>
+  </details>
+
+  <section class="panel ink-panel progress-reset-panel">
+    <p class="eyebrow">Local data</p>
+    <div class="route-card-footer">
+      <div>
+        <strong>Reset progress in this browser</strong>
+        <p class="muted small">This clears every saved learning record on this device, including placement, weekly-plan, game, worksheet, practice, and boss progress. Display preferences are preserved.</p>
+      </div>
+      <button class="button button-secondary" id="reset-progress">Reset progress</button>
     </div>
   </section>
 </section>
 
-<script is:inline>
+<script>
+  // @ts-nocheck
+  import { STORAGE_KEYS, clearProgressStorage, readStoredJson } from '../lib/storage.js';
+
   const root = document.querySelector('.progress-panel');
   const base = root?.dataset.base || '/soroban-dojo/';
-  const lessonKey = 'soroban-dojo:completed-lessons';
-  const exerciseKey = 'soroban-dojo:exercise-states';
-  const timerKey = 'soroban-dojo:timer-history';
-   const sessionKey = 'soroban-dojo:practice-sessions';
-   const worksheetKey = 'soroban-dojo:worksheet-sessions';
-   const bossKey = 'soroban-dojo:boss-rounds';
   const lessonMeta = JSON.parse(root?.dataset.lessons || '[]');
   const exerciseMeta = JSON.parse(root?.dataset.exercises || '[]');
 
-  const read = (key, fallback) => {
-    try {
-      return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback));
-    } catch {
-      return fallback;
-    }
-  };
-
-  const lessonData = read(lessonKey, []);
-  const exerciseData = read(exerciseKey, {});
-  const timerData = read(timerKey, []);
-   const sessionData = read(sessionKey, []);
-   const worksheetData = read(worksheetKey, []);
-   const bossData = read(bossKey, {});
+  const lessonData = readStoredJson(localStorage, STORAGE_KEYS.completedLessons, []);
+  const exerciseData = readStoredJson(localStorage, STORAGE_KEYS.exerciseStates, {});
+  const timerData = readStoredJson(localStorage, STORAGE_KEYS.timerHistory, []);
+  const sessionData = readStoredJson(localStorage, STORAGE_KEYS.practiceSessions, []);
+  const worksheetData = readStoredJson(localStorage, STORAGE_KEYS.worksheetSessions, []);
+  const bossData = readStoredJson(localStorage, STORAGE_KEYS.bossRounds, {});
 
   const attempted = Object.values(exerciseData).filter(Boolean);
   const reviewItems = Object.values(exerciseData).filter((entry) => entry?.status === 'needs-review');
@@ -347,12 +351,9 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
    });
 
   document.getElementById('reset-progress')?.addEventListener('click', () => {
-    localStorage.removeItem(lessonKey);
-    localStorage.removeItem(exerciseKey);
-    localStorage.removeItem(timerKey);
-    localStorage.removeItem(sessionKey);
-    localStorage.removeItem(worksheetKey);
-    localStorage.removeItem(bossKey);
+    const confirmed = window.confirm('Reset all Soroban Dojo progress stored in this browser? This cannot be undone.');
+    if (!confirmed) return;
+    clearProgressStorage(localStorage);
     window.location.reload();
   });
 </script>

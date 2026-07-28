@@ -1,55 +1,47 @@
 # Content Model
 
-## Lessons
+## Source of truth
 
-Lessons are the source of truth for explanation and progression.
+Astro content collections in `src/content/` provide authored lessons, exercises, and references. Runtime-generated practice and worksheets supplement authored content; they do not replace the curriculum graph.
+
+## Shared rules
+
+- IDs are unique across lessons and exercises.
+- Every prerequisite, related exercise, and next lesson resolves to a real content ID.
+- Levels use `L0` through `L5`.
+- Skills use the enum in `src/content/config.ts`; free-form spellings are not accepted.
+- `npm test` validates graph integrity and `npm run check` validates collection schemas.
+
+## Lessons
 
 Required metadata:
 
-- id
-- title
-- audience
-- level
-- skill
-- estimatedMinutes
-- prerequisites
-- objectives
-- relatedExercises
-- nextLessons
-- summary
+- `id`, `title`, `audience`, `level`, and `skill`
+- `estimatedMinutes`, `summary`, and at least one objective
+- `prerequisites`, `relatedExercises`, and `nextLessons` (empty lists are valid)
+
+Optional visual metadata can declare a non-negative `visualValue` and `stepValues`.
 
 ## Exercises
 
-Exercises are authored, not generated at runtime.
+Authored exercises define a focused attempt and explanation. Required metadata includes:
 
-Required metadata:
+- `id`, `title`, `audience`, `level`, `skill`, and `type`
+- difficulty from 1 through 5 and a positive estimated time
+- prerequisites, hint, answer, explanation, and tags
 
-- id
-- title
-- audience
-- level
-- skill
-- difficulty
-- estimatedMinutes
-- type
-- prerequisites
-- hint
-- answer
-- explanation
-- tags
+Numeric exercises may include `expectedValue`; visual exercises may include `visualValue` and `stepValues`.
+
+## Generated practice
+
+Generated sessions carry a level, source, format, question style, term count, check mode, optional timer, stable session ID, responses, and final score. Generated algorithms must be deterministic when supplied a seed and must expose truthful mode-specific rules.
 
 ## Worksheets
 
-Worksheets may be generated at runtime or authored in content files, but both should share the same worksheet profile metadata.
+Generated and authored worksheet drills share a normalized profile:
 
-Required worksheet profile metadata:
+- digit and operation ranges
+- `add`, `subtract`, or `mixed` operator mode
+- normalized visible label
 
-- profileId
-- minDigits
-- maxDigits
-- minOperations
-- maxOperations
-- operatorMode
-- label
-
-Authored worksheets should also declare their drill items in a format that can be validated against the selected profile.
+Authored `worksheetDrill` terms are certified against the declared profile at build time. See `worksheet-generator.md` for algorithm constraints.

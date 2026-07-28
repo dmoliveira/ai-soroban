@@ -1,9 +1,9 @@
 ---
-id: exercise-l3-001
+id: exercise-l3-003
 title: L3 mixed, sequence columns · 3-4 digits
 audience: [adult, child]
 level: L3
-skill: mixed operations
+skill: mixed-operations
 difficulty: 4
 estimatedMinutes: 8
 type: worksheet

@@ -1,6 +1,21 @@
 import { defineCollection, z } from 'astro:content';
 import { certifyWorksheetContentData } from '../lib/worksheet.js';
 
+const skillSchema = z.enum([
+  'abacus-orientation',
+  'number-reading',
+  'place-value',
+  'number-setting',
+  'addition',
+  'subtraction',
+  'complements',
+  'mixed-operations',
+  'multiplication',
+  'division',
+  'anzan',
+  'mastery',
+]);
+
 const worksheetProfileSchema = z.object({
   digitRange: z.string(),
   operationRange: z.string(),
@@ -25,7 +40,7 @@ const lessons = defineCollection({
     title: z.string(),
     audience: z.array(z.enum(['child', 'adult', 'both'])),
     level: z.enum(['L0', 'L1', 'L2', 'L3', 'L4', 'L5']),
-    skill: z.string(),
+    skill: skillSchema,
     estimatedMinutes: z.number().int().positive(),
     prerequisites: z.array(z.string()).default([]),
     objectives: z.array(z.string()).min(1),
@@ -44,7 +59,7 @@ const exercises = defineCollection({
     title: z.string(),
     audience: z.array(z.enum(['child', 'adult', 'both'])),
     level: z.enum(['L0', 'L1', 'L2', 'L3', 'L4', 'L5']),
-    skill: z.string(),
+    skill: skillSchema,
     difficulty: z.number().int().min(1).max(5),
     estimatedMinutes: z.number().int().positive(),
     type: z.string(),

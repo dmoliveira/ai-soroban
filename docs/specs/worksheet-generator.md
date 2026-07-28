@@ -1,5 +1,7 @@
 # Worksheet Generator Specification
 
+**Status:** implemented for authored and generated addition/subtraction sequence worksheets. This file remains the certification contract; multiplication, division, and anzan use separate family generators on the worksheet page.
+
 ## Goal
 
 Expand worksheet and drill generation so Soroban Dojo can produce and certify multi-step arithmetic practice beyond the current 1-step generated drills.
@@ -12,19 +14,19 @@ The first target is to support:
 - profile certification for both generated and authored worksheets
 - visible worksheet profile labels such as `3-4 digits · 2-10 ops · mixed`
 
-## Current gap
+## Original gap (closed)
 
-The current generated practice flow only supports:
+The original generated practice flow only supported:
 
 - simple 2-digit reading prompts
 - one-step addition or subtraction prompts
 - complement-to-10 prompts
 
-This does not yet cover worksheet-style vertical arithmetic or configurable operation chains.
+The current implementation now covers worksheet-style vertical arithmetic, configurable operation chains, profile labels, and certification tests.
 
 ## Scope
 
-Phase order:
+Delivered phase order:
 
 1. apply the config model to generated drill sessions
 2. apply the same profile model to authored worksheet content
@@ -36,11 +38,11 @@ In scope:
 - worksheet profile labels in the UI
 - validator/test coverage for profile compliance
 
-Out of scope for v1:
+Out of scope for the sequence-profile v1 contract:
 
 - user-authored exact sign templates such as a custom literal `+ - + -`
-- multiplication and division
-- adaptive difficulty based on performance
+- multiplication and division within this specific `+`/`-` profile model (separate worksheet families implement them)
+- automatic profile difficulty changes during an active generated sheet
 
 ## Worksheet profile model
 

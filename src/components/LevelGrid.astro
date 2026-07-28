@@ -2,18 +2,38 @@
 import { LEVELS } from '../lib/constants';
 import { levelKanji } from '../lib/japanese';
 const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
+const levelGuidance = {
+  L0: { fit: 'Best for brand-new learners', cue: 'Start here if unsure', next: 'Open the foundations route first' },
+  L1: { fit: 'Best for first bead movement', cue: 'Choose this after stable reading', next: 'Use this when one-rod work is next' },
+  L2: { fit: 'Best for complements practice', cue: 'Move here after direct moves feel steady', next: 'Open this for five and ten complements' },
+  L3: { fit: 'Best for mixed multi-rod fluency', cue: 'Choose this when short sequences feel readable', next: 'Open this for calm mixed-operation flow' },
+  L4: { fit: 'Best for multiplication and division', cue: 'Move here after mixed operations stay stable', next: 'Open this for grouped products and quotient work' },
+  L5: { fit: 'Best for speed and mental soroban', cue: 'Choose this after written patterns feel automatic', next: 'Open this for advanced rhythm and anzan' },
+};
 ---
 
 <div class="card-grid level-grid">
-  {LEVELS.map((level) => (
-    <article class="panel card compact-card route-card">
+  {LEVELS.map((level) => {
+    const guidance = levelGuidance[level.id as keyof typeof levelGuidance];
+    return <article class="panel card compact-card route-card level-choice-card">
       <p class="eyebrow">{level.id} · {levelKanji(level.id)}</p>
       <h3>{level.name}</h3>
+      <p class="muted small"><strong>{guidance.fit}</strong></p>
+      <div class="review-chip-row">
+        <span class="review-chip">{guidance.cue}</span>
+      </div>
       <p>{level.focus}</p>
       <div class="route-card-footer">
-        <span class="muted small">Best next step: level detail + circuits</span>
-        <a class="text-link" href={`${base}levels/${level.id.toLowerCase()}`}>View level →</a>
+        <span class="muted small">{guidance.next}</span>
+        <a class="button button-secondary" href={`${base}levels/${level.id.toLowerCase()}`}>Open {level.id}</a>
       </div>
     </article>
-  ))}
+  })}
 </div>
+
+<style>
+  .level-choice-card{background:linear-gradient(180deg, rgba(255,255,255,.82), rgba(248,242,233,.88))}
+  .level-choice-card h3{margin:.1rem 0}
+  .level-choice-card .review-chip-row{margin-top:-.35rem}
+  .level-choice-card .route-card-footer .button{white-space:nowrap}
+</style>
