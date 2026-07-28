@@ -79,7 +79,7 @@ test('lesson practice link preserves its level and starts immediately', async ({
 
   await page.getByRole('link', { name: 'Practice this level' }).click();
 
-  await expect(page).toHaveURL(/practice\?level=L4&skill=division&start=1/);
+  await expect(page).toHaveURL(/practice\/?\?level=L4&skill=division&start=1/);
   await expect(page.locator('#session-title')).toContainText('division · L4 session');
   await expect(page.locator('#sheet-list .input').first()).toBeFocused();
   await expect(page.locator('#sheet-list .sheet-prompt').first()).toBeInViewport();
