@@ -1,4 +1,5 @@
 import { createRng } from './worksheet.js';
+import { digitToRodState, normalizeRodState, rodStateToDigit } from './soroban.js';
 
 export const MINI_GAME_DEFINITIONS = {
   'complement-dash': {
@@ -45,6 +46,17 @@ export const MINI_GAME_DEFINITIONS = {
     defaults: { questionCount: 10 },
     options: { questionCount: [5, 10, 20] },
   },
+  'bead-builder': {
+    ruleVersion: 1,
+    key: 'bead-builder',
+    title: 'Bead Builder',
+    summary: 'Build target digits by moving legal upper and lower beads on one soroban rod.',
+    rule: 'Set one legal 1:4 rod state, then check it. Each check consumes one target; Stop ends the round without saving a best.',
+    kind: 'questions',
+    thresholds: { bronze: 20, silver: 50, gold: 85 },
+    defaults: { questionCount: 10 },
+    options: { questionCount: [5, 10, 20] },
+  },
 };
 
 export const MINI_GAME_LIST = Object.values(MINI_GAME_DEFINITIONS);
@@ -52,6 +64,21 @@ export const MINI_GAME_TIERS = ['starter', 'bronze', 'silver', 'gold'];
 
 const randInt = (rng, min, max) => Math.floor(rng() * (max - min + 1)) + min;
 const pick = (rng, values) => values[Math.floor(rng() * values.length)];
+const shuffle = (rng, values) => {
+  const result = [...values];
+  for (let index = result.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(rng() * (index + 1));
+    [result[index], result[swapIndex]] = [result[swapIndex], result[index]];
+  }
+  return result;
+};
+
+export const BEAD_BUILDER_TARGETS_BY_TIER = Object.freeze({
+  starter: Object.freeze([0, 1, 2, 3, 4]),
+  bronze: Object.freeze([5, 6, 7, 8, 9]),
+  silver: Object.freeze([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]),
+  gold: Object.freeze([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]),
+});
 
 const allowedNumber = (value, allowed, fallback) => {
   const numeric = Number(value);
@@ -159,6 +186,22 @@ const buildErrorFixQuestions = (rng, tier, questionCount) => Array.from({ length
   };
 });
 
+const buildBeadBuilderQuestions = (rng, tier, questionCount) => {
+  const allowedTargets = BEAD_BUILDER_TARGETS_BY_TIER[tier];
+  const targets = [];
+  while (targets.length < questionCount) {
+    const cycle = shuffle(rng, allowedTargets);
+    if (cycle.length > 1 && targets.at(-1) === cycle[0]) [cycle[0], cycle[1]] = [cycle[1], cycle[0]];
+    targets.push(...cycle.slice(0, questionCount - targets.length));
+  }
+  return targets.map((target, index) => ({
+    id: `builder-${index}`,
+    prompt: `Build ${target} on the rod.`,
+    answer: target,
+    data: { kind: 'bead-builder', target, state: digitToRodState(target) },
+  }));
+};
+
 const evaluateFlashTerms = (terms) => terms.slice(1).reduce((total, term) => (
   term.operator === '-' ? total - term.value : total + term.value
 ), terms[0]?.value || 0);
@@ -192,6 +235,7 @@ const recomputeQuestionAnswer = (question) => {
   if (data.kind === 'division') return data.dividend / data.divisor;
   if (data.kind === 'subtraction') return data.left - data.right;
   if (data.kind === 'addition') return data.left + data.right;
+  if (data.kind === 'bead-builder') return rodStateToDigit(data.state);
   return Number.NaN;
 };
 
@@ -217,8 +261,39 @@ export const certifyMiniGameRound = (round) => {
   } else {
     if (!Array.isArray(round.questions) || round.questions.length !== normalized.questionCount) errors.push('question count does not match settings');
     (round.questions || []).forEach((question, index) => {
-      if (question.answer !== recomputeQuestionAnswer(question)) errors.push(`question ${index} answer does not match structured data`);
+      let recomputed = Number.NaN;
+      try { recomputed = recomputeQuestionAnswer(question); } catch {}
+      if (question.answer !== recomputed) errors.push(`question ${index} answer does not match structured data`);
     });
+    if (round.gameId === 'bead-builder') {
+      const allowedTargets = new Set(BEAD_BUILDER_TARGETS_BY_TIER[round.tier] || []);
+      (round.questions || []).forEach((question, index) => {
+        const data = question?.data;
+        if (!data || Object.keys(data).sort().join(',') !== 'kind,state,target' || data.kind !== 'bead-builder') {
+          errors.push(`builder question ${index} must use the exact structured shape`);
+          return;
+        }
+        if (!Number.isInteger(data.target) || !allowedTargets.has(data.target)) {
+          errors.push(`builder question ${index} target is outside the tier`);
+          return;
+        }
+        let normalizedState = null;
+        try { normalizedState = normalizeRodState(data.state); } catch {}
+        const expectedState = digitToRodState(data.target);
+        if (!normalizedState
+          || Object.keys(data.state || {}).sort().join(',') !== 'lowerActive,upperActive'
+          || normalizedState.upperActive !== expectedState.upperActive
+          || normalizedState.lowerActive !== expectedState.lowerActive) {
+          errors.push(`builder question ${index} state is not the canonical target rod`);
+        }
+        if (question.answer !== data.target || question.prompt !== `Build ${data.target} on the rod.`) {
+          errors.push(`builder question ${index} renderer fields do not match the target`);
+        }
+        if (index > 0 && data.target === round.questions[index - 1]?.data?.target) {
+          errors.push(`builder question ${index} repeats the previous target`);
+        }
+      });
+    }
   }
   return { valid: errors.length === 0, errors };
 };
@@ -240,6 +315,8 @@ export const buildMiniGameRound = ({ gameId, tier = 'starter', settings = {}, se
       ? { questions: buildNumberBonds(rng, normalizedTier, normalizedSettings.questionCount) }
       : gameId === 'table-tower'
         ? { questions: buildTableQuestions(rng, normalizedTier, normalizedSettings.questionCount) }
+        : gameId === 'bead-builder'
+          ? { questions: buildBeadBuilderQuestions(rng, normalizedTier, normalizedSettings.questionCount) }
         : gameId === 'error-fix'
           ? { questions: buildErrorFixQuestions(rng, normalizedTier, normalizedSettings.questionCount) }
           : (() => {

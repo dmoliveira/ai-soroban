@@ -26,6 +26,17 @@ export const CHALLENGE_DEFINITIONS = {
     threshold: 8,
     config: { format: 'single', type: 'generated', level: 'L1', length: 10, checkMode: 'verify', timerMode: 'off', questionStyle: 'visual-five', termCount: '2' },
   },
+  'ten-bridge': {
+    ruleVersion: 1,
+    key: 'ten-bridge',
+    title: 'Ten Bridge',
+    summary: 'Split one addend into the missing complement and remainder to cross ten cleanly.',
+    target: 'Solve at least 8 of 10 ten-crossing facts correctly on the first check.',
+    rule: 'Each unique fact uses operands from 2 through 9, crosses exactly one ten, and certifies the complement and remainder. Reveals and recovery answers do not count.',
+    metric: 'correct',
+    threshold: 8,
+    config: { format: 'single', type: 'generated', level: 'L2', length: 10, checkMode: 'verify', timerMode: 'off', questionStyle: 'mixed', termCount: '2' },
+  },
   'streak-sprint': {
     ruleVersion: 1,
     key: 'streak-sprint',
@@ -174,6 +185,42 @@ const buildChallengeQuestionList = (challengeKey, seed, rng) => {
     }));
   }
 
+  if (challengeKey === 'ten-bridge') {
+    const candidates = [];
+    for (let start = 2; start <= 9; start += 1) {
+      for (let addend = 2; addend <= 9; addend += 1) {
+        if (start + addend >= 11 && start + addend <= 18) candidates.push({ start, addend });
+      }
+    }
+    const pairKeys = new Set();
+    return shuffle(rng, candidates).filter(({ start, addend }) => {
+      const pairKey = [start, addend].sort((left, right) => left - right).join(':');
+      if (pairKeys.has(pairKey)) return false;
+      pairKeys.add(pairKey);
+      return true;
+    }).slice(0, 10).map(({ start, addend }, index) => {
+      const complement = 10 - start;
+      const remainder = addend - complement;
+      const answer = start + addend;
+      return {
+        id: `${seed}-challenge-${index}`,
+        progressKey: `challenge-ten-bridge-${start}-${addend}`,
+        title: `Ten bridge ${index + 1}`,
+        prompt: `Bridge across ten: solve ${start} + ${addend}.`,
+        answer,
+        visualValue: null,
+        steps: [
+          `Start at ${start}.`,
+          `Use ${complement} of the addend to reach 10.`,
+          `Add the remaining ${remainder}.`,
+          `Final value: ${answer}.`,
+        ],
+        skill: 'complements',
+        challengeData: { kind: 'ten-bridge', start, addend, complement, remainder },
+      };
+    });
+  }
+
   if (challengeKey === 'streak-sprint') {
     const firstOperator = rng() >= 0.5 ? '+' : '-';
     return Array.from({ length: 15 }, (_, index) => {
@@ -261,6 +308,7 @@ const recomputeAnswer = (question) => {
   if (data.kind === 'sequence') return evaluateTerms(data.terms || []);
   if (data.kind === 'multiplication') return data.multiplicand * data.factor;
   if (data.kind === 'division') return data.dividend / data.divisor;
+  if (data.kind === 'ten-bridge') return data.start + data.addend;
   return Number.NaN;
 };
 
@@ -288,6 +336,28 @@ export const certifyChallengeQuestions = (challengeKey, questions, ruleVersion =
   if (challengeKey === 'clean-five') {
     const values = questions.map((question) => question.challengeData?.value).sort((a, b) => a - b);
     if (values.join(',') !== '5,5,6,6,7,7,8,8,9,9') errors.push('clean five must contain each value 5-9 exactly twice');
+  }
+  if (challengeKey === 'ten-bridge') {
+    const pairKeys = new Set();
+    questions.forEach((question, index) => {
+      const data = question.challengeData || {};
+      if (Object.keys(data).sort().join(',') !== 'addend,complement,kind,remainder,start' || data.kind !== 'ten-bridge') {
+        errors.push(`ten bridge question ${index} must use the exact structured shape`);
+        return;
+      }
+      if (!Number.isInteger(data.start) || data.start < 2 || data.start > 9
+        || !Number.isInteger(data.addend) || data.addend < 2 || data.addend > 9) {
+        errors.push(`ten bridge question ${index} operands must stay within 2-9`);
+        return;
+      }
+      const sum = data.start + data.addend;
+      if (sum < 11 || sum > 18) errors.push(`ten bridge question ${index} must cross exactly one ten`);
+      if (data.complement !== 10 - data.start || data.complement <= 0) errors.push(`ten bridge question ${index} has the wrong complement`);
+      if (data.remainder !== data.addend - data.complement || data.remainder <= 0) errors.push(`ten bridge question ${index} has the wrong remainder`);
+      const pairKey = [data.start, data.addend].sort((left, right) => left - right).join(':');
+      if (pairKeys.has(pairKey)) errors.push(`ten bridge question ${index} repeats an unordered operand pair`);
+      pairKeys.add(pairKey);
+    });
   }
   if (challengeKey === 'streak-sprint') {
     const operators = questions.map((question) => question.challengeData?.operator);
