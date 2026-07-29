@@ -5,6 +5,7 @@ const configuredBaseURL = process.env.PLAYWRIGHT_BASE_URL || localBaseURL;
 const baseURL = configuredBaseURL.endsWith('/') ? configuredBaseURL : `${configuredBaseURL}/`;
 const usesExternalServer = Boolean(process.env.PLAYWRIGHT_BASE_URL);
 const serverMode = process.env.PLAYWRIGHT_SERVER_MODE || 'dev';
+const astroCli = 'node ./node_modules/astro/bin/astro.mjs';
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -14,8 +15,11 @@ export default defineConfig({
   reporter: process.env.CI ? 'list' : 'html',
   webServer: usesExternalServer ? undefined : {
     command: serverMode === 'preview'
-      ? 'npm run preview -- --host 127.0.0.1 --port 4321'
-      : 'npm run dev -- --host 127.0.0.1 --port 4321',
+      ? `${astroCli} preview --host 127.0.0.1 --port 4321`
+      : `${astroCli} dev --host 127.0.0.1 --port 4321`,
+    env: {
+      ASTRO_DEV_BACKGROUND: '0',
+    },
     url: localBaseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

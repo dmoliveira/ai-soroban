@@ -21,7 +21,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       { label: 'Tone', value: 'Attempt first' },
     ]}
     actions={[
-      ...(firstExercise ? [{ href: `${base}exercises/${firstExercise.slug}`, label: 'Open the first exercise' }] : []),
+      ...(firstExercise ? [{ href: `${base}exercises/${firstExercise.id}`, label: 'Open the first exercise' }] : []),
       { href: `${base}lessons`, label: 'Back to lessons', secondary: true },
     ]}
   />
@@ -50,7 +50,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
                 <p>{exercise.data.hint}</p>
                 <div class="route-card-footer">
                   <span class="muted small">Best next step: use this after one lesson read-through</span>
-                  <a class="library-action-link" href={`${base}exercises/${exercise.slug}`} aria-label={`Open exercise: ${exercise.data.title}`}>Open exercise →</a>
+                  <a class="library-action-link" href={`${base}exercises/${exercise.id}`} aria-label={`Open exercise: ${exercise.data.title}`}>Open exercise →</a>
                 </div>
               </li>
             ))}

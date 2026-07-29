@@ -130,10 +130,10 @@ const circuits = [
         </ol>
         <div class="route-card-footer circuit-primary-footer">
           <span class="muted small">Start here, then continue in order below.</span>
-          <a class="button" href={circuit.lesson ? `${base}lessons/${circuit.lesson.slug}` : `${base}lessons`}>Start circuit</a>
+          <a class="button" href={circuit.lesson ? `${base}lessons/${circuit.lesson.id}` : `${base}lessons`}>Start circuit</a>
         </div>
         <div class="button-row button-row-compact circuit-secondary-actions">
-          <a class="button button-secondary" href={circuit.exercise ? `${base}exercises/${circuit.exercise.slug}` : `${base}exercises`}>Then open the exercise</a>
+          <a class="button button-secondary" href={circuit.exercise ? `${base}exercises/${circuit.exercise.id}` : `${base}exercises`}>Then open the exercise</a>
           <a class="button button-secondary" href={circuit.finishHref}>{circuit.finishLabel}</a>
           <a class="button button-secondary" href={circuit.worksheetHref}>Worksheet finish</a>
         </div>

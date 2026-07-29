@@ -6,11 +6,11 @@ Astro content collections in `src/content/` provide authored lessons, exercises,
 
 ## Shared rules
 
-- IDs are unique across lessons and exercises.
+- IDs are unique across lessons and exercises. Lesson IDs use `lesson-l0-001` through `lesson-l5-999`; exercise IDs use the matching `exercise-...` form.
 - Every prerequisite, related exercise, and next lesson resolves to a real content ID.
 - Levels use `L0` through `L5`.
-- Skills use the enum in `src/content/config.ts`; free-form spellings are not accepted.
-- `npm test` validates graph integrity and `npm run check` validates collection schemas.
+- Skills use the enum in `src/content.config.ts`; free-form spellings are not accepted.
+- `npm test` validates graph integrity, `npm run check` validates collection schemas, and `npm run test:content-build` verifies content-backed routes and sitemap URLs after a build.
 
 ## Lessons
 

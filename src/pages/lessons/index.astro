@@ -24,7 +24,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       { label: 'Best next move', value: 'Practice after reading' },
     ]}
     actions={[
-      ...(firstLesson ? [{ href: `${base}lessons/${firstLesson.slug}`, label: 'Open the first lesson' }] : []),
+      ...(firstLesson ? [{ href: `${base}lessons/${firstLesson.id}`, label: 'Open the first lesson' }] : []),
       { href: `${base}curriculum`, label: 'Open curriculum map', secondary: true },
     ]}
   />
@@ -55,7 +55,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
                 <p>{lesson.data.summary}</p>
                 <div class="route-card-footer">
                   <span class="muted small">Best next step: read, then practice once</span>
-                  <a class="library-action-link" href={`${base}lessons/${lesson.slug}`} aria-label={`Open lesson: ${lesson.data.title}`}>Open lesson →</a>
+                  <a class="library-action-link" href={`${base}lessons/${lesson.id}`} aria-label={`Open lesson: ${lesson.data.title}`}>Open lesson →</a>
                 </div>
               </li>
             ))}

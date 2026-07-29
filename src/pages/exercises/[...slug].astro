@@ -6,7 +6,7 @@ import { numberToKanji } from '../../lib/japanese';
 
 export async function getStaticPaths() {
   const exercises = await getCollection('exercises');
-  return exercises.map((exercise) => ({ params: { slug: exercise.slug }, props: { exercise } }));
+  return exercises.map((exercise) => ({ params: { slug: exercise.id }, props: { exercise } }));
 }
 
 const { exercise } = Astro.props;
@@ -109,7 +109,7 @@ const bestFor = exercise.data.type === 'visual-check'
       <div class="button-row">
         <a class="button" href={focusedPracticeHref}>Practice this level</a>
         <a class="button button-secondary" href={`${base}worksheets`}>Open worksheet</a>
-        {relatedLesson && <a class="button button-secondary" href={`${base}lessons/${relatedLesson.slug}`}>Review lesson</a>}
+        {relatedLesson && <a class="button button-secondary" href={`${base}lessons/${relatedLesson.id}`}>Review lesson</a>}
       </div>
       <p class="muted">Move straight into guided practice, or open worksheets for a denser set of drills around this same skill.</p>
       {relatedLesson && (
@@ -118,7 +118,7 @@ const bestFor = exercise.data.type === 'visual-check'
           <p class="muted">{relatedLesson.data.title}</p>
           <div class="route-card-footer">
             <span class="muted small">Best next step: review the concept, then retry</span>
-            <a class="text-link" href={`${base}lessons/${relatedLesson.slug}`}>Open lesson →</a>
+            <a class="text-link" href={`${base}lessons/${relatedLesson.id}`}>Open lesson →</a>
           </div>
         </div>
       )}

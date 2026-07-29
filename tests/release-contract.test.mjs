@@ -57,6 +57,13 @@ test('0.4 release metadata and learner notes stay aligned', () => {
   assert.equal(packageJson.version, '0.4.0');
   assert.equal(packageLock.version, packageJson.version);
   assert.equal(packageLock.packages[''].version, packageJson.version);
+  assert.equal(packageJson.engines.node, '>=22.12.0');
+  assert.equal(packageJson.engines.npm, '>=9.6.5');
+  assert.equal(packageJson.dependencies.astro, '^7.1.5');
+  assert.equal(packageJson.dependencies['@astrojs/check'], '^0.9.10');
+  assert.equal(packageJson.dependencies.zod, undefined);
+  assert.equal(packageLock.packages[''].dependencies.zod, undefined);
+  assert.equal(packageJson.scripts['audit:dependencies'], 'npm audit --audit-level=high');
 
   const releases = read('src/pages/releases.astro');
   const current = releases.indexOf("version: '0.4.0'");
@@ -119,6 +126,14 @@ test('public privacy and worksheet docs match the shipped 0.4 boundaries', () =>
   assert.match(worksheetSpec, /digit bands are ordered ranges from 1 through 6 digits/);
   assert.match(worksheetSpec, /operation bounds are ordered integers from 1 through 4/);
   assert.match(worksheetSpec, /sequence-profile rules below/);
+
+  const contentSpec = read('docs/specs/content-model.md');
+  assert.match(contentSpec, /src\/content\.config\.ts/);
+  assert.match(contentSpec, /npm run test:content-build/);
+
+  const playwrightConfig = read('playwright.config.js');
+  assert.match(playwrightConfig, /node \.\/node_modules\/astro\/bin\/astro\.mjs/);
+  assert.match(playwrightConfig, /ASTRO_DEV_BACKGROUND: '0'/);
 });
 
 test('CI and Pages use Node 24-compatible actions and enforce the release gate', () => {
@@ -132,21 +147,41 @@ test('CI and Pages use Node 24-compatible actions and enforce the release gate',
   const validate = workflowBlock(ci, 'validate', 2);
   assert.equal(workflowValue(workflowStep(validate, 'Checkout'), 'uses', 8), 'actions/checkout@v7');
   assert.equal(workflowValue(workflowStep(validate, 'Setup Node'), 'uses', 8), 'actions/setup-node@v7');
+  assert.equal(workflowValue(workflowStep(validate, 'Setup Node'), 'node-version', 10), '22');
+  assert.equal(workflowValue(workflowStep(validate, 'Audit dependency baseline'), 'run', 8), 'npm run audit:dependencies');
   assert.equal(workflowValue(workflowStep(validate, 'Verify release contract'), 'run', 8), 'npm run test:release');
+  assert.equal(workflowValue(workflowStep(validate, 'Verify built content routes'), 'run', 8), 'npm run test:content-build');
+  assert.equal(
+    workflowValue(workflowStep(validate, 'Run local browser tests'), 'run', 8),
+    'PLAYWRIGHT_SERVER_MODE=preview npm run test:e2e',
+  );
   assert.equal(workflowValue(workflowStep(validate, 'Upload browser diagnostics'), 'uses', 8), 'actions/upload-artifact@v7');
 
   const pages = read('.github/workflows/deploy-pages.yml');
   assert.equal(workflowValue(pages, 'permissions', 0), '{}');
+  assert.equal(
+    workflowValue(workflowBlock(pages, 'concurrency', 0), 'group', 2),
+    'pages-${{ github.workflow }}-${{ github.ref }}',
+  );
 
   const build = workflowBlock(pages, 'build', 2);
+  assert.equal(workflowValue(build, 'if', 4), "${{ github.ref == 'refs/heads/main' }}");
   const buildPermissions = workflowBlock(build, 'permissions', 4);
   assert.equal(workflowValue(buildPermissions, 'contents', 6), 'read');
   assert.equal(workflowValue(workflowStep(build, 'Checkout'), 'uses', 8), 'actions/checkout@v7');
   assert.equal(workflowValue(workflowStep(build, 'Setup Node'), 'uses', 8), 'actions/setup-node@v7');
+  assert.equal(workflowValue(workflowStep(build, 'Setup Node'), 'node-version', 10), '22');
   assert.equal(workflowValue(workflowStep(build, 'Setup Pages'), 'uses', 8), 'actions/configure-pages@v6');
+  assert.equal(workflowValue(workflowStep(build, 'Audit dependency baseline'), 'run', 8), 'npm run audit:dependencies');
+  assert.equal(workflowValue(workflowStep(build, 'Verify built content routes'), 'run', 8), 'npm run test:content-build');
+  assert.equal(
+    workflowValue(workflowStep(build, 'Validate browser flows'), 'run', 8),
+    'PLAYWRIGHT_SERVER_MODE=preview npm run test:e2e',
+  );
   assert.equal(workflowValue(workflowStep(build, 'Upload Pages artifact'), 'uses', 8), 'actions/upload-pages-artifact@v5');
 
   const deploy = workflowBlock(pages, 'deploy', 2);
+  assert.equal(workflowValue(deploy, 'if', 4), "${{ github.ref == 'refs/heads/main' }}");
   const deployPermissions = workflowBlock(deploy, 'permissions', 4);
   assert.equal(workflowValue(deployPermissions, 'pages', 6), 'write');
   assert.equal(workflowValue(deployPermissions, 'id-token', 6), 'write');
@@ -167,5 +202,6 @@ test('CI and Pages use Node 24-compatible actions and enforce the release gate',
   );
   assert.equal(workflowValue(workflowStep(releaseSmoke, 'Checkout'), 'uses', 8), 'actions/checkout@v7');
   assert.equal(workflowValue(workflowStep(releaseSmoke, 'Setup Node'), 'uses', 8), 'actions/setup-node@v7');
+  assert.equal(workflowValue(workflowStep(releaseSmoke, 'Setup Node'), 'node-version', 10), '22');
   assert.equal(workflowValue(workflowStep(releaseSmoke, 'Smoke deployed release'), 'run', 8), 'npm run test:e2e:release-smoke');
 });

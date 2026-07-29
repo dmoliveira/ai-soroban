@@ -12,7 +12,7 @@ A privacy-first Soroban learning app built with Astro. Learners can move from be
 
 ## Quick start
 
-Requires Node.js 22 or newer.
+Requires Node.js 22.12.0 or newer and npm 9.6.5 or newer.
 
 ```bash
 npm ci
@@ -25,15 +25,17 @@ Astro serves the project at `http://localhost:4321/soroban-dojo/`.
 
 ```bash
 npm run check       # Astro, TypeScript, and content schemas
+npm run audit:dependencies # high-severity audit across the installed build and test graph
 npm test            # domain, storage, content-graph, and theme unit tests
 npm run test:release # 0.4 metadata, public-doc, and workflow contract
 npm run build       # production static export
+npm run test:content-build # built content routes, sitemap URLs, and trusted lesson bootstrap
 npm run test:theme-build # production theme-bootstrap ordering
 npm run test:e2e    # local Chromium flow tests; starts Astro automatically
 npm run test:e2e:release-smoke # narrow, no-retry release/privacy/base-path smoke
 ```
 
-Use `npm run test:e2e:live` only for an explicit broad test of the deployed GitHub Pages site. Pull requests run check, release contract, unit, build, production-theme, and full local browser gates in `.github/workflows/ci.yml`. Pushes to `main` repeat those gates before deployment, then run the narrow release smoke against the deployed Pages URL.
+Use `npm run test:e2e:live` only for an explicit broad test of the deployed GitHub Pages site. Pull requests audit dependencies and run check, release contract, unit, build-content, production-theme, and full local browser gates in `.github/workflows/ci.yml`. Pushes to `main` repeat those gates before deployment, then run the narrow release smoke against the deployed Pages URL.
 
 ## Main routes
 
@@ -67,4 +69,4 @@ Use the header selector to choose Washi, Sakura, or Sumi. Washi is the default; 
 
 ## Contributing content
 
-Reuse existing frontmatter and route patterns. Content IDs must be unique, every prerequisite/related/next link must resolve, and skills must use the taxonomy in `src/content/config.ts`. Run the complete validation bundle before opening a pull request.
+Reuse existing frontmatter and route patterns. Content IDs must be unique, every prerequisite/related/next link must resolve, and skills must use the taxonomy in `src/content.config.ts`. Run the complete validation bundle before opening a pull request.

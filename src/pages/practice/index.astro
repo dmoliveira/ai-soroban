@@ -6,7 +6,7 @@ import StudioHero from '../../components/StudioHero.astro';
 
 const exercises = (await getCollection('exercises')).map((exercise) => ({
   id: exercise.data.id,
-  slug: exercise.slug,
+  slug: exercise.id,
   title: exercise.data.title,
   level: exercise.data.level,
   skill: exercise.data.skill,

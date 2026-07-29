@@ -20,11 +20,12 @@ const staticPaths = [
 ];
 
 export async function GET() {
-  const base = 'https://dmoliveira.github.io/ai-soroban/';
+  const configuredBase = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
+  const base = new URL(configuredBase, import.meta.env.SITE).toString();
   const lessons = await getCollection('lessons');
   const exercises = await getCollection('exercises');
-  const lessonUrls = lessons.map((entry) => `${base}lessons/${entry.slug}/`);
-  const exerciseUrls = exercises.map((entry) => `${base}exercises/${entry.slug}/`);
+  const lessonUrls = lessons.map((entry) => `${base}lessons/${entry.id}/`);
+  const exerciseUrls = exercises.map((entry) => `${base}exercises/${entry.id}/`);
   const urls = [
     ...staticPaths.map((path) => `${base}${path}`),
     ...lessonUrls,

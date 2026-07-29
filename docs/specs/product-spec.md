@@ -37,4 +37,4 @@ Provide a calm, practical Soroban dojo that helps children, adult self-learners,
 
 ## Release quality bar
 
-A release is complete only when release-contract and content checks, unit tests, static build, local browser flows, responsive and cross-theme checks, production bootstrap ordering, the GitHub Pages base path, and a no-retry deployed-release smoke are green. Promised game mechanics must match their implemented rules.
+A release is complete only when the high-severity dependency audit, release-contract and content checks, unit tests, static build, local browser flows, responsive and cross-theme checks, production bootstrap ordering, the GitHub Pages base path, and a no-retry deployed-release smoke are green. Promised game mechanics must match their implemented rules.

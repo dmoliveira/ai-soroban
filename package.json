@@ -3,7 +3,12 @@
   "version": "0.4.0",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=22.12.0",
+    "npm": ">=9.6.5"
+  },
   "scripts": {
+    "audit:dependencies": "npm audit --audit-level=high",
     "dev": "astro dev",
     "start": "astro dev",
     "build": "astro build",
@@ -12,6 +17,7 @@
     "check": "astro check",
     "test": "node --test tests/**/*.test.mjs",
     "test:release": "node --test tests/release-contract.test.mjs",
+    "test:content-build": "node --test tests/content-build-check.mjs",
     "test:theme-build": "node --test tests/theme-build-check.mjs",
     "test:e2e": "playwright test",
     "test:e2e:release-smoke": "playwright test tests/e2e/release-smoke.spec.js --project=chromium --reporter=line --workers=1 --retries=0",
@@ -22,10 +28,9 @@
     "test:e2e:theme-preview": "npm run build && PLAYWRIGHT_SERVER_MODE=preview playwright test tests/e2e/theme-persistence.spec.js --grep 'production prepaint' --project=chromium --reporter=line --workers=1 --retries=0"
   },
   "dependencies": {
-    "@astrojs/check": "^0.9.8",
-    "astro": "^5.7.0",
-    "typescript": "^5.9.3",
-    "zod": "^3.24.2"
+    "@astrojs/check": "^0.9.10",
+    "astro": "^7.1.5",
+    "typescript": "^5.9.3"
   },
   "devDependencies": {
     "@playwright/test": "^1.59.1"

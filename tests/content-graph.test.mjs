@@ -5,6 +5,8 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const contentRoot = fileURLToPath(new URL('../src/content/', import.meta.url));
+const lessonIdPattern = /^lesson-l[0-5]-(?!000)\d{3}$/;
+const exerciseIdPattern = /^exercise-l[0-5]-(?!000)\d{3}$/;
 
 const markdownFiles = async (directory) => {
   const entries = await readdir(directory, { withFileTypes: true });
@@ -42,6 +44,15 @@ const parseFrontmatter = async (path) => {
   };
 };
 
+test('content id patterns reserve sequence zero', () => {
+  assert.match('lesson-l0-001', lessonIdPattern);
+  assert.match('lesson-l5-999', lessonIdPattern);
+  assert.doesNotMatch('lesson-l0-000', lessonIdPattern);
+  assert.match('exercise-l0-001', exerciseIdPattern);
+  assert.match('exercise-l5-999', exerciseIdPattern);
+  assert.doesNotMatch('exercise-l0-000', exerciseIdPattern);
+});
+
 test('lesson and exercise ids are unique and every content link resolves', async () => {
   const lessonPaths = await markdownFiles(join(contentRoot, 'lessons'));
   const exercisePaths = await markdownFiles(join(contentRoot, 'exercises'));
@@ -53,6 +64,8 @@ test('lesson and exercise ids are unique and every content link resolves', async
 
   assert.equal(ids.every(Boolean), true, 'every lesson and exercise needs an id');
   assert.deepEqual([...new Set(duplicates)], [], `duplicate content ids: ${duplicates.join(', ')}`);
+  lessons.forEach((entry) => assert.match(entry.id, lessonIdPattern, `${entry.path} has an unsafe lesson id`));
+  exercises.forEach((entry) => assert.match(entry.id, exerciseIdPattern, `${entry.path} has an unsafe exercise id`));
 
   const lessonIds = new Set(lessons.map((entry) => entry.id));
   const exerciseIds = new Set(exercises.map((entry) => entry.id));
