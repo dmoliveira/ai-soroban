@@ -21,6 +21,34 @@ test('challenge cards publish exact targets and certified rules', async ({ page 
   }
 });
 
+test('Ten Bridge launches exact certified decompositions and replays its seed', async ({ page }) => {
+  await page.goto('practice');
+  await page.getByText('More ways to train').click();
+  await page.locator('.practice-challenge-start[data-challenge="ten-bridge"]').click();
+
+  await expect(page.locator('#session-title')).toContainText('Ten Bridge challenge');
+  const started = await readLatestSession(page);
+  expect(started.challengeKey).toBe('ten-bridge');
+  expect(started.questions).toHaveLength(10);
+  const pairKeys = new Set();
+  started.questions.forEach((question) => {
+    const { start, addend, complement, remainder } = question.challengeData;
+    expect(start + addend).toBeGreaterThanOrEqual(11);
+    expect(start + addend).toBeLessThanOrEqual(18);
+    expect(complement).toBe(10 - start);
+    expect(remainder).toBe(addend - complement);
+    pairKeys.add([start, addend].sort((left, right) => left - right).join(':'));
+  });
+  expect(pairKeys.size).toBe(10);
+
+  for (const question of started.questions) await answerCurrentQuestion(page, question.answer);
+  await expect(page.locator('#session-challenge-copy')).toContainText('Target met');
+  await page.locator('#session-replay-current').click();
+  const replay = await readLatestSession(page);
+  expect(replay.challengeSeed).toBe(started.challengeSeed);
+  expect(replay.questions).toEqual(started.questions);
+});
+
 test('a first-check challenge answer explains whether it counts', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 568 });
   await page.goto('practice');
@@ -229,6 +257,54 @@ test('Number Bond Blitz completes its finite queue and Play Again keeps settings
   expect(bestAfterStop).toBeUndefined();
 });
 
+test('Bead Builder completes through legal bead controls and resets ephemeral state', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 700 });
+  await page.goto('mini-games');
+  await page.getByRole('button', { name: 'Configure Bead Builder' }).click();
+  await expect(page.locator('#mini-game-title')).toHaveText('Bead Builder');
+  await expect(page.locator('#mini-game-title')).toBeFocused();
+  await page.locator('#mini-game-question-count').selectOption('5');
+  await page.locator('#mini-game-start-selected').click();
+
+  await expect(page.locator('#mini-game-bead-builder')).toBeVisible();
+  await expect(page.locator('#mini-game-numeric-answer')).toBeHidden();
+  await expect(page.locator('#mini-builder-upper')).toBeFocused();
+  await expect(page.locator('#mini-game-check')).toHaveText('Check beads');
+  await page.locator('#mini-builder-upper').press('Space');
+  await expect(page.locator('#mini-builder-status')).toContainText('Current rod value: 5');
+  await page.locator('#mini-builder-upper').press('Enter');
+  await expect(page.locator('#mini-builder-status')).toContainText('Current rod value: 0');
+
+  for (let index = 0; index < 5; index += 1) {
+    await expect(page.locator('#mini-builder-status')).toContainText('Current rod value: 0');
+    const prompt = await page.locator('#mini-game-prompt').textContent();
+    const target = Number(prompt.match(/Build (\d+) on the rod/)?.[1]);
+    expect(Number.isInteger(target)).toBe(true);
+    if (target >= 5) await page.locator('#mini-builder-upper').click();
+    const lower = target % 5;
+    if (lower > 0) await page.locator(`[data-builder-lower="${lower}"]`).click();
+    await expect(page.locator('#mini-builder-status')).toContainText(`Current rod value: ${target}`);
+    await page.locator('#mini-game-check').click();
+  }
+
+  await expect(page.locator('#mini-game-results')).toBeVisible();
+  await expect(page.locator('#mini-game-result-title')).toBeFocused();
+  await expect(page.locator('#mini-game-result-score')).toHaveText('100');
+  const scoreStore = await page.evaluate(() => localStorage.getItem('soroban-dojo:minigame-scores-v2') || '');
+  expect(scoreStore).toContain('bead-builder');
+  expect(scoreStore).not.toContain('upperActive');
+  expect(scoreStore).not.toContain('lowerActive');
+
+  await page.locator('#mini-game-play-again').click();
+  await expect(page.locator('#mini-game-question-count')).toHaveValue('5');
+  await expect(page.locator('#mini-game-progress')).toHaveText('0 / 5');
+  await expect(page.locator('#mini-builder-status')).toContainText('Current rod value: 0');
+  await expect(page.locator('#mini-builder-upper')).toBeFocused();
+  await page.locator('#mini-game-stop').click();
+  await expect(page.locator('#mini-game-result-reason')).toContainText('partial score was not saved');
+  await expect(page.locator('#mini-builder-status')).toContainText('Current rod value: 0');
+});
+
 test('Number Bond deadline completes through the browser clock without a real wait', async ({ page }) => {
   await page.clock.install({ time: new Date('2026-01-01T00:00:00Z') });
   await page.goto('mini-games');
@@ -291,7 +367,7 @@ test('Stop completes every mini-game without changing legacy best scores', async
   await expect(page.locator('#mini-game-tier')).toHaveText('Unlocked tier: starter');
   await expect(page.locator('#mini-game-difficulty option[value="bronze"]')).toHaveAttribute('disabled', '');
 
-  for (const gameId of ['complement-dash', 'table-tower', 'anzan-flash', 'error-fix']) {
+  for (const gameId of ['complement-dash', 'table-tower', 'anzan-flash', 'error-fix', 'bead-builder']) {
     await page.locator(`.minigame-select[data-game="${gameId}"]`).click();
     await page.locator('#mini-game-start-selected').click();
     await expect(page.locator('#mini-game-stop')).toBeEnabled();

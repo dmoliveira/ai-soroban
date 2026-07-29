@@ -55,10 +55,62 @@ test('every challenge is deterministic and certifies its exact rule', () => {
 });
 
 test('different seeds change each challenge family with seeded variation', () => {
-  for (const challengeKey of ['bead-match', 'clean-five', 'streak-sprint', 'sign-switch-relay', 'table-ladder', 'quotient-chase', 'anzan-burst']) {
+  for (const challengeKey of ['bead-match', 'clean-five', 'ten-bridge', 'streak-sprint', 'sign-switch-relay', 'table-ladder', 'quotient-chase', 'anzan-burst']) {
     const signatures = new Set(['alpha', 'bravo', 'charlie', 'delta'].map((seed) => JSON.stringify(buildChallengeQuestions({ challengeKey, seed }))));
     assert.ok(signatures.size > 1, challengeKey);
   }
+});
+
+test('Ten Bridge certifies exact ten-crossing decompositions and unordered uniqueness', () => {
+  const questions = buildChallengeQuestions({ challengeKey: 'ten-bridge', seed: 'bridge-fixture' });
+  assert.equal(questions.length, 10);
+  assert.deepEqual(questions.map(({ challengeData: { start, addend } }) => [start, addend]), [
+    [6, 6], [7, 8], [5, 9], [2, 9], [8, 8],
+    [3, 9], [8, 5], [8, 3], [6, 7], [5, 6],
+  ]);
+  const pairKeys = new Set();
+  questions.forEach((question) => {
+    const { start, addend, complement, remainder } = question.challengeData;
+    assert.ok(start >= 2 && start <= 9);
+    assert.ok(addend >= 2 && addend <= 9);
+    assert.ok(start + addend >= 11 && start + addend <= 18);
+    assert.equal(complement, 10 - start);
+    assert.equal(remainder, addend - complement);
+    assert.ok(complement > 0 && remainder > 0);
+    assert.equal(question.answer, start + addend);
+    pairKeys.add([start, addend].sort((left, right) => left - right).join(':'));
+  });
+  assert.equal(pairKeys.size, questions.length);
+
+  const tampered = structuredClone(questions);
+  tampered[0].challengeData.complement += 1;
+  assert.equal(certifyChallengeQuestions('ten-bridge', tampered).valid, false);
+
+  const repeatedPair = structuredClone(questions);
+  repeatedPair[1].challengeData = {
+    ...repeatedPair[0].challengeData,
+    start: repeatedPair[0].challengeData.addend,
+    addend: repeatedPair[0].challengeData.start,
+    complement: 10 - repeatedPair[0].challengeData.addend,
+  };
+  repeatedPair[1].challengeData.remainder = repeatedPair[1].challengeData.addend - repeatedPair[1].challengeData.complement;
+  repeatedPair[1].answer = repeatedPair[1].challengeData.start + repeatedPair[1].challengeData.addend;
+  assert.equal(certifyChallengeQuestions('ten-bridge', repeatedPair).valid, false);
+});
+
+test('saved Ten Bridge sessions rebuild the exact seeded fact order', () => {
+  const questions = buildChallengeQuestions({ challengeKey: 'ten-bridge', seed: 'saved-bridge' });
+  const restored = canonicalizeChallengeSession({
+    id: 'saved-bridge-session',
+    challengeKey: 'ten-bridge',
+    challengeSeed: 'saved-bridge',
+    challengeRuleVersion: 1,
+    questions: questions.map((question) => ({ ...question, prompt: `Answer: ${question.answer}` })),
+    responses: {},
+  });
+
+  assert.deepEqual(restored.questions, questions);
+  assert.equal(restored.questions.some((question) => question.prompt.startsWith('Answer:')), false);
 });
 
 test('certification rejects tampered structured rules and answers', () => {

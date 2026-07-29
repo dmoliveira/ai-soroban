@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  BEAD_BUILDER_TARGETS_BY_TIER,
   MINI_GAME_DEFINITIONS,
   buildMiniGameRound,
   certifyMiniGameRound,
@@ -11,15 +12,47 @@ import {
   reduceMiniGameState,
   shouldPersistMiniGameResult,
 } from '../src/lib/mini-games.js';
+import { rodStateToDigit } from '../src/lib/soroban.js';
 
 test('finite mode defaults and bounded settings normalize exactly', () => {
   assert.deepEqual(normalizeMiniGameSettings('complement-dash'), { questionCount: 10, timeLimitSeconds: 30 });
   assert.deepEqual(normalizeMiniGameSettings('anzan-flash'), { termCount: 20, intervalMs: 1000 });
   assert.deepEqual(normalizeMiniGameSettings('table-tower'), { questionCount: 10 });
   assert.deepEqual(normalizeMiniGameSettings('error-fix'), { questionCount: 10 });
+  assert.deepEqual(normalizeMiniGameSettings('bead-builder'), { questionCount: 10 });
   assert.deepEqual(normalizeMiniGameSettings('complement-dash', { questionCount: 999, timeLimitSeconds: 7 }), { questionCount: 10, timeLimitSeconds: 30 });
   assert.deepEqual(normalizeMiniGameSettings('complement-dash', { questionCount: 5, timeLimitSeconds: 0 }), { questionCount: 5, timeLimitSeconds: 0 });
   assert.deepEqual(normalizeMiniGameSettings('anzan-flash', { termCount: -1, intervalMs: 20 }), { termCount: 20, intervalMs: 1000 });
+});
+
+test('Bead Builder generates canonical tier-bounded one-rod targets', () => {
+  Object.entries(BEAD_BUILDER_TARGETS_BY_TIER).forEach(([tier, allowed]) => {
+    const round = buildMiniGameRound({ gameId: 'bead-builder', tier, seed: `builder-${tier}` });
+    assert.equal(round.questions.length, 10);
+    round.questions.forEach((question, index) => {
+      assert.equal(allowed.includes(question.data.target), true);
+      assert.equal(question.answer, question.data.target);
+      assert.equal(rodStateToDigit(question.data.state), question.data.target);
+      assert.equal(question.prompt, `Build ${question.data.target} on the rod.`);
+      if (index > 0) assert.notEqual(question.data.target, round.questions[index - 1].data.target);
+    });
+    assert.equal(certifyMiniGameRound(round).valid, true, tier);
+  });
+
+  const fixture = buildMiniGameRound({ gameId: 'bead-builder', tier: 'starter', settings: { questionCount: 5 }, seed: 'builder-fixture' });
+  assert.deepEqual(fixture.questions.map((question) => question.data.target), [2, 1, 4, 3, 0]);
+
+  const tamperedTarget = structuredClone(fixture);
+  tamperedTarget.questions[0].data.target = 3;
+  assert.equal(certifyMiniGameRound(tamperedTarget).valid, false);
+
+  const tamperedState = structuredClone(fixture);
+  tamperedState.questions[0].data.state = { upperActive: true, lowerActive: 4 };
+  assert.equal(certifyMiniGameRound(tamperedState).valid, false);
+
+  const extraState = structuredClone(fixture);
+  extraState.questions[0].data.state.extra = true;
+  assert.equal(certifyMiniGameRound(extraState).valid, false);
 });
 
 test('every mini-game builds a deterministic certified finite round', () => {

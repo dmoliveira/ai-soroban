@@ -96,7 +96,20 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       <strong id="mini-game-prompt-title">Prompt</strong>
       <p id="mini-game-term-counter" class="muted small" hidden>Term 0 / 20</p>
       <p id="mini-game-prompt" class="mini-game-prompt">Start the selected game to begin.</p>
-      <label class="stack-sm" for="mini-game-answer">
+      <div id="mini-game-bead-builder" class="mini-game-bead-builder" hidden>
+        <p class="muted small">Move the upper and lower beads, then check the value you built.</p>
+        <div class="mini-builder-rod" role="group" aria-label="Interactive one-rod soroban">
+          <button class="mini-builder-bead mini-builder-upper" id="mini-builder-upper" type="button" aria-pressed="false" aria-label="Upper bead worth five, inactive">5</button>
+          <span class="mini-builder-beam" aria-hidden="true"></span>
+          <div class="mini-builder-lower-stack">
+            {[1, 2, 3, 4].map((index) => (
+              <button class="mini-builder-bead mini-builder-lower" type="button" data-builder-lower={index} aria-pressed="false" aria-label={`Lower bead ${index}, inactive`}>1</button>
+            ))}
+          </div>
+        </div>
+        <p id="mini-builder-status" class="muted small" role="status" aria-live="polite" aria-atomic="true">Current rod value: 0.</p>
+      </div>
+      <label class="stack-sm" id="mini-game-numeric-answer" for="mini-game-answer">
         <span>Answer</span>
         <input id="mini-game-answer" class="input" type="text" inputmode="numeric" placeholder="Write your answer" disabled aria-disabled="true" />
       </label>
@@ -141,6 +154,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     shouldPersistMiniGameResult,
   } from '../lib/mini-games.js';
   import { buildScoreSummary, medalForNormalizedScore, normalizeScoreStore, scoreScopeKey, storeComparableScore } from '../lib/scoring.js';
+  import { digitToRodState, pressLowerBead, rodStateToDigit, toggleUpperBead } from '../lib/soroban.js';
   import { STORAGE_KEYS, readStoredJson, writeStoredJson } from '../lib/storage.js';
   import { ensureStorageCompatibility } from '../lib/storage-migrations.js';
 
@@ -156,6 +170,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   let currentGame = 'complement-dash';
   let currentTier = 'starter';
   let currentState = null;
+  let builderRodState = digitToRodState(0);
   let runToken = 0;
   let completionHandledToken = null;
   let elapsedInterval = null;
@@ -163,6 +178,32 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
   const readScoreStore = () => normalizeScoreStore(readStoredJson(localStorage, STORAGE_KEYS.miniGameScoresV2, {}));
   const isActive = () => currentState && activeStatuses.has(currentState.status);
+  const isBuilderGame = () => currentGame === 'bead-builder';
+  const resetBuilderRod = () => { builderRodState = digitToRodState(0); };
+  const focusFirstBuilderBead = () => byId('mini-builder-upper')?.focus();
+  const renderBuilder = () => {
+    const selected = isBuilderGame();
+    const active = selected && currentState?.status === 'running';
+    const panel = byId('mini-game-bead-builder');
+    const numericAnswer = byId('mini-game-numeric-answer');
+    panel.hidden = !selected;
+    numericAnswer.hidden = selected;
+    const upper = byId('mini-builder-upper');
+    upper.disabled = !active;
+    upper.classList.toggle('is-active', builderRodState.upperActive);
+    upper.setAttribute('aria-pressed', String(builderRodState.upperActive));
+    upper.setAttribute('aria-label', `Upper bead worth five, ${builderRodState.upperActive ? 'active' : 'inactive'}`);
+    document.querySelectorAll('[data-builder-lower]').forEach((button) => {
+      const index = Number(button.dataset.builderLower);
+      const beadActive = index <= builderRodState.lowerActive;
+      button.disabled = !active;
+      button.classList.toggle('is-active', beadActive);
+      button.setAttribute('aria-pressed', String(beadActive));
+      button.setAttribute('aria-label', `Lower bead ${index}, ${beadActive ? 'active' : 'inactive'}`);
+    });
+    byId('mini-builder-status').textContent = `Current rod value: ${rodStateToDigit(builderRodState)}. Upper bead ${builderRodState.upperActive ? 'active' : 'inactive'}; ${builderRodState.lowerActive} lower ${builderRodState.lowerActive === 1 ? 'bead' : 'beads'} active.`;
+    byId('mini-game-check').textContent = selected ? 'Check beads' : 'Check answer';
+  };
   const formatTime = (milliseconds) => {
     const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000));
     const minutes = Math.floor(totalSeconds / 60);
@@ -251,11 +292,12 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     const active = isActive();
     const awaitingAnswer = currentState?.status === 'awaiting-answer';
     const flashRunning = currentGame === 'anzan-flash' && currentState?.status === 'running';
-    const answerEnabled = active && !flashRunning;
+    const answerEnabled = active && !flashRunning && !isBuilderGame();
+    const checkEnabled = active && !flashRunning;
     byId('mini-game-answer').disabled = !answerEnabled;
     byId('mini-game-answer').setAttribute('aria-disabled', String(!answerEnabled));
-    byId('mini-game-check').disabled = !answerEnabled;
-    byId('mini-game-check').setAttribute('aria-disabled', String(!answerEnabled));
+    byId('mini-game-check').disabled = !checkEnabled;
+    byId('mini-game-check').setAttribute('aria-disabled', String(!checkEnabled));
     byId('mini-game-stop').disabled = !active;
     byId('mini-game-stop').setAttribute('aria-disabled', String(!active));
     byId('mini-game-start-selected').disabled = active;
@@ -328,6 +370,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     renderPrompt();
     syncTime();
     setControlState();
+    renderBuilder();
   };
 
   const persistCompletedResult = () => {
@@ -429,16 +472,20 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       settings,
       seed: makeSeed(),
     });
+    resetBuilderRod();
     currentState = reduceMiniGameState(createMiniGameState(round), { type: 'START', now: Date.now() });
     byId('mini-game-answer').value = '';
     byId('mini-game-results').hidden = true;
     byId('mini-game-feedback').textContent = currentGame === 'anzan-flash'
       ? 'Watch each visual term. Terms are not live-announced; Stop remains available throughout the sequence.'
-      : 'Submit one numeric answer for each prompt. Wrong answers still consume the question.';
+      : isBuilderGame()
+        ? 'Move the beads to build each target. Every check consumes the question.'
+        : 'Submit one numeric answer for each prompt. Wrong answers still consume the question.';
     syncGameMeta();
     renderState();
 
     if (currentGame === 'anzan-flash') byId('mini-game-stop').focus();
+    else if (isBuilderGame()) focusFirstBuilderBead();
     else byId('mini-game-answer').focus();
     const token = runToken;
     elapsedInterval = window.setInterval(() => {
@@ -453,6 +500,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     clearSchedulers();
     currentGame = gameId;
     currentState = null;
+    resetBuilderRod();
     completionHandledToken = null;
     byId('mini-game-results').hidden = true;
     byId('mini-game-answer').value = '';
@@ -470,7 +518,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
   const submitAnswer = () => {
     if (!isActive()) return;
-    const input = byId('mini-game-answer').value.trim();
+    const builderGame = isBuilderGame();
+    const input = builderGame ? String(rodStateToDigit(builderRodState)) : byId('mini-game-answer').value.trim();
     if (!input || !Number.isFinite(Number(input))) {
       byId('mini-game-feedback').textContent = 'Write a numeric answer first.';
       return;
@@ -483,15 +532,37 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       byId('mini-game-feedback').textContent = currentState.lastAnswerCorrect
         ? 'Correct. The next prompt is ready.'
         : `Not correct. The answer was ${previousQuestion.answer}; the next prompt is ready.`;
-      byId('mini-game-answer').value = '';
-      byId('mini-game-answer').focus();
+      if (builderGame) {
+        resetBuilderRod();
+        renderState();
+        focusFirstBuilderBead();
+      } else {
+        byId('mini-game-answer').value = '';
+        byId('mini-game-answer').focus();
+      }
     }
   };
 
+  byId('mini-builder-upper')?.addEventListener('click', () => {
+    if (!isBuilderGame() || currentState?.status !== 'running') return;
+    builderRodState = toggleUpperBead(builderRodState);
+    renderBuilder();
+  });
+  document.querySelectorAll('[data-builder-lower]').forEach((button) => button.addEventListener('click', () => {
+    if (!isBuilderGame() || currentState?.status !== 'running') return;
+    builderRodState = pressLowerBead(builderRodState, Number(button.dataset.builderLower));
+    renderBuilder();
+  }));
   document.querySelectorAll('.minigame-select').forEach((button) => button.addEventListener('click', () => selectGame(button.dataset.game)));
   byId('mini-game-start-selected')?.addEventListener('click', () => startGame());
   byId('mini-game-check')?.addEventListener('click', submitAnswer);
-  byId('mini-game-stop')?.addEventListener('click', () => dispatch({ type: 'STOP', reason: 'stopped' }));
+  byId('mini-game-stop')?.addEventListener('click', () => {
+    dispatch({ type: 'STOP', reason: 'stopped' });
+    if (isBuilderGame()) {
+      resetBuilderRod();
+      renderState();
+    }
+  });
   byId('mini-game-play-again')?.addEventListener('click', () => startGame());
   byId('mini-game-answer')?.addEventListener('keydown', (event) => {
     if (event.key !== 'Enter') return;
@@ -519,7 +590,13 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     renderState();
   }));
   document.addEventListener('visibilitychange', () => {
-    if (document.hidden && isActive()) dispatch({ type: 'STOP', reason: 'interrupted' });
+    if (document.hidden && isActive()) {
+      dispatch({ type: 'STOP', reason: 'interrupted' });
+      if (isBuilderGame()) {
+        resetBuilderRod();
+        renderState();
+      }
+    }
   });
 
   syncGameMeta();
@@ -549,6 +626,64 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     font-size: clamp(1.25rem, 4vw, 2rem);
     font-weight: 800;
     letter-spacing: 0.02em;
+  }
+
+  .mini-game-bead-builder {
+    margin-block: 0.75rem 1rem;
+    text-align: center;
+  }
+
+  .mini-builder-rod {
+    width: min(100%, 12rem);
+    margin: 0.75rem auto;
+    padding: 0.85rem;
+    display: grid;
+    justify-items: center;
+    gap: 0.5rem;
+    border: 1px solid var(--control-line);
+    border-radius: 1rem;
+    background: var(--panel-raised);
+  }
+
+  .mini-builder-beam {
+    width: 100%;
+    height: 0.35rem;
+    border-radius: 999px;
+    background: var(--ink);
+  }
+
+  .mini-builder-lower-stack {
+    display: grid;
+    gap: 0.35rem;
+  }
+
+  .mini-builder-bead {
+    min-width: 3rem;
+    min-height: 3rem;
+    border: 2px solid var(--control-line);
+    border-radius: 999px;
+    background: var(--panel-raised);
+    color: var(--ink);
+    font: inherit;
+    font-weight: 800;
+    cursor: pointer;
+    transition: transform 120ms ease, background-color 120ms ease, border-color 120ms ease;
+  }
+
+  .mini-builder-bead.is-active {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    transform: scale(1.06);
+  }
+
+  .mini-builder-bead:focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 3px;
+  }
+
+  .mini-builder-bead:disabled {
+    cursor: default;
+    opacity: 0.72;
   }
 
   .mini-game-results {
