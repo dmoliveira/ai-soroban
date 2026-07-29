@@ -6,9 +6,12 @@ import {
   buildMasterySeenIndex,
   claimMasteryItem,
   createAttemptEvidence,
+  deriveReviewProfile,
   isCanonicalAttemptEvidence,
   isCanonicalMasterySeenIndex,
   normalizeEvidenceLedger,
+  normalizeMasterySeenIndex,
+  reviewBucketForSignal,
   summarizeAttemptEvidence,
   upsertAttemptEvidence,
 } from '../src/lib/mastery.js';
@@ -181,4 +184,170 @@ test('malformed trust facts normalize only as activity', () => {
     version: 1,
     claims: [{ itemId: 'item', attemptId: 'attempt', firstSeenAt: '2026-07-29T00:00:00.000Z', futureField: true }],
   }), false);
+});
+
+const reviewAttempt = ({
+  attemptId,
+  itemId,
+  skill = 'division',
+  correct,
+  startedAt = '2026-01-01T00:00:00.000Z',
+  assisted = false,
+}) => {
+  let evidence = createAttemptEvidence({
+    attemptId,
+    source: 'exercise',
+    itemId,
+    skill,
+    level: skill === 'division' || skill === 'multiplication' ? 'L4' : 'L2',
+    rule: { id: `exercise.${skill}`, version: 1 },
+    startedAt,
+  });
+  if (assisted) evidence = appendEvidenceEvent(evidence, { kind: 'hint', at: startedAt });
+  return appendEvidenceEvent(evidence, { kind: 'submit', value: correct ? '4' : '5', correct, at: startedAt });
+};
+
+const seenFor = (...attempts) => attempts.reduce((index, evidence, position) => claimMasteryItem(index, {
+  itemId: evidence.itemId,
+  attemptId: evidence.attemptId,
+  firstSeenAt: `2026-01-01T00:00:${String(position).padStart(2, '0')}.000Z`,
+}).index, normalizeMasterySeenIndex(null));
+
+test('review profile keeps a corrected first-check miss unresolved', () => {
+  let miss = reviewAttempt({ attemptId: 'attempt-miss', itemId: 'division-a', correct: false });
+  miss = appendEvidenceEvent(miss, { kind: 'submit', value: '4', correct: true, at: '2026-01-01T00:01:00.000Z' });
+  const profile = deriveReviewProfile({ evidenceLedger: [miss], seenIndex: seenFor(miss), activityStates: {} });
+  assert.equal(profile.basis, 'first-check');
+  assert.equal(profile.focus.key, 'division');
+  assert.deepEqual(profile.buckets.division.unresolvedItemIds, ['division-a']);
+});
+
+test('a later distinct same-skill first check resolves one prior miss FIFO', () => {
+  const missA = reviewAttempt({ attemptId: 'miss-a', itemId: 'division-a', correct: false, startedAt: '2030-01-01T00:00:00.000Z' });
+  const missB = reviewAttempt({ attemptId: 'miss-b', itemId: 'division-b', correct: false, startedAt: '2020-01-01T00:00:00.000Z' });
+  const recovery = reviewAttempt({ attemptId: 'correct-c', itemId: 'division-c', correct: true, startedAt: '2010-01-01T00:00:00.000Z' });
+  const profile = deriveReviewProfile({
+    evidenceLedger: [recovery, missB, missA],
+    seenIndex: seenFor(missA, missB, recovery),
+    activityStates: {},
+  });
+  assert.equal(profile.historyIncomplete, false);
+  assert.deepEqual(profile.buckets.division.unresolvedItemIds, ['division-b']);
+});
+
+test('different-skill, assisted, and unowned correct attempts cannot resolve a miss', () => {
+  const miss = reviewAttempt({ attemptId: 'miss-a', itemId: 'division-a', correct: false });
+  const otherSkill = reviewAttempt({ attemptId: 'correct-mul', itemId: 'multiply-a', skill: 'multiplication', correct: true });
+  const assisted = reviewAttempt({ attemptId: 'correct-assisted', itemId: 'division-b', correct: true, assisted: true });
+  const unowned = reviewAttempt({ attemptId: 'correct-unowned', itemId: 'division-c', correct: true });
+  const profile = deriveReviewProfile({
+    evidenceLedger: [miss, otherSkill, assisted, unowned],
+    seenIndex: seenFor(miss, otherSkill, assisted),
+    activityStates: {},
+  });
+  assert.deepEqual(profile.buckets.division.unresolvedItemIds, ['division-a']);
+  assert.equal(profile.retainedQualifiedCount, 2);
+});
+
+test('missing owned detail disables recovery while retaining known misses', () => {
+  const missing = reviewAttempt({ attemptId: 'evicted', itemId: 'division-old', correct: false });
+  const miss = reviewAttempt({ attemptId: 'miss-a', itemId: 'division-a', correct: false });
+  const recovery = reviewAttempt({ attemptId: 'correct-b', itemId: 'division-b', correct: true });
+  const profile = deriveReviewProfile({
+    evidenceLedger: [miss, recovery],
+    seenIndex: seenFor(missing, miss, recovery),
+    activityStates: {},
+  });
+  assert.equal(profile.historyIncomplete, true);
+  assert.equal(profile.missingClaimDetails, 1);
+  assert.deepEqual(profile.buckets.division.unresolvedItemIds, ['division-a']);
+});
+
+test('unowned prospective detail is ignored without becoming review evidence', () => {
+  const miss = reviewAttempt({ attemptId: 'unowned-miss', itemId: 'division-a', correct: false });
+  const profile = deriveReviewProfile({
+    evidenceLedger: [miss],
+    seenIndex: normalizeMasterySeenIndex(null),
+    activityStates: {},
+  });
+  assert.equal(profile.historyIncomplete, false);
+  assert.equal(profile.unownedProspectiveDetails, 1);
+  assert.equal(profile.basis, 'none');
+});
+
+test('unowned prospective detail cannot block valid owned recovery', () => {
+  const miss = reviewAttempt({ attemptId: 'owned-miss', itemId: 'division-a', correct: false });
+  const recovery = reviewAttempt({ attemptId: 'owned-correct', itemId: 'division-b', correct: true });
+  const orphan = reviewAttempt({ attemptId: 'orphan', itemId: 'division-c', correct: false });
+  const profile = deriveReviewProfile({
+    evidenceLedger: [miss, recovery, orphan],
+    seenIndex: seenFor(miss, recovery),
+    activityStates: {},
+  });
+  assert.equal(profile.historyIncomplete, false);
+  assert.equal(profile.unownedProspectiveDetails, 1);
+  assert.equal(profile.evidenceTotal, 0);
+});
+
+test('duplicate attempt ownership is incomplete and cannot double count', () => {
+  const first = reviewAttempt({ attemptId: 'duplicate-attempt', itemId: 'division-a', correct: false });
+  const second = reviewAttempt({ attemptId: 'duplicate-attempt', itemId: 'division-b', correct: false });
+  const profile = deriveReviewProfile({
+    evidenceLedger: [first, second],
+    seenIndex: seenFor(first, second),
+    activityStates: {},
+  });
+  assert.equal(profile.historyIncomplete, true);
+  assert.equal(profile.missingClaimDetails, 2);
+  assert.equal(profile.evidenceTotal, 0);
+});
+
+test('each later correct resolves at most one retained miss', () => {
+  const missA = reviewAttempt({ attemptId: 'miss-a', itemId: 'division-a', correct: false });
+  const missB = reviewAttempt({ attemptId: 'miss-b', itemId: 'division-b', correct: false });
+  const correct = reviewAttempt({ attemptId: 'correct-a', itemId: 'division-c', correct: true });
+  const profile = deriveReviewProfile({
+    evidenceLedger: [missA, missB, correct],
+    seenIndex: seenFor(missA, missB, correct),
+    activityStates: {},
+  });
+  assert.equal(profile.evidenceTotal, 1);
+  assert.deepEqual(profile.buckets.division.unresolvedItemIds, ['division-b']);
+});
+
+test('legacy review is a per-item fallback only without qualified owned detail', () => {
+  const correct = reviewAttempt({ attemptId: 'correct-a', itemId: 'exercise-a', skill: 'complements', correct: true });
+  const profile = deriveReviewProfile({
+    evidenceLedger: [correct],
+    seenIndex: seenFor(correct),
+    activityStates: {
+      'exercise-a': { status: 'needs-review', skill: 'complements', level: 'L2' },
+      'exercise-b': { status: 'needs-review', skill: 'multiplication', level: 'L4' },
+    },
+  });
+  assert.equal(profile.basis, 'activity');
+  assert.equal(profile.focus.key, 'multiplication');
+  assert.deepEqual(profile.buckets.complements.legacyItemIds, []);
+  assert.deepEqual(profile.buckets.multiplication.legacyItemIds, ['exercise-b']);
+});
+
+test('review buckets preserve deterministic level and session fallbacks', () => {
+  assert.equal(reviewBucketForSignal({ skill: 'anzan' }), 'mental');
+  assert.equal(reviewBucketForSignal({ skill: 'division', level: 'L4' }), 'division');
+  assert.equal(reviewBucketForSignal({ level: 'L4' }), 'multiplication');
+  assert.equal(reviewBucketForSignal({ sessionId: 'practice:L2:legacy' }), 'complements');
+  assert.equal(reviewBucketForSignal({ skill: 'addition' }), 'arithmetic');
+});
+
+test('review focus uses the documented stable tie order', () => {
+  const profile = deriveReviewProfile({
+    evidenceLedger: [],
+    seenIndex: normalizeMasterySeenIndex(null),
+    activityStates: {
+      mental: { status: 'needs-review', skill: 'anzan', level: 'L5' },
+      division: { status: 'needs-review', skill: 'division', level: 'L4' },
+      multiplication: { status: 'needs-review', skill: 'multiplication', level: 'L4' },
+    },
+  });
+  assert.equal(profile.focus.key, 'mental');
 });
