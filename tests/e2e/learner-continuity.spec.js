@@ -87,7 +87,7 @@ test('placement-aware Practice action starts only after the learner activates it
   await expect(start).toBeInViewport();
   await page.keyboard.press('Enter');
 
-  await expect(page).toHaveURL(/practice\?level=L4&skill=multiplication&start=1$/);
+  await expect(page).toHaveURL(/practice\/?\?level=L4&skill=multiplication&start=1$/);
   await expect(page.locator('#session-title')).toHaveText('multiplication · L4 session');
   await expect(continuityCard(page)).toBeHidden();
   const latest = await page.evaluate(() => JSON.parse(localStorage.getItem('soroban-dojo:practice-sessions'))[0]);
