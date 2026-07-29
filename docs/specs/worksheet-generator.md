@@ -1,10 +1,10 @@
 # Worksheet Generator Specification
 
-**Status:** implemented for authored and generated addition/subtraction sequence worksheets. This file remains the certification contract; multiplication, division, and anzan use separate family generators on the worksheet page.
+**Status:** implemented. This document records two related v1 contracts: the authored/generated addition/subtraction sequence profile and the deterministic worksheet-family generator used by the worksheet studio.
 
 ## Goal
 
-Expand worksheet and drill generation so Soroban Dojo can produce and certify multi-step arithmetic practice beyond the current 1-step generated drills.
+Keep worksheet labels, prompts, operands, answers, teacher keys, adaptive targets, and saved presentation consistent with certified structured data.
 
 The first target is to support:
 
@@ -43,6 +43,31 @@ Out of scope for the sequence-profile v1 contract:
 - user-authored exact sign templates such as a custom literal `+ - + -`
 - multiplication and division within this specific `+`/`-` profile model (separate worksheet families implement them)
 - automatic profile difficulty changes during an active generated sheet
+
+## Certified worksheet-family v1
+
+The worksheet studio uses a separate, versioned family contract for dynamic, fixed, and adaptive sheets. It does not widen the sequence-profile rules below.
+
+Supported source families:
+
+- addition, subtraction, mixed, and sequence
+- multiplication and division
+- anzan
+
+Those sources resolve to five certified families: `additive`, `complement`, `multiplication`, `division`, and `anzan`. Every question stores an exact rule ID/version, source family, certified family, submode, role-labelled operands, technique metadata, and recomputed answer.
+
+Family-v1 bounds and behavior:
+
+- digit bands are ordered ranges from 1 through 6 digits
+- requested operation bounds are ordered integers from 1 through 4
+- multiplication and division always certify one operation with role-specific operands
+- sequence and anzan questions require at least two operations
+- counts are bounded from 1 through 100 questions
+- `balanced` keeps one band across the sheet; `ramp` certifies the band for each row stage
+- the active seed remains stable across presentation-only rerenders and rotates only when questions are refreshed
+- adaptive mode selects a supported family/submode from local weak-area evidence without weakening certification
+
+Prompts, score checks, worked examples, and teacher keys are formatted from structured operands. They are never parsed back from mutable display text to establish correctness.
 
 ## Worksheet profile model
 
@@ -177,15 +202,15 @@ Suggested test cases:
 4. validate an authored worksheet that passes profile checks
 5. validate an authored worksheet that includes a 2-digit operand inside a `3-4 digits` profile and fail clearly
 
-## Implementation notes
+## Implemented architecture
 
-Recommended implementation path:
+The current implementation:
 
-1. extract generated arithmetic logic from `PracticeClient.astro` into a focused worksheet generator module
-2. define normalized worksheet profile types and helpers
-3. add a `certifyWorksheetProfile()` validator for generated and authored items
-4. connect the new selectors and visible label in the practice UI
-5. extend authored worksheet content metadata to opt into the same profile model
+1. keeps sequence-profile and worksheet-family helpers in `src/lib/worksheet.js`
+2. certifies generated and authored sequence drills with normalized profile labels
+3. certifies family questions recursively against canonical config, IDs, roles, techniques, operands, and recomputed answers
+4. caches active questions by seed/config so presentation rerenders cannot silently rotate content
+5. renders worksheet scoring, examples, and teacher keys from the certified structured questions
 
 ## Acceptance criteria
 
@@ -196,3 +221,5 @@ Recommended implementation path:
 - authored worksheets can declare and validate against the same profile model
 - the UI shows the active worksheet profile label
 - automated tests cover the certification rules
+- worksheet-family questions stay within their separate 1-6 digit and 1-4 operation bounds
+- additive, complement, multiplication, division, and anzan families reject shape, role, answer, technique, and identity tampering

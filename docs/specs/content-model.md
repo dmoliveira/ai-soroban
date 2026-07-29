@@ -36,13 +36,15 @@ Numeric exercises may include `expectedValue`; visual exercises may include `vis
 
 Generated sessions carry a level, source, format, question style, term count, check mode, optional timer, stable session ID, responses, and final score. Generated algorithms must be deterministic when supplied a seed and must expose truthful mode-specific rules.
 
-Challenge sessions add a versioned challenge identity, seed, exact target and rule snapshots, structured question data, and a measured outcome. The generator certifies coverage and recomputed answers before persistence. Challenge outcomes count only first-check numeric answers without hints, reveals, or recovery; they never trust a mutable `correct` flag.
+Challenge sessions add a versioned challenge identity, seed, exact target and rule snapshots, structured question data, and a measured outcome. The generator certifies coverage and recomputed answers before persistence. Ten Bridge additionally certifies exact complement and remainder decomposition plus unordered pair uniqueness. Challenge outcomes count only first-check numeric answers without hints, reveals, or recovery; they never trust a mutable `correct` flag.
 
 ## Mini-games
 
 Mini-games build their full question queue or Flash Anzan term sequence from a seed before play. Settings are normalized to bounded choices. Number Bond Blitz defaults to 10 questions and 30 seconds and also offers an untimed finite queue; Flash Anzan defaults to 20 terms at 1,000 milliseconds per term and links to untimed mental practice.
 
 Every game has a finite terminal state. Natural completion records the best score and medal under the existing game ID; Stop or hidden-page interruption reports partial score and elapsed time without replacing a best. Replay keeps the selected settings and creates a fresh seed.
+
+Bead Builder generates a certified tier-bounded decimal target and derives submissions from canonical one-rod soroban state. Its interactive upper/lower bead state is UI-only; only the resulting numeric answer enters the shared reducer and scoring path.
 
 ## Worksheets
 

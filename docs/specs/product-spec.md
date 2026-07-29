@@ -27,13 +27,14 @@ Provide a calm, practical Soroban dojo that helps children, adult self-learners,
 
 - six levels, L0 through L5
 - authored lessons and exercises with validated relationships
-- guided and generated practice, journeys, challenge presets, resume, scoring, and recovery
+- guided and generated practice, journeys, certified challenges including Ten Bridge, resume, scoring, and recovery
+- prospective first-check evidence with additive legacy compatibility and read-only protection for malformed 0.4 companions or a newer schema marker
 - adaptive daily drills and weekly planning
-- configurable/certified worksheets with print and answer-key modes
-- mini-games, boss rounds, badges, and certificates
+- configurable/certified additive, complement, multiplication, division, and anzan worksheets with print and answer-key modes
+- finite mini-games including Bead Builder, boss rounds, badges, and certificates
 - placement and local progress recommendations
 - persistent Washi, Sakura, and Sumi display themes, with Washi as the safe default
 
 ## Release quality bar
 
-A release is complete only when content checks, unit tests, static build, local browser flows, responsive and cross-theme checks, production bootstrap ordering, and the GitHub Pages base path are green. Promised game mechanics must match their implemented rules.
+A release is complete only when release-contract and content checks, unit tests, static build, local browser flows, responsive and cross-theme checks, production bootstrap ordering, the GitHub Pages base path, and a no-retry deployed-release smoke are green. Promised game mechanics must match their implemented rules.

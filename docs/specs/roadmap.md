@@ -5,12 +5,13 @@
 - static Astro/GitHub Pages application
 - six-level authored curriculum with child and adult routes
 - local lesson, exercise, practice, worksheet, placement, game, boss, and progress state
-- configurable certified worksheet generation
+- deterministic certified additive, complement, multiplication, division, and anzan worksheet generation
 - daily drills, weekly plans, mini-games, boss rounds, badges, and certificates
 - responsive task navigation and local-first pull-request browser testing
-- deterministic certified challenges with measured targets across save, resume, replay, history, and progress
-- finite Number Bond, table, Flash Anzan, and error-repair games with score/time completion summaries
+- deterministic certified challenges, including Ten Bridge decomposition, with measured targets across save, resume, replay, history, and progress
+- finite Number Bond, table, Flash Anzan, error-repair, and Bead Builder games with score/time completion summaries
 - persistent accessible Washi, Sakura, and Sumi themes with prepaint restoration and local preference storage
+- prospective first-check evidence, additive 0.3 compatibility, and read-only protection for malformed 0.4 companions or a newer schema marker
 
 ## Delivered modernization
 
@@ -24,7 +25,7 @@
 ## Durable follow-ups
 
 - extract the large practice client behind tested domain modules
-- versioned storage migrations and bounded history policies
+- future versioned storage migrations beyond the additive 0.4 boundary, plus bounded history policies
 - spaced review based on demonstrated accuracy, not activity alone
 - broader challenge/content banks and automated accessibility baselines
 
