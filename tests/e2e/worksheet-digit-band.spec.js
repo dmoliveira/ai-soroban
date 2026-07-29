@@ -75,6 +75,101 @@ test('adaptive worksheet targets division weakness automatically', async ({ page
   prompts.forEach((prompt) => expect(prompt).toContain('÷'));
 });
 
+test('worksheet seed stays stable for presentation rerenders and rotates on refresh', async ({ page }) => {
+  await page.goto('worksheets?preset=sequence-mix');
+
+  const inputs = page.locator('.worksheet-input');
+  const initialIds = await inputs.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-question-id')));
+  const initialAnswers = await inputs.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-answer')));
+  expect(initialIds.every(Boolean)).toBe(true);
+  expect(initialAnswers.every((answer) => /^\d+$/.test(answer || ''))).toBe(true);
+
+  await inputs.first().fill(initialAnswers[0] || '');
+  await page.getByText('After you generate').click();
+  await page.getByRole('button', { name: 'Check answered' }).click();
+  await expect(inputs.first().locator('xpath=ancestor::article[1]').locator('.worksheet-feedback')).toHaveClass(/vertical-feedback.*ok/);
+
+  await inputs.nth(1).fill(initialAnswers[1] || '');
+  await inputs.nth(1).press('Enter');
+  await expect(inputs.nth(1).locator('xpath=ancestor::article[1]').locator('.worksheet-feedback')).toHaveClass(/vertical-feedback.*ok/);
+
+  await page.getByText('Advanced options').click();
+  await page.selectOption('#worksheet-orientation', 'ledger');
+  await expect(inputs.first()).toBeVisible();
+  expect(await inputs.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-question-id')))).toEqual(initialIds);
+
+  await page.getByRole('button', { name: 'Refresh questions' }).click();
+  await expect(inputs.first()).toBeVisible();
+  expect(await inputs.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-question-id')))).not.toEqual(initialIds);
+});
+
+test('worksheet scoring and teacher key use certified structured answers', async ({ page }) => {
+  await page.goto('worksheets?preset=complements');
+
+  const firstInput = page.locator('.worksheet-input').first();
+  const certifiedAnswer = await firstInput.getAttribute('data-answer');
+  expect(certifiedAnswer).toMatch(/^\d+$/);
+  await firstInput.evaluate((input) => input.setAttribute('data-prompt', '1 + 1'));
+  await firstInput.fill(certifiedAnswer || '');
+  await firstInput.press('Enter');
+  await expect(firstInput.locator('xpath=ancestor::*[contains(@class,"worksheet-row") or contains(@class,"vertical-drill-row")]').locator('.worksheet-feedback')).toHaveText('✓');
+
+  await page.getByText('After you generate').click();
+  await page.getByRole('button', { name: 'Teacher key' }).click();
+  await expect(page.locator('#worksheet-score-copy')).toContainText('Certified answer key');
+  const revealed = await page.locator('.worksheet-input').evaluateAll((inputs) => inputs.map((input) => ({
+    answer: input.getAttribute('data-answer'),
+    feedback: input.closest('.ledger-row, .vertical-drill-row')?.querySelector('.worksheet-feedback')?.textContent,
+    family: input.getAttribute('data-family'),
+  })));
+  expect(revealed.every(({ answer, feedback, family }) => answer === feedback?.trim() && family === 'complement')).toBe(true);
+});
+
+test('adaptive complement weakness emits certified complement rows', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('soroban-dojo:exercise-states', JSON.stringify({
+      a: { status: 'needs-review', level: 'L2', skill: 'complements', sessionId: 'exercise:L2:complements' },
+      b: { status: 'needs-review', level: 'L2', skill: 'complements', sessionId: 'exercise:L2:complements' },
+    }));
+  });
+
+  await page.goto('worksheets');
+  await page.selectOption('#worksheet-mode', 'adaptive');
+  await page.selectOption('#worksheet-level', 'L2');
+  await page.getByRole('button', { name: 'Refresh questions' }).click();
+
+  await expect(page.locator('#worksheet-target-summary')).toContainText('Complement balance');
+  const families = await page.locator('.worksheet-input').evaluateAll((inputs) => inputs.map((input) => input.getAttribute('data-family')));
+  expect(families.length).toBeGreaterThan(0);
+  expect(families.every((family) => family === 'complement')).toBe(true);
+});
+
+test('worksheet falls back from wrong-shape local records after shared compatibility bootstrap', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('soroban-dojo:exercise-states', '[]');
+    localStorage.setItem('soroban-dojo:worksheet-sessions', '"wrong"');
+  });
+
+  await page.goto('worksheets');
+  await expect(page.locator('html')).toHaveAttribute('data-storage-writable', 'true');
+  await expect(page.locator('.worksheet-input').first()).toBeVisible();
+  const sessions = await page.evaluate(() => JSON.parse(localStorage.getItem('soroban-dojo:worksheet-sessions') || 'null'));
+  expect(Array.isArray(sessions)).toBe(true);
+});
+
+test('worksheet preserves future-state sessions in shared read-only mode', async ({ page }) => {
+  const futureSessions = '[{"id":"future-worksheet","futureField":true}]';
+  await page.addInitScript((sessions) => {
+    localStorage.setItem('soroban-dojo:state-schema', JSON.stringify({ version: 99, migratedAt: 'future' }));
+    localStorage.setItem('soroban-dojo:worksheet-sessions', sessions);
+  }, futureSessions);
+
+  await page.goto('worksheets');
+  await expect(page.locator('html')).toHaveAttribute('data-storage-writable', 'false');
+  await expect(page.locator('.worksheet-input').first()).toBeVisible();
+  expect(await page.evaluate(() => localStorage.getItem('soroban-dojo:worksheet-sessions'))).toBe(futureSessions);
+});
+
 test('curriculum mastery worksheet link opens anzan-focused sheet', async ({ page }) => {
   await page.goto('curriculum');
   await page.getByRole('link', { name: 'Anzan worksheet' }).click();

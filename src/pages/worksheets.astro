@@ -630,33 +630,13 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     }
   </style>
 
-  <script is:inline>
-    const fixedBanks = {
-      L0: {
-        addition: ['1 + 2','2 + 1','2 + 2','3 + 1','4 + 1','1 + 3','2 + 3','3 + 2','4 + 2','5 + 1'],
-        subtraction: ['4 - 1','5 - 2','6 - 1','7 - 3','8 - 2','6 - 2','7 - 1','8 - 4','9 - 3','9 - 2'],
-      },
-      L1: {
-        addition: ['12 + 5','24 + 7','31 + 4','18 + 6','42 + 13','25 + 11','33 + 14','47 + 21','51 + 8','62 + 17'],
-        subtraction: ['24 - 7','31 - 4','18 - 6','42 - 13','55 - 12','63 - 21','80 - 15','74 - 32','91 - 18','64 - 9'],
-      },
-      L2: {
-        mixed: ['24 + 7','31 - 4','18 + 5','42 - 11','25 + 6','36 - 12','27 + 8','44 - 9','52 - 18','19 + 14'],
-        sequence: ['12 + 5 - 3','24 - 7 + 6','18 + 5 + 2','42 - 11 + 4','25 + 6 - 4','36 - 12 + 5','27 + 8 - 6','44 - 9 + 3','52 - 18 + 7','19 + 14 - 9'],
-      },
-      L3: {
-        mixed: ['124 + 37','231 - 44','318 + 56','442 - 111','205 + 16','360 - 124','274 + 88','440 - 95','520 - 184','193 + 147'],
-        sequence: ['124 + 37 - 15','231 - 44 + 18','318 + 56 - 21','442 - 111 + 24','205 + 16 + 19','360 - 124 + 37','274 + 88 - 46','440 - 95 + 18','520 - 184 + 29','193 + 147 - 58'],
-      },
-      L4: {
-        multiplication: ['3 × 4','4 × 3','12 × 2','5 × 12','13 × 5','6 × 12','14 × 4','3 × 16','17 × 2','15 × 3'],
-        division: ['12 ÷ 3','12 ÷ 4','40 ÷ 5','45 ÷ 5','36 ÷ 6','48 ÷ 6','56 ÷ 7','63 ÷ 9','72 ÷ 8','81 ÷ 9'],
-      },
-      L5: {
-        mixed: ['1245 + 378','2318 - 444','3186 + 567','4420 - 1114','2057 + 168','3604 - 1248','2745 + 889','4400 - 955','5208 - 1842','1937 + 1476'],
-        anzan: ['18 + 7 + 5','24 - 6 + 8','37 + 14 - 9','45 - 8 + 6','63 + 12 - 15','72 - 18 + 9','84 + 15 - 11','96 - 24 + 8','128 + 37 - 15','205 - 18 + 27'],
-      },
-    };
+  <script>
+    // @ts-nocheck -- This DOM-driven page script is bundled here so it can import the shared certified generator.
+    import {
+      buildWorksheetFamilyQuestions,
+      createWorksheetFamilyConfig,
+      formatWorksheetFamilyQuestion,
+    } from '../lib/worksheet.js';
 
     const levelBands = {
       L0: '1',
@@ -699,6 +679,21 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     let celebrationTimeout = null;
     let resolvedWorksheetTarget = 'auto';
     let currentWorksheetSessionId = null;
+    let activeWorksheetSeed = '';
+    let worksheetSeedCounter = 0;
+    const worksheetQuestionCache = new Map();
+    const rotateWorksheetSeed = () => {
+      worksheetSeedCounter += 1;
+      const entropy = new Uint32Array(2);
+      window.crypto?.getRandomValues?.(entropy);
+      activeWorksheetSeed = [
+        'worksheet-v1',
+        Date.now().toString(36),
+        worksheetSeedCounter.toString(36),
+        ...Array.from(entropy, (value) => value.toString(36)),
+      ].join(':');
+      worksheetQuestionCache.clear();
+    };
     const audioWindow = typeof window !== 'undefined' ? /** @type {any} */ (window) : null;
     const AudioContextCtor = audioWindow
       ? audioWindow.AudioContext || (audioWindow).webkitAudioContext || null
@@ -729,24 +724,6 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     const selectedFamilies = () => Array.from(document.querySelectorAll('input[name="worksheet-family"]:checked')).map((node) => node.value);
     const setMetric = (id, value) => { byId(id).textContent = String(value); };
 
-    const solvePrompt = (prompt) => {
-      const normalized = prompt.replace('×', '*').replace('÷', '/');
-      const tokens = normalized.split(' ');
-      if (tokens.length < 3) return null;
-      let total = Number(tokens[0]);
-      for (let i = 1; i < tokens.length; i += 2) {
-        const operator = tokens[i];
-        const value = Number(tokens[i + 1]);
-        if (Number.isNaN(total) || Number.isNaN(value)) return null;
-        if (operator === '+') total += value;
-        else if (operator === '-') total -= value;
-        else if (operator === '*') total *= value;
-        else if (operator === '/') total /= value;
-        else return null;
-      }
-      return total;
-    };
-
     const renderVerticalPrompt = (prompt) => {
       const tokens = prompt.split(' ');
       const rows = [];
@@ -759,199 +736,12 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       return `<div class="v-arith-block">${rows.join('')}</div>`;
     };
 
-    const parseBand = (band) => {
-      if (band.includes('-')) {
-        const [min, max] = band.split('-').map(Number);
-        return { min, max };
-      }
-      const digits = Number(band);
-      return { min: digits, max: digits };
-    };
-
-    const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
-    const shuffle = (items) => {
-      const copy = [...items];
-      for (let index = copy.length - 1; index > 0; index -= 1) {
-        const swapIndex = rand(0, index);
-        [copy[index], copy[swapIndex]] = [copy[swapIndex], copy[index]];
-      }
-      return copy;
-    };
-    const randomNumberForDigits = (digits) => {
-      const min = digits === 1 ? 1 : 10 ** (digits - 1);
-      const max = (10 ** digits) - 1;
-      return rand(min, max);
-    };
-    const minValueForDigits = (digits) => (digits === 1 ? 1 : 10 ** (digits - 1));
-    const maxValueForDigits = (digits) => (10 ** digits) - 1;
-    const digitLength = (value) => String(Math.abs(value)).length;
-    const randomNumberForDigitsWhere = (digits, predicate) => {
-      for (let attempt = 0; attempt < 40; attempt += 1) {
-        const candidate = randomNumberForDigits(digits);
-        if (predicate(candidate)) return candidate;
-      }
-      return null;
-    };
-    const pickDigitsForVariant = (bandRange, variant) => {
-      if (bandRange.min === bandRange.max) return bandRange.min;
-      const spread = bandRange.max - bandRange.min;
-      if (variant % 4 === 0) return bandRange.max;
-      if (variant % 4 === 1) return bandRange.min;
-      if (variant % 4 === 2) return Math.max(bandRange.min, bandRange.max - 1);
-      return bandRange.min + rand(0, spread);
-    };
     const readOperationRange = () => {
       const min = Number(byId('worksheet-op-min')?.value || 1);
       const max = Number(byId('worksheet-op-max')?.value || min);
       return { min: Math.min(min, max), max: Math.max(min, max) };
     };
     const operationRangeSupported = (_mode, families) => !families.some((family) => ['multiplication', 'division'].includes(family));
-    const familyMinOperationCount = (family) => (family === 'sequence' || family === 'anzan' ? 2 : 1);
-    const pickOperationCount = (family, variant, operationRange) => {
-      const min = Math.max(operationRange.min, familyMinOperationCount(family));
-      const max = Math.max(min, operationRange.max);
-      return min + (((variant * 3) + 1) % (max - min + 1));
-    };
-    const buildRepeatedPrompt = (family, bandRange, variant, operationCount) => {
-      let total = randomNumberForDigits(pickDigitsForVariant(bandRange, variant));
-      const parts = [String(total)];
-      for (let index = 0; index < operationCount; index += 1) {
-        if (family === 'addition') {
-          const addDigits = pickDigitsForVariant(bandRange, variant + index + 1);
-          const value = randomNumberForDigits(addDigits);
-          total += value;
-          parts.push('+', String(value));
-          continue;
-        }
-        const maxSubtractDigits = Math.min(bandRange.max, digitLength(Math.max(total - minValueForDigits(bandRange.min), 0)));
-        if (maxSubtractDigits < bandRange.min) {
-          const fallback = randomNumberForDigits(pickDigitsForVariant(bandRange, variant + index + 1));
-          total += fallback;
-          parts.push('+', String(fallback));
-          continue;
-        }
-        const subtractDigits = pickDigitsForVariant({ min: bandRange.min, max: maxSubtractDigits }, variant + index + 1);
-        const value = randomNumberForDigitsWhere(subtractDigits, (candidate) => candidate < total && total - candidate >= minValueForDigits(bandRange.min));
-        if (value === null) {
-          const fallback = randomNumberForDigits(pickDigitsForVariant(bandRange, variant + index + 1));
-          total += fallback;
-          parts.push('+', String(fallback));
-          continue;
-        }
-        total -= value;
-        parts.push('-', String(value));
-      }
-      return parts.join(' ');
-    };
-    const buildAdditionPrompt = (bandRange, variant) => {
-      const aDigits = pickDigitsForVariant(bandRange, variant);
-      const bDigits = pickDigitsForVariant({ min: bandRange.min, max: aDigits }, variant + 1);
-      const aFallback = randomNumberForDigits(aDigits);
-      const bFallback = randomNumberForDigits(bDigits);
-
-      if (variant % 4 === 0) {
-        const a = randomNumberForDigitsWhere(aDigits, (value) => value % 10 >= 6) ?? aFallback;
-        const b = randomNumberForDigitsWhere(bDigits, (value) => value % 10 >= 4) ?? bFallback;
-        return `${a} + ${b}`;
-      }
-      if (variant % 4 === 1) {
-        const aOnes = rand(1, 9);
-        const bOnes = 10 - aOnes;
-        const a = randomNumberForDigitsWhere(aDigits, (value) => value % 10 === aOnes) ?? aFallback;
-        const b = randomNumberForDigitsWhere(bDigits, (value) => value % 10 === bOnes) ?? bFallback;
-        return `${a} + ${b}`;
-      }
-      if (variant % 4 === 2) {
-        const a = randomNumberForDigits(aDigits);
-        const offset = rand(1, Math.max(3, 10 ** Math.max(0, bDigits - 1)));
-        const bMin = minValueForDigits(bDigits);
-        const bMax = maxValueForDigits(bDigits);
-        const b = Math.max(bMin, Math.min(bMax, a + (variant % 2 === 0 ? offset : -offset)));
-        return `${a} + ${b}`;
-      }
-      const a = randomNumberForDigits(bandRange.max);
-      const b = randomNumberForDigits(bandRange.min);
-      return `${a} + ${b}`;
-    };
-    const buildSubtractionPrompt = (bandRange, variant) => {
-      const aDigits = pickDigitsForVariant(bandRange, variant);
-      const bDigits = pickDigitsForVariant({ min: bandRange.min, max: aDigits }, variant + 1);
-      const genericA = randomNumberForDigits(aDigits);
-      const genericB = Math.min(randomNumberForDigits(bDigits), genericA);
-
-      if (variant % 4 === 0) {
-        const a = randomNumberForDigitsWhere(aDigits, (value) => value % 10 <= 3 && value > minValueForDigits(bDigits)) ?? genericA;
-        const b = randomNumberForDigitsWhere(bDigits, (value) => value < a && value % 10 >= 4) ?? Math.min(randomNumberForDigits(bDigits), a);
-        return `${a} - ${b}`;
-      }
-      if (variant % 4 === 1) {
-        const b = randomNumberForDigits(bDigits);
-        const aMin = Math.max(minValueForDigits(aDigits), b + 5);
-        const aMax = Math.min(maxValueForDigits(aDigits), b + Math.max(12, minValueForDigits(bDigits)));
-        if (aMin <= aMax) return `${rand(aMin, aMax)} - ${b}`;
-      }
-      if (variant % 4 === 2) {
-        const a = randomNumberForDigits(bandRange.max);
-        const b = Math.min(randomNumberForDigits(bandRange.min), a - 1);
-        return `${a} - ${Math.max(1, b)}`;
-      }
-      return `${genericA} - ${genericB}`;
-    };
-    const buildSequencePrompt = (family, bandRange, variant, operationCount = null) => {
-      const patterns = family === 'anzan'
-        ? [['+', '-', '+'], ['+', '+', '-'], ['-', '+', '+'], ['+', '-', '+', '+']]
-        : [['+', '-'], ['-', '+'], ['+', '+', '-'], ['+', '-', '+'], ['-', '+', '+']];
-      const pattern = operationCount
-        ? Array.from({ length: operationCount }, (_, index) => {
-            if (family === 'anzan') return index % 3 === 1 ? '-' : '+';
-            return index % 2 === 0 ? '+' : '-';
-          })
-        : patterns[variant % patterns.length];
-      const startDigits = pattern.includes('-') ? bandRange.max : pickDigitsForVariant(bandRange, variant);
-      const startMin = pattern.includes('-') ? Math.max(minValueForDigits(startDigits), Math.floor(maxValueForDigits(startDigits) * 0.55)) : minValueForDigits(startDigits);
-      let total = rand(startMin, maxValueForDigits(startDigits));
-      const parts = [String(total)];
-
-      pattern.forEach((operator, index) => {
-        if (operator === '+') {
-          const addDigits = pickDigitsForVariant(bandRange, variant + index + 1);
-          const value = randomNumberForDigits(addDigits);
-          total += value;
-          parts.push('+', String(value));
-          return;
-        }
-
-        const maxSubtractDigits = Math.min(bandRange.max, digitLength(Math.max(total - minValueForDigits(bandRange.min), 0)));
-        if (maxSubtractDigits < bandRange.min) {
-          const value = randomNumberForDigits(pickDigitsForVariant(bandRange, variant + index + 1));
-          total += value;
-          parts.push('+', String(value));
-          return;
-        }
-
-        const subtractDigits = pickDigitsForVariant({ min: bandRange.min, max: maxSubtractDigits }, variant + index + 1);
-        const minimumRemainder = minValueForDigits(Math.min(bandRange.min, digitLength(total)));
-        const value = randomNumberForDigitsWhere(subtractDigits, (candidate) => candidate < total && total - candidate >= minimumRemainder);
-        if (value === null) {
-          const fallback = randomNumberForDigits(pickDigitsForVariant(bandRange, variant + index + 1));
-          total += fallback;
-          parts.push('+', String(fallback));
-          return;
-        }
-
-        total -= value;
-        parts.push('-', String(value));
-      });
-
-      return parts.join(' ');
-    };
-
-    const chooseFamily = (level, selectedFamily, variant = 0) => {
-      if (selectedFamily !== 'mixed') return selectedFamily;
-      if (level === 'L0' || level === 'L1') return variant % 2 === 0 ? 'addition' : 'subtraction';
-      if (level === 'L4') return variant % 2 === 0 ? 'multiplication' : 'division';
-      return variant % 2 === 0 ? 'addition' : 'subtraction';
-    };
 
     const applyLevelDefaults = () => {
       const level = byId('worksheet-level').value;
@@ -1027,6 +817,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
           ? 'Available for arithmetic, sequence, and anzan sheets. If you change it while on Fixed sheet, the page will switch to Dynamic ledger.'
           : 'Each drill can randomly use any operation count inside the selected range.';
       }
+      rotateWorksheetSeed();
       renderSheet();
     };
 
@@ -1221,204 +1012,26 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       writeWorksheetSessions(sessions);
     };
 
-    const styleAdjustBand = (_style, band) => band;
-
-    const digitBandForProgress = (bandRange, count, index, flowMode) => {
-      if (flowMode !== 'ramp' || bandRange.min === bandRange.max) return bandRange;
-      const progress = count <= 1 ? 1 : index / (count - 1);
-      const threshold = bandRange.max > bandRange.min ? 0.45 : 1;
-      if (progress < threshold) {
-        return { min: bandRange.min, max: Math.max(bandRange.min, bandRange.max - 1) };
-      }
-      if (progress < 0.8) {
-        return { min: Math.max(bandRange.min, bandRange.max - 1), max: bandRange.max };
-      }
-      return { min: bandRange.max, max: bandRange.max };
-    };
-
-    const buildMultiplicationPrompt = (level, digits, variant, submode) => {
-      if (digits >= 3) {
-        const a = randomNumberForDigits(digits);
-        const b = randomNumberForDigits(pickDigitsForVariant({ min: digits, max: digits }, variant + 1));
-        return `${a} × ${b}`;
-      }
-      const factorDigits = Math.min(level === 'L5' ? 3 : 2, pickDigitsForVariant({ min: 1, max: digits }, variant));
-      if (submode === 'table-family') {
-        const table = [3, 4, 5, 6, 7, 8, 9][variant % 7];
-        const multiplicand = randomNumberForDigits(Math.max(1, Math.min(factorDigits, digits === 1 ? 1 : factorDigits)));
-        return `${multiplicand} × ${table}`;
-      }
-      if (submode === 'place-shifts') {
-        const tensBase = rand(1, 9) * 10;
-        const ones = digits > 1 ? rand(2, 8) : rand(2, 4);
-        const multiplicand = tensBase + ones;
-        const multiplier = rand(2, level === 'L5' ? 9 : 6);
-        return `${multiplicand} × ${multiplier}`;
-      }
-      const a = randomNumberForDigits(factorDigits);
-      const b = variant % 2 === 0 ? rand(2, level === 'L5' ? 12 : 9) : rand(3, level === 'L5' ? 11 : 8);
-      return `${a} × ${b}`;
-    };
-
-    const buildDivisionPrompt = (level, digits, variant, submode) => {
-      if (digits >= 3) {
-        for (let attempt = 0; attempt < 80; attempt += 1) {
-          const divisor = randomNumberForDigits(digits);
-          const maxQuotient = Math.min(9, Math.floor(maxValueForDigits(digits) / divisor));
-          if (maxQuotient < 2) continue;
-          const quotient = rand(2, maxQuotient);
-          const dividend = divisor * quotient;
-          if (digitLength(dividend) !== digits) continue;
-          return `${dividend} ÷ ${divisor}`;
-        }
-      }
-      if (submode === 'division-facts') {
-        const divisor = [3, 4, 5, 6, 7, 8, 9][variant % 7];
-        const quotient = rand(2, level === 'L5' ? 12 : 9);
-        return `${divisor * quotient} ÷ ${divisor}`;
-      }
-      if (submode === 'quotient-building') {
-        const divisor = rand(4, level === 'L5' ? 12 : 9);
-        const quotient = rand(3, Math.min(9, maxValueForDigits(Math.max(1, Math.min(2, digits)))));
-        return `${divisor * quotient} ÷ ${divisor}`;
-      }
-      const divisor = variant % 2 === 0 ? rand(2, level === 'L5' ? 12 : 9) : rand(3, level === 'L5' ? 11 : 8);
-      const quotient = randomNumberForDigits(Math.max(1, Math.min(level === 'L5' ? 3 : 2, pickDigitsForVariant({ min: 1, max: digits }, variant + 1))));
-      return `${divisor * quotient} ÷ ${divisor}`;
-    };
-
-    const makeDynamicPrompt = (level, family, band, style, variant = 0, flowBand = null, submode = 'auto', operationRange = { min: 1, max: 3 }) => {
-      const adjustedBand = styleAdjustBand(style, band);
-      const bandRange = flowBand || parseBand(adjustedBand);
-      const operationCount = pickOperationCount(family, variant, operationRange);
-
-      if (family === 'sequence' || family === 'anzan') {
-        return buildSequencePrompt(family, bandRange, variant, operationCount);
-      }
-      const resolvedFamily = chooseFamily(level, family, variant);
-      if (operationCount > 1 && ['addition', 'subtraction', 'mixed'].includes(family)) {
-        if (family === 'mixed') return buildSequencePrompt('sequence', bandRange, variant, operationCount);
-        return buildRepeatedPrompt(family, bandRange, variant, operationCount);
-      }
-      const digits = rand(bandRange.min, bandRange.max);
-      if (resolvedFamily === 'multiplication') {
-        return buildMultiplicationPrompt(level, digits, variant, submode);
-      }
-      if (resolvedFamily === 'division') {
-        return buildDivisionPrompt(level, digits, variant, submode);
-      }
-      if (resolvedFamily === 'addition') return buildAdditionPrompt({ min: bandRange.min, max: digits }, variant);
-      return buildSubtractionPrompt({ min: bandRange.min, max: digits }, variant);
-    };
-
-    const promptStructureSignature = (prompt) => {
-      const tokens = prompt.split(' ');
-      const parts = [];
-      for (let index = 0; index < tokens.length; index += 2) {
-        const value = tokens[index];
-        const operator = index === 0 ? 'start' : tokens[index - 1];
-        parts.push(`${operator}:${String(value).length}`);
-      }
-      return parts.join('|');
-    };
-
-    const promptFitsBand = (prompt, bandRange) => prompt
-      .split(' ')
-      .filter((token) => /^\d+$/.test(token))
-      .every((token) => {
-        const digits = String(token).length;
-        return digits >= bandRange.min && digits <= bandRange.max;
-      });
-
-    const buildUniquePrompts = (count, createPrompt, resolveExpectedBand) => {
-      const prompts = [];
-      const seen = new Set();
-      const structureCounts = new Map();
-      let attempts = 0;
-      const maxAttempts = Math.max(count * 120, 600);
-      const maxStructureRepeats = Math.max(2, Math.ceil(count / 10));
-
-      while (prompts.length < count && attempts < maxAttempts) {
-        const prompt = createPrompt(prompts.length, attempts);
-        attempts += 1;
-        const expectedBand = resolveExpectedBand(prompts.length);
-        if (!promptFitsBand(prompt, expectedBand)) continue;
-        if (seen.has(prompt)) continue;
-        const structureSignature = promptStructureSignature(prompt);
-        const structureCount = structureCounts.get(structureSignature) || 0;
-        if (structureCount >= maxStructureRepeats) continue;
-        seen.add(prompt);
-        structureCounts.set(structureSignature, structureCount + 1);
-        prompts.push(prompt);
-      }
-
-      while (prompts.length < count && attempts < maxAttempts * 2) {
-        const prompt = createPrompt(prompts.length, attempts);
-        attempts += 1;
-        const expectedBand = resolveExpectedBand(prompts.length);
-        if (!promptFitsBand(prompt, expectedBand)) continue;
-        if (seen.has(prompt)) continue;
-        seen.add(prompt);
-        prompts.push(prompt);
-      }
-      return prompts;
-    };
-
-    const buildPrompts = () => {
+    const buildQuestionConfig = () => {
+      if (!activeWorksheetSeed) rotateWorksheetSeed();
       const mode = byId('worksheet-mode').value;
       const level = byId('worksheet-level').value;
-      const families = selectedFamilies();
-      const style = byId('worksheet-style').value;
-      const count = Number(byId('worksheet-count').value);
-      const band = byId('worksheet-band').value || levelBands[level] || '2';
-      const flowMode = byId('worksheet-flow-mode').value || 'balanced';
+      const selected = selectedFamilies();
       const selectedSubmode = byId('worksheet-submode').value || 'auto';
-      const supportedOpRange = operationRangeSupported(mode, families);
-      const operationRange = supportedOpRange ? readOperationRange() : { min: 1, max: 1 };
-      const adjustedBand = styleAdjustBand(style, band);
-      const overallBandRange = parseBand(adjustedBand);
-      const bank = fixedBanks[level] || {};
-      const fixedPool = families.flatMap((family) => bank[family] || []).filter(Boolean);
-      const fixedFamily = fixedPool.length ? fixedPool : bank.mixed || Object.values(bank)[0] || [];
-      if (!fixedFamily.length) return [];
-      if (mode === 'fixed') {
-        resolvedWorksheetTarget = selectedSubmode;
-        const familyBuckets = families.map((family, familyIndex) => {
-          const familyFixed = (bank[family] || []).filter((prompt) => promptFitsBand(prompt, overallBandRange));
-          const targetCount = Math.max(1, Math.ceil(count / Math.max(1, families.length)));
-          const prompts = [...familyFixed];
-          if (!prompts.length || prompts.length < targetCount) {
-            const needed = targetCount - prompts.length;
-            const dynamicBackfill = buildUniquePrompts(
-              needed,
-              (index, attempt) => makeDynamicPrompt(level, family, band, style, familyIndex * 100 + index + attempt, digitBandForProgress(overallBandRange, count, prompts.length + index, flowMode), selectedSubmode, operationRange),
-              (index) => digitBandForProgress(overallBandRange, count, prompts.length + index, flowMode),
-            );
-            prompts.push(...dynamicBackfill);
-          }
-          return shuffle(prompts.slice(0, targetCount));
-        }).filter((bucket) => bucket.length);
+      let sourceFamilies = selected.length ? selected : ['addition'];
+      let requestedSubmode = selectedSubmode;
 
-        const interleaved = [];
-        while (interleaved.length < count && familyBuckets.some((bucket) => bucket.length)) {
-          familyBuckets.forEach((bucket) => {
-            if (bucket.length && interleaved.length < count) interleaved.push(bucket.shift());
-          });
-        }
-        return interleaved;
-      }
       if (mode === 'adaptive') {
-        const weakAreas = readWeakAreas();
-        const target = resolveAdaptiveTarget(weakAreas);
-        const adaptiveFamily = target === 'multiplication'
-          ? 'multiplication'
+        const target = resolveAdaptiveTarget(readWeakAreas());
+        sourceFamilies = target === 'multiplication'
+          ? ['multiplication']
           : target === 'division'
-            ? 'division'
+            ? ['division']
             : target === 'mental'
-              ? 'anzan'
+              ? ['anzan']
               : target === 'complements'
-                ? 'anzan'
-                : families[0] || 'addition';
+                ? ['addition', 'subtraction']
+                : [selected[0] || 'addition'];
         const adaptiveSubmode = target === 'multiplication'
           ? 'place-shifts'
           : target === 'division'
@@ -1428,24 +1041,45 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
               : target === 'complements'
                 ? 'complement-balance'
                 : 'arithmetic-rhythm';
-        resolvedWorksheetTarget = selectedSubmode === 'auto' ? adaptiveSubmode : selectedSubmode;
-        return buildUniquePrompts(
-          count,
-          (index, attempt) => makeDynamicPrompt(level, adaptiveFamily, band, style, index + attempt, digitBandForProgress(overallBandRange, count, index, flowMode), resolvedWorksheetTarget, operationRange),
-          (index) => digitBandForProgress(overallBandRange, count, index, flowMode),
-        );
+        requestedSubmode = selectedSubmode === 'auto' ? adaptiveSubmode : selectedSubmode;
       }
-      resolvedWorksheetTarget = selectedSubmode;
-      return buildUniquePrompts(
-        count,
-        (index, attempt) => makeDynamicPrompt(level, families[index % Math.max(1, families.length)] || 'addition', band, style, index + attempt, digitBandForProgress(overallBandRange, count, index, flowMode), selectedSubmode, operationRange),
-        (index) => digitBandForProgress(overallBandRange, count, index, flowMode),
-      );
+
+      const operationRange = operationRangeSupported(mode, sourceFamilies)
+        ? readOperationRange()
+        : { min: 1, max: 1 };
+      return createWorksheetFamilyConfig({
+        seed: activeWorksheetSeed,
+        count: Number(byId('worksheet-count').value),
+        level,
+        sourceFamilies,
+        submode: requestedSubmode,
+        digitBand: byId('worksheet-band').value || levelBands[level] || '2',
+        minOperations: operationRange.min,
+        maxOperations: operationRange.max,
+        flowMode: byId('worksheet-flow-mode').value || 'balanced',
+        mode,
+      });
+    };
+
+    const buildQuestions = () => {
+      const config = buildQuestionConfig();
+      const cacheKey = JSON.stringify(config);
+      let questions = worksheetQuestionCache.get(cacheKey);
+      if (!questions) {
+        questions = buildWorksheetFamilyQuestions(config);
+        worksheetQuestionCache.set(cacheKey, questions);
+      }
+      if (byId('worksheet-submode').value === 'auto') {
+        resolvedWorksheetTarget = questions[0]?.submode || 'arithmetic-rhythm';
+      } else {
+        resolvedWorksheetTarget = byId('worksheet-submode').value;
+      }
+      return questions;
     };
 
     const renderSheet = () => {
-      const prompts = buildPrompts();
-      currentWorksheetSessionId = `ws-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+      const questions = buildQuestions();
+      currentWorksheetSessionId = `ws-${questions[0]?.id || activeWorksheetSeed}`;
       const orientation = byId('worksheet-orientation').value;
       const ledgerHead = byId('worksheet-ledger-head');
       const teacherMode = byId('worksheet-style').value === 'teacher';
@@ -1461,18 +1095,19 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       ledgerHead.hidden = orientation === 'vertical';
       if (orientation === 'vertical') {
         const columns = 5;
-        const perColumn = Math.ceil(prompts.length / columns);
+        const perColumn = Math.ceil(questions.length / columns);
         for (let c = 0; c < columns; c += 1) {
           const col = document.createElement('div');
           col.className = 'vertical-drill-column';
-          prompts.slice(c * perColumn, (c + 1) * perColumn).forEach((prompt, index) => {
+          questions.slice(c * perColumn, (c + 1) * perColumn).forEach((question, index) => {
             const absoluteIndex = c * perColumn + index;
+            const prompt = formatWorksheetFamilyQuestion(question);
             const row = document.createElement('article');
             row.className = 'vertical-drill-row';
             row.innerHTML = `
               <span class="ledger-no">${absoluteIndex + 1}</span>
               ${renderVerticalPrompt(prompt)}
-              <div class="worksheet-answer-block"><span class="worksheet-answer-label">Answer</span><input class="input worksheet-input vertical-input" data-prompt="${prompt}" type="text" inputmode="numeric" placeholder="Write" /></div>
+              <div class="worksheet-answer-block"><span class="worksheet-answer-label">Answer</span><input class="input worksheet-input vertical-input" data-prompt="${prompt}" data-answer="${question.answer}" data-question-id="${question.id}" data-family="${question.family}" type="text" inputmode="numeric" placeholder="Write" /></div>
               <small class="worksheet-feedback vertical-feedback" aria-live="polite"></small>
               <div class="worksheet-row-actions"><button type="button" class="mini-action" data-row-action="check">Check</button><button type="button" class="mini-action" data-row-action="reveal">Reveal</button></div>
             `;
@@ -1482,13 +1117,14 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
           table.appendChild(col);
         }
       } else {
-        prompts.forEach((prompt, index) => {
+        questions.forEach((question, index) => {
+          const prompt = formatWorksheetFamilyQuestion(question);
           const row = document.createElement('article');
           row.className = 'ledger-row worksheet-row';
           row.innerHTML = `
             <span class="ledger-no">${index + 1}</span>
             <span class="worksheet-prompt ledger-prompt">${prompt}</span>
-            <div class="worksheet-answer-block"><span class="worksheet-answer-label">Answer</span><input class="input worksheet-input ledger-input" data-prompt="${prompt}" type="text" inputmode="numeric" placeholder="Write" /></div>
+            <div class="worksheet-answer-block"><span class="worksheet-answer-label">Answer</span><input class="input worksheet-input ledger-input" data-prompt="${prompt}" data-answer="${question.answer}" data-question-id="${question.id}" data-family="${question.family}" type="text" inputmode="numeric" placeholder="Write" /></div>
             <small class="worksheet-feedback ledger-feedback" aria-live="polite"></small>
             <div class="worksheet-row-actions"><button type="button" class="mini-action" data-row-action="check">Check</button><button type="button" class="mini-action" data-row-action="reveal">Reveal</button></div>
           `;
@@ -1529,7 +1165,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       const focusGuide = focusGuideCopy[focusKey] || focusGuideCopy.auto;
       const workedExample = workedExamples[focusKey] || workedExamples.auto;
       byId('worksheet-title').textContent = `${levelLabel} ${familyLabel} · ${orientationLabel} · ${formatBandLabel(bandLabel)}`;
-      byId('worksheet-count-badge').textContent = `${prompts.length} drills`;
+      byId('worksheet-count-badge').textContent = `${questions.length} drills`;
       currentSetupCopy.textContent = `${levelLabel} · ${modeLabel} · ${familyLabel} · ${formatBandLabel(bandLabel)} · ${supportsOpRange ? opLabel : 'fixed op count'} · ${orientationLabel}`;
       if (opGuide) opGuide.textContent = !supportsOpRange
         ? 'Operation range is currently available for arithmetic, sequence, and anzan sheets. It is disabled for multiplication and division.'
@@ -1547,7 +1183,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         ? `Flow: ${flowLabel}. Families: ${familyLabel}. Operation range: ${opRange.min}–${opRange.max}. ${bandLabel.includes('-') ? 'Ranges intentionally mix easier and denser rows.' : 'Every row keeps the same operand width.'}`
         : `Flow: ${flowLabel}. Families: ${familyLabel}. ${bandLabel.includes('-') ? 'Ranges intentionally mix easier and denser rows.' : 'Every row keeps the same operand width.'}`;
       if (targetSummary) targetSummary.textContent = `Focus: ${submodeLabels[submodeLabel] || submodeLabel}${submodeLabel === 'auto' ? ` → ${submodeLabels[resolvedWorksheetTarget] || resolvedWorksheetTarget}` : ''}.`;
-      if (advancedSummary) advancedSummary.textContent = `Advanced options · ${styleLabel} · ${prompts.length} drills · ${orientationLabel} · ${flowLabel} · ${timerLabel} · ${printLabel}`;
+      if (advancedSummary) advancedSummary.textContent = `Advanced options · ${styleLabel} · ${questions.length} drills · ${orientationLabel} · ${flowLabel} · ${timerLabel} · ${printLabel}`;
       if (focusTitle) focusTitle.textContent = focusGuide.title;
       if (focusCopy) focusCopy.textContent = focusGuide.copy;
       if (focusExample) focusExample.textContent = focusGuide.example;
@@ -1564,21 +1200,29 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       setMetric('worksheet-accuracy', '0%');
       setMetric('worksheet-completion', '0%');
       persistWorksheetSession();
+      if (teacherMode || byId('worksheet-print-mode').value === 'answer-key') scoreSheet(true);
+    };
+
+    const setFeedbackClass = (feedback, state = '') => {
+      const variant = feedback.classList.contains('vertical-feedback') ? 'vertical-feedback' : 'ledger-feedback';
+      feedback.className = `worksheet-feedback ${variant}${state ? ` ${state}` : ''}`;
     };
 
     const scoreSheet = (reveal = false) => {
       const inputs = Array.from(document.querySelectorAll('.worksheet-input'));
+      const answerKeyMode = reveal && (byId('worksheet-style').value === 'teacher' || byId('worksheet-print-mode').value === 'answer-key');
       let answered = 0;
       let correct = 0;
       inputs.forEach((input) => {
         const row = input.closest('.ledger-row, .vertical-drill-row');
-        const expected = solvePrompt(input.dataset.prompt);
+        const expected = Number(input.dataset.answer);
         const feedback = row?.querySelector('.worksheet-feedback');
         const value = input.value.trim();
         if (!value) {
-          feedback.textContent = '';
-          feedback.className = 'worksheet-feedback ledger-feedback';
+          feedback.textContent = answerKeyMode ? `${expected}` : '';
+          setFeedbackClass(feedback, answerKeyMode ? 'revealed' : '');
           row?.classList.remove('row-ok', 'row-needs-work', 'row-revealed');
+          if (answerKeyMode) row?.classList.add('row-revealed');
           return;
         }
         answered += 1;
@@ -1586,12 +1230,16 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         if (isCorrect) correct += 1;
         playTone(reveal ? 'success' : isCorrect ? 'success' : 'error');
         feedback.textContent = reveal ? `${expected}` : (isCorrect ? '✓' : '○');
-        feedback.className = `worksheet-feedback ledger-feedback ${reveal ? 'revealed' : isCorrect ? 'ok' : 'needs-work'}`;
+        setFeedbackClass(feedback, reveal ? 'revealed' : isCorrect ? 'ok' : 'needs-work');
         row?.classList.remove('row-ok', 'row-needs-work', 'row-revealed');
         row?.classList.add(reveal ? 'row-revealed' : isCorrect ? 'row-ok' : 'row-needs-work');
       });
       if (!answered) {
-        scoreCopy.textContent = reveal ? 'Answers revealed for answered rows only. Blank rows were skipped.' : 'No answered rows yet. Blank rows are skipped.';
+        scoreCopy.textContent = answerKeyMode
+          ? 'Certified answer key is visible for every row.'
+          : reveal
+            ? 'Answers revealed for answered rows only. Blank rows were skipped.'
+            : 'No answered rows yet. Blank rows are skipped.';
         setMetric('worksheet-answered', 0);
         setMetric('worksheet-correct', 0);
         setMetric('worksheet-accuracy', '0%');
@@ -1642,11 +1290,11 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       const input = row.querySelector('.worksheet-input');
       const feedback = row.querySelector('.worksheet-feedback');
       if (!input || !feedback) return false;
-      const expected = solvePrompt(input.dataset.prompt);
+      const expected = Number(input.dataset.answer);
       const value = input.value.trim();
       if (!value) {
         feedback.textContent = reveal ? `${expected}` : 'Write first';
-        feedback.className = `worksheet-feedback ${reveal ? 'revealed' : 'needs-work'}`;
+        setFeedbackClass(feedback, reveal ? 'revealed' : 'needs-work');
         row.classList.remove('row-ok', 'row-needs-work', 'row-revealed');
         row.classList.add(reveal ? 'row-revealed' : 'row-needs-work');
         return false;
@@ -1654,7 +1302,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       const isCorrect = Number(value) === expected;
       playTone(reveal ? 'success' : isCorrect ? 'success' : 'error');
       feedback.textContent = reveal ? `${expected}` : (isCorrect ? '✓' : '○');
-      feedback.className = `worksheet-feedback ${reveal ? 'revealed' : isCorrect ? 'ok' : 'needs-work'}`;
+      setFeedbackClass(feedback, reveal ? 'revealed' : isCorrect ? 'ok' : 'needs-work');
       row.classList.remove('row-ok', 'row-needs-work', 'row-revealed');
       row.classList.add(reveal ? 'row-revealed' : isCorrect ? 'row-ok' : 'row-needs-work');
       return isCorrect;
@@ -1695,7 +1343,10 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       applyLevelDefaults();
       renderSheet();
     });
-    byId('generate-worksheet')?.addEventListener('click', renderSheet);
+    byId('generate-worksheet')?.addEventListener('click', () => {
+      rotateWorksheetSeed();
+      renderSheet();
+    });
     byId('check-worksheet')?.addEventListener('click', () => scoreSheet(false));
     byId('reveal-worksheet')?.addEventListener('click', () => scoreSheet(true));
     byId('teacher-key')?.addEventListener('click', () => {
@@ -1703,14 +1354,12 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       byId('worksheet-print-mode').value = 'answer-key';
       setPrintMode();
       renderSheet();
-      scoreSheet(true);
     });
     byId('print-worksheet')?.addEventListener('click', () => {
       setPrintMode();
       if (byId('worksheet-print-mode').value === 'answer-key') {
         byId('worksheet-style').value = 'teacher';
         renderSheet();
-        scoreSheet(true);
       }
       window.print();
     });
