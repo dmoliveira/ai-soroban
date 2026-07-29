@@ -16,7 +16,7 @@ Soroban Dojo may store:
 - practice sessions and bounded timer history
 - worksheet sessions and weekly study-plan state
 - placement answers and recommendation
-- naturally completed mini-game best scores and medals; session settings and stopped partial results are not persisted
+- naturally completed mini-game best scores and medals; session settings, stopped partial results, and Bead Builder's in-progress rod state are not persisted
 - prospective first-check evidence, including whether a hint, reveal, recovery, or manual action happened before the first check, plus a monotonic item-claim index that prevents retries from becoming new evidence
 - comparable mini-game results stored separately from legacy raw scores
 - boss-round, active boss-session, badge, certificate, and playable/offline/legacy completion-source state
@@ -24,7 +24,7 @@ Soroban Dojo may store:
 
 The canonical key registry is `src/lib/storage.js`. New browser state must be added there and covered by reset tests before release.
 
-Soroban Dojo does not infer verified mastery from pre-0.4 records because those records do not contain enough attempt or assistance history. Existing records remain visible as legacy activity. New evidence uses parallel versioned keys and does not rewrite the old records or the raw theme preference. If saved state is malformed or belongs to a newer schema, learning-state controls become read-only instead of downgrading it.
+Soroban Dojo does not infer verified mastery from pre-0.4 records because those records do not contain enough attempt or assistance history. Existing records remain visible as legacy activity. New evidence uses parallel versioned keys and does not rewrite the old records or the raw theme preference. If a 0.4 versioned evidence, score, or provenance companion cannot be validated, or the schema marker names a newer version, the compatibility layer disables learning-state writes rather than overwriting those unknown records. Other malformed local records retain their safe read-time fallbacks.
 
 ## Reset contract
 

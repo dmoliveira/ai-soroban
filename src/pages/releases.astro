@@ -5,6 +5,23 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
 const releases = [
   {
+    version: '0.4.0',
+    title: 'Verified evidence and practice-first flow',
+    date: '2026-07-29',
+    summary: 'Made progress more honest and practice more direct with prospective first-check evidence, certified worksheet families, new Ten Bridge and Bead Builder play, and stronger release validation.',
+    tags: ['Mastery Evidence', 'Worksheets', 'Practice', 'Mini-games', 'Accessibility'],
+    cta: { href: `${base}practice`, label: 'Start focused practice' },
+    secondaryCta: { href: `${base}worksheets`, label: 'Open certified worksheets' },
+    notes: [
+      'Added prospective first-check evidence without turning older activity, retries, reveals, or assisted recovery into retroactive mastery.',
+      'Kept 0.3 activity visible through additive compatibility while leaving malformed 0.4 companion records and state from a newer schema untouched instead of rewriting them.',
+      'Certified deterministic additive, complement, multiplication, division, and anzan worksheet families from structured prompts through answers and teacher keys.',
+      'Added Ten Bridge as a deterministic certified challenge and Bead Builder as an accessible canonical one-rod mini-game.',
+      'Put the live practice session before optional setup, history, and library, with calmer responsive navigation and keyboard focus.',
+      'Expanded local, preview, CI, Pages, theme, privacy, compatibility, and deployed-release checks while keeping progress browser-only.',
+    ],
+  },
+  {
     version: '0.3.0',
     title: 'Persistent themes and finite challenge play',
     date: '2026-07-29',
@@ -60,7 +77,7 @@ const priorReleases = releases.slice(1);
     summary="See the newest study tools, calmer practice improvements, and which updated route is worth revisiting first."
     stats={[
       { label: 'Latest version', value: releases[0].version },
-      { label: 'Current focus', value: 'Accessible themes and honest play' },
+      { label: 'Current focus', value: 'Verified evidence and direct practice' },
       { label: 'Best use', value: 'See what changed recently' },
     ]}
   />

@@ -1,6 +1,6 @@
 # Soroban Dojo
 
-A privacy-first Soroban learning app built with Astro. Learners can move from bead reading to mental arithmetic through authored lessons, attempt-first exercises, guided practice, adaptive daily drills, worksheets, mini-games, boss rounds, and local progress tracking.
+A privacy-first Soroban learning app built with Astro. Learners can move from bead reading to mental arithmetic through authored lessons, attempt-first exercises, guided practice, certified worksheets and challenges, finite mini-games, boss rounds, and honest local progress evidence.
 
 ## Product principles
 
@@ -26,12 +26,14 @@ Astro serves the project at `http://localhost:4321/soroban-dojo/`.
 ```bash
 npm run check       # Astro, TypeScript, and content schemas
 npm test            # domain, storage, content-graph, and theme unit tests
+npm run test:release # 0.4 metadata, public-doc, and workflow contract
 npm run build       # production static export
 npm run test:theme-build # production theme-bootstrap ordering
 npm run test:e2e    # local Chromium flow tests; starts Astro automatically
+npm run test:e2e:release-smoke # narrow, no-retry release/privacy/base-path smoke
 ```
 
-Use `npm run test:e2e:live` only for an explicit smoke test of the deployed GitHub Pages site. Pull requests run the full local validation bundle in `.github/workflows/ci.yml`; pushes to `main` deploy only after check, unit, and build validation.
+Use `npm run test:e2e:live` only for an explicit broad test of the deployed GitHub Pages site. Pull requests run check, release contract, unit, build, production-theme, and full local browser gates in `.github/workflows/ci.yml`. Pushes to `main` repeat those gates before deployment, then run the narrow release smoke against the deployed Pages URL.
 
 ## Main routes
 
@@ -51,9 +53,13 @@ Use `npm run test:e2e:live` only for an explicit smoke test of the deployed GitH
 - `tests/` — Node unit tests and Playwright user-flow tests
 - `docs/specs/` — product, content, privacy, navigation, and worksheet contracts
 
+## Current release
+
+Soroban Dojo 0.4.0 adds prospective first-check evidence, additive compatibility for legacy local records, certified deterministic worksheet families, the Ten Bridge challenge, the Bead Builder mini-game, and a practice-first responsive layout. It preserves browser-only storage while strengthening validation across themes, accessibility, privacy, compatibility, preview builds, and the deployed Pages site.
+
 ## Local data
 
-Soroban Dojo stores lesson completion, exercise state, practice/timer/worksheet history, weekly-plan and placement state, mini-game scores and medals, boss progress and certificates, a selected learner path, and the selected display theme. The Progress page can clear all learning records while preserving display preferences. See `docs/specs/privacy-and-data.md` for the exact contract.
+Soroban Dojo stores lesson completion, exercise state, practice/timer/worksheet history, prospective first-check evidence, weekly-plan and placement state, mini-game scores and medals, boss progress and certificates, a selected learner path, and the selected display theme. Pre-0.4 activity is not promoted into verified mastery. If a 0.4 versioned companion record is malformed or the schema marker names a newer version, learning-state writes are disabled rather than overwriting those unknown records; other malformed local records use safe read-time fallbacks. The Progress page can clear all learning records while preserving display preferences. See `docs/specs/privacy-and-data.md` for the exact contract.
 
 ## Display themes
 

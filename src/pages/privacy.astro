@@ -40,6 +40,13 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   </section>
 
   <section class="panel content-prose route-card compact-card">
+    <p class="eyebrow">Compatibility boundary</p>
+    <h2>Older activity stays visible without becoming verified mastery</h2>
+    <p>First-check evidence is prospective from 0.4 onward. Earlier activity can remain visible for continuity, but Soroban Dojo does not upgrade it into verified mastery because those records do not contain enough attempt or assistance history.</p>
+    <p>If a 0.4 versioned evidence, score, or provenance record cannot be validated, or the schema marker names a newer version, the compatibility layer disables learning-state writes instead of normalizing and overwriting those unknown records. Other malformed local records use safe read-time fallbacks. Compatibility updates are additive, and the saved theme remains separate.</p>
+  </section>
+
+  <section class="panel content-prose route-card compact-card">
     <p class="eyebrow">Reset control</p>
     <h2>Clearing progress is local to this browser</h2>
     <p>If you reset progress, Soroban Dojo clears every learning and reward record stored on this device, including placement, weekly-plan, game, worksheet, practice, and boss data. Other open Dojo tabs are asked to reload; if the browser cannot notify them, the reset message tells you to reload those tabs manually. Your selected theme and unrelated browser data remain untouched. If that preference is missing or unavailable, the site safely uses Washi.</p>
