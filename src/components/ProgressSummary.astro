@@ -59,7 +59,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     <article class="stat-card stat-card-soft"><small>Items to review:</small><span id="review-items">0</span></article>
     <article class="stat-card stat-card-soft"><small>Practice time:</small><span id="time-practiced">0m</span></article>
     <article class="stat-card stat-card-soft"><small>Sessions finished:</small><span id="finished-sessions">0</span></article>
-    <article class="stat-card stat-card-soft"><small>Best score:</small><span id="best-score">0</span></article>
+    <article class="stat-card stat-card-soft"><small>Best practice accuracy:</small><span id="best-score">0</span></article>
   </div>
 
   <details class="panel progress-more disclosure-block">
@@ -91,13 +91,14 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
       <section class="panel ink-panel">
         <p class="eyebrow">Skill map</p>
-        <h3>Mastery by practice area</h3>
+        <h3>First-check evidence by practice area</h3>
+        <p class="muted small">Assisted corrections remain useful activity, but only unassisted first checks enter this evidence view.</p>
         <div id="skill-map" class="skill-map"></div>
       </section>
 
       <section class="panel ink-panel">
         <p class="eyebrow">Worksheet submodes</p>
-        <h3>Mastery by worksheet focus</h3>
+        <h3>Accuracy by worksheet focus</h3>
         <div id="worksheet-focus-map" class="skill-map"></div>
       </section>
 
@@ -123,13 +124,19 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       </div>
       <button class="button button-secondary" id="reset-progress">Reset progress</button>
     </div>
+    <p id="reset-progress-status" class="muted small" role="status" aria-live="polite"></p>
   </section>
 </section>
 
 <script>
   // @ts-nocheck
-  import { canonicalizeChallengeSession } from '../lib/challenges.js';
-  import { STORAGE_KEYS, clearProgressStorage, normalizeStoredRecord, readStoredArray, readStoredRecord } from '../lib/storage.js';
+  import { isBossComplete, normalizeBossCompletionRecord } from '../lib/boss-provenance.js';
+  import { canonicalizeChallengeSession, isChallengeSessionOpaque } from '../lib/challenges.js';
+  import { isCanonicalAttemptEvidence, masteryClaimOwnedBy, normalizeMasterySeenIndex, summarizeAttemptEvidence } from '../lib/mastery.js';
+  import { STORAGE_KEYS, clearProgressStorage, normalizeStoredRecord, readStoredArray, readStoredJson, readStoredRecord } from '../lib/storage.js';
+  import { ensureStorageCompatibility } from '../lib/storage-migrations.js';
+
+  const compatibility = ensureStorageCompatibility(localStorage);
 
   const root = document.querySelector('.progress-panel');
   const base = root?.dataset.base || '/soroban-dojo/';
@@ -140,18 +147,39 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   const exerciseData = readStoredRecord(localStorage, STORAGE_KEYS.exerciseStates);
   const timerData = readStoredArray(localStorage, STORAGE_KEYS.timerHistory);
   const sessionData = readStoredArray(localStorage, STORAGE_KEYS.practiceSessions)
-    .filter((entry) => entry && typeof entry === 'object' && !Array.isArray(entry) && Array.isArray(entry.questions))
-    .map((entry) => canonicalizeChallengeSession({ ...entry, responses: normalizeStoredRecord(entry.responses) }))
+    .filter((entry) => entry && typeof entry === 'object' && !Array.isArray(entry))
+    .map((entry) => {
+      if (!Array.isArray(entry.questions) && !isChallengeSessionOpaque(entry)) return null;
+      const session = canonicalizeChallengeSession({ ...entry, responses: normalizeStoredRecord(entry.responses) });
+      return session ? { ...session, questions: Array.isArray(entry.questions) ? session.questions : [] } : null;
+    })
     .filter(Boolean);
   const worksheetData = readStoredArray(localStorage, STORAGE_KEYS.worksheetSessions);
-  const bossData = readStoredRecord(localStorage, STORAGE_KEYS.bossRounds);
+  const bossData = normalizeBossCompletionRecord(readStoredRecord(localStorage, STORAGE_KEYS.bossRounds));
+  const evidenceData = readStoredArray(localStorage, STORAGE_KEYS.masteryEvidence);
+  const seenEvidenceItems = normalizeMasterySeenIndex(readStoredJson(localStorage, STORAGE_KEYS.masterySeenItems, {}));
+  const exposedEvidenceItems = new Set();
+  const qualifiedEvidence = evidenceData
+    .filter(isCanonicalAttemptEvidence)
+    .map((attempt) => ({ attempt, summary: summarizeAttemptEvidence(attempt) }))
+    .filter(({ attempt, summary }) => {
+      const firstExposure = !exposedEvidenceItems.has(attempt.itemId);
+      if (attempt.events.length) exposedEvidenceItems.add(attempt.itemId);
+      return firstExposure
+        && summary.qualified
+        && masteryClaimOwnedBy(seenEvidenceItems, attempt.itemId, attempt.attemptId);
+    });
+  const evidenceAccuracy = qualifiedEvidence.length
+    ? Math.round((qualifiedEvidence.filter(({ summary }) => summary.firstCheckCorrect).length / qualifiedEvidence.length) * 100)
+    : 0;
 
   const attempted = Object.values(exerciseData).filter(Boolean);
   const reviewItems = Object.values(exerciseData).filter((entry) => entry?.status === 'needs-review');
   const totalSeconds = timerData.reduce((sum, entry) => sum + (entry?.seconds || ((entry?.minutes || 0) * 60)), 0);
   const totalMinutes = Math.round(totalSeconds / 60);
   const finishedSessions = sessionData.filter((entry) => entry?.completed);
-  const bestScore = finishedSessions.reduce((best, entry) => Math.max(best, entry.finalScore || 0), 0);
+  const scoredSessions = finishedSessions.filter((entry) => !entry.challengeUnavailable);
+  const bestScore = scoredSessions.reduce((best, entry) => Math.max(best, entry.finalScore || 0), 0);
   const journeyEnergy = Math.min(100, lessonData.length * 10 + attempted.length * 2 + finishedSessions.length * 6 + Math.floor(totalMinutes / 5));
 
   const rankBands = [
@@ -176,7 +204,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   document.getElementById('review-items').textContent = String(reviewItems.length);
   document.getElementById('time-practiced').textContent = `${totalMinutes}m`;
   document.getElementById('finished-sessions').textContent = String(finishedSessions.length);
-  document.getElementById('best-score').textContent = String(bestScore);
+  document.getElementById('best-score').textContent = scoredSessions.length ? String(bestScore) : '—';
 
   document.getElementById('rank-title').textContent = currentRank.title;
   document.getElementById('rank-copy').textContent = currentRank.copy;
@@ -185,7 +213,9 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
   const journeyTitle = lessonData.length ? `You have placed ${lessonData.length} stones on your path` : 'Begin your first stone';
   const journeyCopy = finishedSessions.length
-    ? `You have completed ${finishedSessions.length} formal sessions and your best score is ${bestScore}/100.`
+    ? scoredSessions.length
+      ? `You have completed ${finishedSessions.length} formal sessions and your best available practice accuracy is ${bestScore}/100.`
+      : `You have completed ${finishedSessions.length} formal sessions, but no saved accuracy is available for comparison.`
     : 'Small steps, steady hands.';
   document.getElementById('journey-title').textContent = journeyTitle;
   document.getElementById('journey-copy').textContent = journeyCopy;
@@ -228,7 +258,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   const gardenPieces = [
     ...Array.from({ length: Math.min(lessonData.length, 6) }, () => 'stone'),
     ...Array.from({ length: Math.min(finishedSessions.length, 4) }, () => 'lantern'),
-    ...Array.from({ length: bestScore >= 70 ? 2 : bestScore >= 40 ? 1 : 0 }, () => 'blossom'),
+    ...Array.from({ length: qualifiedEvidence.length >= 5 && evidenceAccuracy >= 80 ? 2 : qualifiedEvidence.length >= 5 && evidenceAccuracy >= 60 ? 1 : 0 }, () => 'blossom'),
   ];
   if (!gardenPieces.length) gardenPieces.push('stone');
   gardenPieces.forEach((piece) => {
@@ -241,9 +271,9 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     { label: 'First lesson', active: lessonData.length >= 1 },
     { label: 'Five lessons', active: lessonData.length >= 5 },
     { label: 'First session', active: finishedSessions.length >= 1 },
-    { label: 'Strong score', active: bestScore >= 70 },
+    { label: 'Five evidence checks', active: qualifiedEvidence.length >= 5 },
     { label: 'Long practice', active: totalMinutes >= 30 },
-    { label: 'First boss', active: Object.values(bossData).some(Boolean) },
+    { label: 'First boss', active: Object.values(bossData).some(isBossComplete) },
   ];
   milestones.forEach((milestone) => {
     const card = document.createElement('div');
@@ -257,16 +287,20 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       const card = document.createElement('article');
       card.className = 'session-card';
       const title = document.createElement('strong');
-      title.textContent = entry.challengeTitle
-        ? `Challenge · ${entry.challengeTitle}`
+      title.textContent = entry.challengeTitle || entry.challengeKey
+        ? `Challenge · ${entry.challengeTitle || entry.challengeKey}`
         : `${entry.type} · ${entry.level}`;
       const meta = document.createElement('p');
       meta.className = 'muted';
       const challengeResult = entry.challengeOutcome
-        ? `${entry.challengeOutcome.met ? 'Target met' : 'Target not met yet'} · ${entry.challengeOutcome.metric === 'longestStreak' ? `streak ${entry.challengeOutcome.value}` : `${entry.challengeOutcome.value}/${entry.challengeOutcome.total} correct`}`
+        ? entry.challengeOutcome.valid === false
+          ? 'Result unavailable for this saved rule version'
+          : `${entry.challengeOutcome.met ? 'Target met' : 'Target not met yet'} · ${entry.challengeOutcome.metric === 'longestStreak' ? `streak ${entry.challengeOutcome.value}` : `${entry.challengeOutcome.value}/${entry.challengeOutcome.total} correct`}`
         : '';
-      meta.textContent = entry.completed
-        ? `Final score ${entry.finalScore}/100${challengeResult ? ` · ${challengeResult}` : ''}`
+      meta.textContent = entry.challengeUnavailable
+        ? 'Result unavailable for this saved rule version'
+        : entry.completed
+          ? `Final accuracy ${entry.finalScore}/100${challengeResult ? ` · ${challengeResult}` : ''}`
         : `Progress ${entry.currentIndex}/${entry.questions.length}${entry.challengeTarget ? ` · Target: ${entry.challengeTarget}` : ''}`;
       card.append(title, meta);
       recentSessions.appendChild(card);
@@ -279,7 +313,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     lessonData.length ? `${lessonData.length} lesson stones` : 'Start one lesson',
     reviewItems.length ? `${reviewItems.length} items ready for repair` : 'No urgent review items',
     finishedSessions.length ? `${finishedSessions.length} finished sessions` : 'Finish your first session',
-    bestScore ? `Best score ${bestScore}/100` : 'Aim for one strong score',
+    qualifiedEvidence.length ? `${qualifiedEvidence.length} unassisted first-check sample(s)` : 'No first-check evidence yet',
   ];
   reflectionItems.forEach((text) => {
     const chip = document.createElement('span');
@@ -295,28 +329,38 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   document.getElementById('reflection-title').textContent = reflectionTitle;
   document.getElementById('reflection-copy').textContent = reflectionCopy;
 
-   const skillBuckets = ['abacus-orientation', 'number-reading', 'place-value', 'number-setting', 'addition', 'subtraction', 'complements', 'mixed-operations', 'multiplication', 'division'];
+   const skillBuckets = ['abacus-orientation', 'number-reading', 'place-value', 'number-setting', 'addition', 'subtraction', 'complements', 'mixed-operations', 'multiplication', 'division', 'anzan', 'mastery'];
    const worksheetSubmodes = ['arithmetic-rhythm', 'complement-balance', 'sequence-signs', 'table-family', 'place-shifts', 'division-facts', 'quotient-building', 'anzan-recall'];
    const labelize = (value) => value.replace(/-/g, ' ');
   skillBuckets.forEach((skill) => {
     const lessonHits = lessonMeta.filter((entry) => entry.skill === skill && lessonData.includes(entry.id)).length;
     const exerciseHits = exerciseMeta.filter((entry) => entry.skill === skill && exerciseData[entry.id]).length;
     const reviewHits = exerciseMeta.filter((entry) => entry.skill === skill && exerciseData[entry.id]?.status === 'needs-review').length;
-    const energy = Math.min(100, lessonHits * 30 + exerciseHits * 15 - reviewHits * 10);
+    const skillEvidence = qualifiedEvidence.filter(({ attempt }) => attempt.skill === skill);
+    const correctEvidence = skillEvidence.filter(({ summary }) => summary.firstCheckCorrect).length;
+    const evidencePercent = skillEvidence.length ? Math.round((correctEvidence / skillEvidence.length) * 100) : 0;
     const row = document.createElement('article');
     row.className = 'skill-row';
     const name = document.createElement('div');
     name.className = 'skill-label';
-    name.innerHTML = `<strong>${labelize(skill)}</strong><small>${lessonHits} lessons · ${exerciseHits} exercises</small>`;
+    name.innerHTML = `<strong>${labelize(skill)}</strong><small>${lessonHits} lessons · ${exerciseHits} exercise activities</small>`;
     const meter = document.createElement('div');
     meter.className = 'skill-meter';
+    const evidenceReady = skillEvidence.length >= 5;
+    const meterPercent = evidenceReady ? evidencePercent : Math.min(100, (skillEvidence.length / 5) * 100);
+    meter.setAttribute('role', 'img');
+    meter.setAttribute('aria-label', evidenceReady
+      ? `${skill}: ${evidencePercent}% first-check accuracy from ${skillEvidence.length} samples`
+      : `${skill}: ${skillEvidence.length} of 5 samples collected`);
     const fill = document.createElement('div');
     fill.className = 'skill-meter-fill';
-    fill.style.width = `${Math.max(8, energy)}%`;
+    fill.style.width = `${meterPercent}%`;
     meter.appendChild(fill);
     const meta = document.createElement('span');
     meta.className = 'muted small';
-    meta.textContent = reviewHits ? `${reviewHits} review item(s)` : `${energy}% steady`; 
+    meta.textContent = evidenceReady
+      ? `${evidencePercent}% unassisted first-check · ${skillEvidence.length} samples`
+      : `Building evidence · ${skillEvidence.length}/5 samples · ${correctEvidence} first-check correct${reviewHits ? ` · ${reviewHits} review item(s)` : ''}`;
     const actions = document.createElement('div');
     actions.className = 'skill-actions';
     const practiceLink = document.createElement('a');
@@ -361,10 +405,35 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
      worksheetFocusMount?.appendChild(row);
    });
 
-  document.getElementById('reset-progress')?.addEventListener('click', () => {
+  const resetButton = document.getElementById('reset-progress');
+  const resetStatus = document.getElementById('reset-progress-status');
+  if (!compatibility.writable && resetButton) {
+    resetButton.disabled = true;
+    resetStatus.textContent = compatibility.future
+      ? 'Reset is disabled in this older read-only page so newer saved data is not removed.'
+      : 'Reset is disabled while saved progress cannot be validated.';
+  }
+  resetButton?.addEventListener('click', () => {
     const confirmed = window.confirm('Reset all Soroban Dojo progress stored in this browser? This cannot be undone.');
     if (!confirmed) return;
-    clearProgressStorage(localStorage);
+    const result = clearProgressStorage(localStorage);
+    if (!result.complete) {
+      resetStatus.textContent = `Some local records could not be cleared (${result.failedKeys.length}). Close other tabs or check browser storage permissions, then retry.`;
+      return;
+    }
+    let channelBroadcast = false;
+    try {
+      if ('BroadcastChannel' in window) {
+        const channel = new BroadcastChannel('soroban-dojo:progress');
+        channel.postMessage({ type: 'reset' });
+        channel.close();
+        channelBroadcast = true;
+      }
+    } catch {}
+    const notice = result.broadcast || channelBroadcast
+      ? 'Progress reset on this device. Display theme and unrelated browser data were preserved.'
+      : 'Progress reset here. Other open Soroban Dojo tabs could not be notified; reload them before continuing.';
+    try { sessionStorage.setItem('soroban-dojo:reset-notice', notice); } catch {}
     window.location.reload();
   });
 </script>

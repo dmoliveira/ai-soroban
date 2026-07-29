@@ -90,7 +90,7 @@ const rounds = [
   <StudioHero
     eyebrow="Boss rounds"
     title="Level endings that feel like milestones"
-    summary="Each boss round includes a playable three-phase session: warm-up, core challenge, and calm finisher. Clear all three to earn the badge and unlock the certificate."
+    summary="Each boss round includes a playable three-phase session. Completion records now say whether the clear happened in the Dojo, offline, or before source tracking existed."
     stats={[
       { label: 'Structure', value: '3 phases per boss' },
       { label: 'Best use', value: 'Level-ending checkpoint' },
@@ -105,7 +105,7 @@ const rounds = [
 
   <section class="panel content-prose boss-session-explainer">
     <p class="eyebrow">Boss format</p>
-    <h2>Three steps, one earned clear</h2>
+    <h2>Three steps, one clearly sourced completion</h2>
     <div class="boss-phase-strip">
       <div class="milestone-chip active">1 · Warm-up</div>
       <div class="milestone-chip active">2 · Core challenge</div>
@@ -123,7 +123,7 @@ const rounds = [
   <section class="panel boss-certificate-panel">
     <p class="eyebrow">Certificate</p>
     <h2>Print your dojo certificate</h2>
-    <p class="muted">When you finish a boss round, you can print a simple certificate that marks the cleared level and the day you earned it.</p>
+    <p class="muted">When you finish or record a boss round, the certificate names the cleared level, date, and completion source.</p>
     <div class="button-row button-row-compact">
       <label class="stack-sm">
         <span>Student name</span>
@@ -166,7 +166,7 @@ const rounds = [
         </div>
         <div class="button-row button-row-compact">
           <button class="button boss-session-start" type="button">Play boss session</button>
-          <button class="button button-secondary boss-round-toggle" type="button">Mark cleared manually</button>
+          <button class="button button-secondary boss-round-toggle" type="button">Record offline clear</button>
         </div>
         <p class="muted small boss-round-status">Not completed yet.</p>
         <div class="milestone-row boss-session-progress" aria-label={`${round.level} boss phase progress`}></div>
@@ -253,17 +253,20 @@ const rounds = [
     }
   </style>
 
-  <script is:inline>
-    const key = 'soroban-dojo:boss-rounds';
-    const sessionKey = 'soroban-dojo:boss-session-progress';
-    const read = () => { try { return JSON.parse(localStorage.getItem(key) || '{}'); } catch { return {}; } };
-    const write = (state) => {
-      try { localStorage.setItem(key, JSON.stringify(state)); return true; } catch { return false; }
-    };
-    const readSessions = () => { try { return JSON.parse(localStorage.getItem(sessionKey) || '{}'); } catch { return {}; } };
-    const writeSessions = (state) => {
-      try { localStorage.setItem(sessionKey, JSON.stringify(state)); return true; } catch { return false; }
-    };
+  <script>
+    // @ts-nocheck
+    import { bossProvenanceLabel, createBossProvenance, isBossComplete, normalizeBossCertificateRecord, normalizeBossCompletionRecord, normalizeBossProvenanceRecord, resolveBossProvenance } from '../lib/boss-provenance.js';
+    import { STORAGE_KEYS, readStoredRecord, writeStoredJson } from '../lib/storage.js';
+    import { ensureStorageCompatibility } from '../lib/storage-migrations.js';
+
+    ensureStorageCompatibility(localStorage);
+
+    const key = STORAGE_KEYS.bossRounds;
+    const sessionKey = STORAGE_KEYS.bossSessionProgress;
+    const read = () => normalizeBossCompletionRecord(readStoredRecord(localStorage, key));
+    const write = (state) => writeStoredJson(localStorage, key, state);
+    const readSessions = () => readStoredRecord(localStorage, sessionKey);
+    const writeSessions = (state) => writeStoredJson(localStorage, sessionKey, state);
     const strip = document.getElementById('boss-progress-strip');
     const certificateName = document.getElementById('certificate-name');
     const certificateLevel = document.getElementById('certificate-level');
@@ -272,34 +275,58 @@ const rounds = [
     const printCertificate = document.getElementById('print-certificate');
     const copyCertificate = document.getElementById('copy-certificate');
     const certificatePreview = document.getElementById('boss-certificate-preview');
-    const certificateKey = 'soroban-dojo:boss-certificates';
-    const readCertificates = () => { try { return JSON.parse(localStorage.getItem(certificateKey) || '{}'); } catch { return {}; } };
-    const writeCertificates = (state) => {
-      try { localStorage.setItem(certificateKey, JSON.stringify(state)); return true; } catch { return false; }
-    };
-    const ensureCertificate = (level) => {
+    const certificateKey = STORAGE_KEYS.bossCertificates;
+    const provenanceKey = STORAGE_KEYS.bossProvenance;
+    const readCertificates = () => normalizeBossCertificateRecord(readStoredRecord(localStorage, certificateKey));
+    const writeCertificates = (state) => writeStoredJson(localStorage, certificateKey, state);
+    const certificateDateLabel = (value) => Number.isFinite(Date.parse(value))
+      ? new Date(value).toLocaleDateString()
+      : value;
+    const readProvenance = () => normalizeBossProvenanceRecord(readStoredRecord(localStorage, provenanceKey));
+    const writeProvenance = (state) => writeStoredJson(localStorage, provenanceKey, state);
+    const sourceFor = (level, completed = read()[level]) => resolveBossProvenance(isBossComplete(completed), readProvenance()[level]);
+    const ensureCertificate = (level, source) => {
+      if (!source) return false;
       const certificates = readCertificates();
-      if (!certificates[level]) {
-        certificates[level] = {
-          name: certificateName.value.trim() || 'Dojo learner',
-          date: new Date().toLocaleDateString(),
-        };
-      }
-      writeCertificates(certificates);
+      const existing = certificates[level] || {};
+      certificates[level] = {
+        ...existing,
+        name: existing.name || certificateName.value.trim() || 'Dojo learner',
+        date: source.completedAt || existing.date || new Date().toISOString(),
+        source: source.source,
+      };
+      return writeCertificates(certificates);
     };
     const revokeCertificate = (level) => {
       const certificates = readCertificates();
       delete certificates[level];
-      writeCertificates(certificates);
+      return writeCertificates(certificates);
+    };
+    const saveCompletion = (level, source, state) => {
+      const provenance = readProvenance();
+      const previous = provenance[level] || null;
+      const alreadyComplete = isBossComplete(state[level]);
+      provenance[level] = source;
+      if (!writeProvenance(provenance)) return { complete: false, certificate: false };
+      if (!alreadyComplete) state[level] = true;
+      if (!alreadyComplete && !write(state)) {
+        if (previous) provenance[level] = previous;
+        else delete provenance[level];
+        writeProvenance(provenance);
+        return { complete: false, certificate: false };
+      }
+      return { complete: true, certificate: ensureCertificate(level, source) };
     };
     const syncCertificatePreview = () => {
       const level = certificateLevel.value;
+      const completed = isBossComplete(read()[level]);
       const certificates = readCertificates();
-      const earned = certificates[level];
+      const provenance = sourceFor(level, completed);
+      const earned = completed && provenance ? certificates[level] : null;
       certificateTitle.textContent = `Soroban Dojo · ${level} certificate`;
       certificateCopy.textContent = earned
-        ? `${earned.name} cleared the ${level} boss round on ${earned.date}.`
-        : `Clear the ${level} boss round, then print a certificate for that earned milestone.`;
+        ? `${earned.name} cleared the ${level} boss round on ${certificateDateLabel(earned.date)}. ${bossProvenanceLabel(provenance)}.`
+        : `Complete or record the ${level} boss round, then print a source-labelled milestone.`;
       printCertificate.disabled = !earned;
       copyCertificate.disabled = !earned;
     };
@@ -315,8 +342,10 @@ const rounds = [
       const state = read();
       const certificates = readCertificates();
       const earned = certificates[level];
-      if (!earned || !state[level]) return null;
-      return `Soroban Dojo Certificate\n${earned.name} cleared the ${level} boss round on ${earned.date}.`;
+      const provenance = sourceFor(level, state[level]);
+      if (!earned || !isBossComplete(state[level]) || !provenance) return null;
+      const date = provenance.completedAt ? new Date(provenance.completedAt).toLocaleDateString() : earned.date;
+      return `Soroban Dojo Certificate\n${earned.name} cleared the ${level} boss round on ${date}.\n${bossProvenanceLabel(provenance)}.`;
     };
     const renderBossSession = (card, state, sessionState) => {
       const level = card.dataset.level;
@@ -331,7 +360,8 @@ const rounds = [
       const phases = JSON.parse(panel.dataset.phases || '[]');
       const progressState = sessionState[level] || { index: 0, started: false, completed: false, replaying: false, message: '', tone: 'neutral' };
       const current = phases[Math.min(progressState.index, phases.length - 1)] || null;
-      const done = !!state[level] && !progressState.replaying;
+      const done = isBossComplete(state[level]) && !progressState.replaying;
+      const provenance = sourceFor(level, done);
 
       progress.replaceChildren();
       phases.forEach((phase, index) => {
@@ -345,9 +375,9 @@ const rounds = [
         title.textContent = `${level} boss cleared`;
         prompt.textContent = 'This boss is complete. Replay it any time for a cleaner clear.';
         tip.textContent = current?.tip || 'Certificate unlocked.';
-        feedback.textContent = progressState.message || 'Strong work. The boss badge is earned and the certificate is ready.';
+        feedback.textContent = progressState.message || `Completion saved. ${bossProvenanceLabel(provenance)}.`;
         feedback.classList.toggle('is-success', progressState.tone === 'success');
-        status.textContent = 'Completed through the playable boss session.';
+        status.textContent = bossProvenanceLabel(provenance);
         toggle.textContent = 'Mark boss pending';
         return;
       }
@@ -359,7 +389,7 @@ const rounds = [
         tip.textContent = 'Work through warm-up, core challenge, then calm finisher.';
         feedback.textContent = progressState.message || 'Clear all three phases to earn the boss badge.';
         status.textContent = 'Not completed yet.';
-        toggle.textContent = 'Mark cleared manually';
+        toggle.textContent = 'Record offline clear';
         feedback.classList.toggle('is-success', progressState.tone === 'success');
         return;
       }
@@ -369,7 +399,7 @@ const rounds = [
       tip.textContent = current.tip;
       feedback.textContent = progressState.message || `Phase ${progressState.index + 1} of ${phases.length}. Solve it, then check your answer.`;
       status.textContent = `Boss in progress · ${current.title}`;
-      toggle.textContent = 'Mark cleared manually';
+      toggle.textContent = 'Record offline clear';
       feedback.classList.toggle('is-success', progressState.tone === 'success');
     };
     const sync = () => {
@@ -378,7 +408,7 @@ const rounds = [
       strip.replaceChildren();
       document.querySelectorAll('.boss-round-card').forEach((card) => {
         const level = card.dataset.level;
-        const done = !!state[level];
+        const done = isBossComplete(state[level]);
         const chip = document.createElement('div');
         chip.className = `milestone-chip ${done ? 'active' : ''}`;
         chip.textContent = `${level} boss`;
@@ -392,7 +422,7 @@ const rounds = [
       const card = button.closest('.boss-round-card');
       const level = card?.dataset.level;
       if (!level) return;
-      const alreadyCleared = !!read()[level];
+      const alreadyCleared = isBossComplete(read()[level]);
       sessions[level] = {
         index: 0,
         started: true,
@@ -419,8 +449,8 @@ const rounds = [
         index: 0,
         started: false,
         completed: false,
-        replaying: !!state[level],
-        message: state[level]
+        replaying: isBossComplete(state[level]),
+        message: isBossComplete(state[level])
           ? 'Boss session restarted. Your earned badge and certificate remain saved.'
           : '',
         tone: 'neutral',
@@ -453,15 +483,23 @@ const rounds = [
         current.started = true;
         current.index = phases.length;
         current.replaying = false;
-        current.message = state[level]
-          ? 'Replay clear complete. Your original boss badge and certificate remain earned.'
-          : 'Boss cleared. Your certificate preview has been updated.';
         current.tone = 'success';
-        state[level] = true;
+        const source = createBossProvenance({
+          source: 'playable',
+          completedAt: new Date().toISOString(),
+          ruleVersion: 1,
+        });
+        const saved = saveCompletion(level, source, state);
+        if (!saved.complete) {
+          feedback.textContent = 'The clear was correct, but this browser could not save its completion source. Nothing was labelled as a playable clear; check storage permissions and retry.';
+          feedback.classList.remove('is-success');
+          return;
+        }
+        current.message = saved.certificate
+          ? 'Playable Dojo clear saved. The certificate preview now carries the same source and completion date.'
+          : 'Playable Dojo clear saved, but the certificate name could not be saved in this browser.';
         sessions[level] = current;
-        write(state);
         writeSessions(sessions);
-        ensureCertificate(level);
         celebrateCertificateUnlock(level);
         sync();
         return;
@@ -482,25 +520,39 @@ const rounds = [
       const card = button.closest('.boss-round-card');
       const level = card?.dataset.level;
       if (!level) return;
+      const feedback = card.querySelector('.boss-session-feedback');
       const panel = card.querySelector('.boss-session-panel');
       const phases = JSON.parse(panel?.dataset.phases || '[]');
-      state[level] = !state[level];
-      write(state);
-      if (state[level]) {
+      if (!isBossComplete(state[level])) {
+        const source = createBossProvenance({ source: 'manual', completedAt: new Date().toISOString() });
+        const saved = saveCompletion(level, source, state);
+        if (!saved.complete) {
+          feedback.textContent = 'This browser could not save the offline completion source, so the boss remains pending.';
+          return;
+        }
         sessions[level] = {
           index: phases.length,
           started: true,
           completed: true,
           replaying: false,
-          message: 'Boss cleared manually. Certificate unlocked for this level.',
+          message: saved.certificate
+            ? 'Offline clear recorded. The certificate identifies it as self-reported.'
+            : 'Offline clear recorded, but the certificate name could not be saved.',
           tone: 'success',
         };
         writeSessions(sessions);
-        ensureCertificate(level);
         celebrateCertificateUnlock(level);
       } else {
+        state[level] = false;
+        if (!write(state)) {
+          feedback.textContent = 'This browser could not mark the boss pending. The existing completion remains unchanged.';
+          return;
+        }
         sessions[level] = { index: 0, started: false, completed: false, replaying: false, message: '', tone: 'neutral' };
         writeSessions(sessions);
+        const provenance = readProvenance();
+        delete provenance[level];
+        writeProvenance(provenance);
         revokeCertificate(level);
       }
       sync();

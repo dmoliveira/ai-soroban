@@ -1,9 +1,11 @@
 import { createRng } from './worksheet.js';
+import { normalizeAttemptEvidence, summarizeAttemptEvidence } from './mastery.js';
 
 export const CHALLENGE_RULE_VERSION = 1;
 
 export const CHALLENGE_DEFINITIONS = {
   'bead-match': {
+    ruleVersion: 1,
     key: 'bead-match',
     title: 'Bead match',
     summary: 'Read every single-digit soroban shape once in a calm visual round.',
@@ -14,6 +16,7 @@ export const CHALLENGE_DEFINITIONS = {
     config: { format: 'single', type: 'generated', level: 'L0', length: 10, checkMode: 'verify', timerMode: 'off', questionStyle: 'visual-read', termCount: '2' },
   },
   'clean-five': {
+    ruleVersion: 1,
     key: 'clean-five',
     title: 'Clean five',
     summary: 'Recognize upper-bead values until every clean-five shape feels familiar.',
@@ -24,6 +27,7 @@ export const CHALLENGE_DEFINITIONS = {
     config: { format: 'single', type: 'generated', level: 'L1', length: 10, checkMode: 'verify', timerMode: 'off', questionStyle: 'visual-five', termCount: '2' },
   },
   'streak-sprint': {
+    ruleVersion: 1,
     key: 'streak-sprint',
     title: 'Streak sprint',
     summary: 'Build clean momentum through a short alternating arithmetic run.',
@@ -34,6 +38,7 @@ export const CHALLENGE_DEFINITIONS = {
     config: { format: 'single', type: 'generated', level: 'L3', length: 15, checkMode: 'verify', timerMode: 'on', questionStyle: 'mixed', termCount: '2' },
   },
   'sign-switch-relay': {
+    ruleVersion: 1,
     key: 'sign-switch-relay',
     title: 'Sign switch relay',
     summary: 'Hold a running total while plus and minus signs trade places.',
@@ -44,6 +49,7 @@ export const CHALLENGE_DEFINITIONS = {
     config: { format: 'sheet', type: 'generated', level: 'L3', length: 10, checkMode: 'verify', timerMode: 'off', questionStyle: 'mixed', termCount: '4' },
   },
   'table-ladder': {
+    ruleVersion: 1,
     key: 'table-ladder',
     title: 'Table ladder',
     summary: 'Climb one multiplication family in order instead of jumping between facts.',
@@ -54,6 +60,7 @@ export const CHALLENGE_DEFINITIONS = {
     config: { format: 'sheet', type: 'generated', level: 'L4', length: 10, checkMode: 'verify', timerMode: 'off', questionStyle: 'mixed', termCount: '2' },
   },
   'quotient-chase': {
+    ruleVersion: 1,
     key: 'quotient-chase',
     title: 'Quotient chase',
     summary: 'Find exact quotients across one connected division family.',
@@ -64,6 +71,7 @@ export const CHALLENGE_DEFINITIONS = {
     config: { format: 'sheet', type: 'generated', level: 'L4', length: 10, checkMode: 'verify', timerMode: 'on', questionStyle: 'mixed', termCount: '2' },
   },
   'anzan-burst': {
+    ruleVersion: 1,
     key: 'anzan-burst',
     title: 'Anzan burst',
     summary: 'Hold short mental sequences through deliberate sign changes.',
@@ -256,10 +264,11 @@ const recomputeAnswer = (question) => {
   return Number.NaN;
 };
 
-export const certifyChallengeQuestions = (challengeKey, questions) => {
+export const certifyChallengeQuestions = (challengeKey, questions, ruleVersion = CHALLENGE_DEFINITIONS[challengeKey]?.ruleVersion) => {
   const definition = CHALLENGE_DEFINITIONS[challengeKey];
   const errors = [];
   if (!definition) return { valid: false, errors: [`unknown challenge: ${challengeKey}`] };
+  if (ruleVersion !== definition.ruleVersion) return { valid: false, errors: [`unsupported ${challengeKey} rule version: ${ruleVersion}`] };
   if (!Array.isArray(questions)) return { valid: false, errors: ['questions must be an array'] };
   if (questions.length !== definition.config.length) errors.push(`expected ${definition.config.length} questions, got ${questions.length}`);
 
@@ -322,11 +331,12 @@ export const certifyChallengeQuestions = (challengeKey, questions) => {
   return { valid: errors.length === 0, errors };
 };
 
-export const buildChallengeQuestions = ({ challengeKey, seed }) => {
+export const buildChallengeQuestions = ({ challengeKey, seed, ruleVersion = CHALLENGE_DEFINITIONS[challengeKey]?.ruleVersion }) => {
   if (!CHALLENGE_DEFINITIONS[challengeKey]) throw new Error(`Unknown challenge: ${challengeKey}`);
+  if (ruleVersion !== CHALLENGE_DEFINITIONS[challengeKey].ruleVersion) throw new Error(`Unsupported ${challengeKey} rule version: ${ruleVersion}`);
   const normalizedSeed = String(seed || `${challengeKey}-seed`);
   const questions = buildChallengeQuestionList(challengeKey, normalizedSeed, createRng(`${normalizedSeed}:${challengeKey}`));
-  const certification = certifyChallengeQuestions(challengeKey, questions);
+  const certification = certifyChallengeQuestions(challengeKey, questions, ruleVersion);
   if (!certification.valid) {
     throw new Error(`Generated ${challengeKey} challenge failed certification: ${certification.errors.join('; ')}`);
   }
@@ -334,17 +344,18 @@ export const buildChallengeQuestions = ({ challengeKey, seed }) => {
 };
 
 const responseQualifies = (question, response) => {
-  if (!response?.verified || response.attempts !== 1) return false;
-  if (response.hintsUsed || response.revealedFinal || response.revealedSteps || response.recoveryUsed || response.recoveryMode) return false;
-  const input = String(response.input ?? '').trim();
+  const evidence = normalizeAttemptEvidence(response?.evidence);
+  const summary = summarizeAttemptEvidence(response?.evidence);
+  if (!evidence || !summary.qualified || !summary.firstCheckCorrect) return false;
+  const input = evidence.events.find((event) => event.kind === 'submit')?.value.trim() || '';
   if (!input) return false;
   const numericInput = Number(input);
   return Number.isFinite(numericInput) && numericInput === recomputeAnswer(question);
 };
 
-export const evaluateChallengeOutcome = ({ challengeKey, questions, responses = {} }) => {
+export const evaluateChallengeOutcome = ({ challengeKey, questions, responses = {}, ruleVersion = CHALLENGE_DEFINITIONS[challengeKey]?.ruleVersion }) => {
   const definition = CHALLENGE_DEFINITIONS[challengeKey];
-  const certification = certifyChallengeQuestions(challengeKey, questions);
+  const certification = certifyChallengeQuestions(challengeKey, questions, ruleVersion);
   if (!definition || !certification.valid) {
     return {
       valid: false,
@@ -392,8 +403,29 @@ export const canonicalizeChallengeSession = (session) => {
   if (!session.challengeKey) return session;
   const definition = CHALLENGE_DEFINITIONS[session.challengeKey];
   const seed = String(session.challengeSeed || session.id || '');
-  if (!definition || !seed) return null;
-  const questions = buildChallengeQuestions({ challengeKey: session.challengeKey, seed });
+  const ruleVersion = session.challengeRuleVersion;
+  if (!definition || !seed || !Number.isInteger(ruleVersion) || ruleVersion !== definition.ruleVersion) {
+    const error = !definition
+      ? `unknown challenge rule: ${session.challengeKey}`
+      : !Number.isInteger(ruleVersion)
+        ? `missing challenge rule version: ${session.challengeKey}`
+        : `unsupported ${session.challengeKey} rule version: ${ruleVersion}`;
+    return {
+      ...session,
+      challengeRuleVersion: Number.isInteger(ruleVersion) ? ruleVersion : null,
+      challengeUnavailable: true,
+      challengeOutcome: {
+        valid: false,
+        met: false,
+        metric: definition?.metric || 'correct',
+        value: 0,
+        threshold: definition?.threshold || 0,
+        total: Array.isArray(session.questions) ? session.questions.length : 0,
+        errors: [error],
+      },
+    };
+  }
+  const questions = buildChallengeQuestions({ challengeKey: session.challengeKey, seed, ruleVersion });
   const canonical = {
     ...session,
     type: definition.config.type,
@@ -407,7 +439,7 @@ export const canonicalizeChallengeSession = (session) => {
     challengeTitle: definition.title,
     challengeTarget: definition.target,
     challengeRule: definition.rule,
-    challengeRuleVersion: CHALLENGE_RULE_VERSION,
+    challengeRuleVersion: ruleVersion,
     challengeSeed: seed,
     questions,
   };
@@ -416,7 +448,16 @@ export const canonicalizeChallengeSession = (session) => {
       challengeKey: canonical.challengeKey,
       questions,
       responses: canonical.responses || {},
+      ruleVersion,
     })
     : null;
   return canonical;
+};
+
+export const isChallengeSessionOpaque = (session) => {
+  if (!session || typeof session !== 'object' || Array.isArray(session) || !session.challengeKey) return false;
+  const definition = CHALLENGE_DEFINITIONS[session.challengeKey];
+  return !definition
+    || !Number.isInteger(session.challengeRuleVersion)
+    || session.challengeRuleVersion !== definition.ruleVersion;
 };

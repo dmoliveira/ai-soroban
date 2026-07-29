@@ -253,7 +253,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       </div>
       <div class="practice-session-stats">
         <article class="stat-card stat-card-soft"><small>Progress:</small><span id="session-progress">0 / 0</span></article>
-        <article class="stat-card stat-card-soft"><small>Score:</small><span id="session-score">—</span></article>
+        <article class="stat-card stat-card-soft"><small>Accuracy:</small><span id="session-score">—</span></article>
         <article class="stat-card stat-card-soft"><small>Timer:</small><span id="session-timer">Off</span></article>
       </div>
       <div class="practice-session-meta">
@@ -403,16 +403,20 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
 <script>
   // @ts-nocheck
-  import { CHALLENGE_DEFINITIONS, buildChallengeQuestions, canonicalizeChallengeSession, certifyChallengeQuestions, evaluateChallengeOutcome, formatChallengeOutcome } from '../lib/challenges.js';
-  import { normalizeStoredArray, normalizeStoredRecord, readStoredJson, writeStoredJson } from '../lib/storage.js';
+  import { CHALLENGE_DEFINITIONS, buildChallengeQuestions, canonicalizeChallengeSession, certifyChallengeQuestions, evaluateChallengeOutcome, formatChallengeOutcome, isChallengeSessionOpaque } from '../lib/challenges.js';
+  import { appendEvidenceEvent, claimMasteryItem, createAttemptEvidence, masteryClaimOwnedBy, normalizeAttemptEvidence, normalizeMasterySeenIndex, summarizeAttemptEvidence, upsertAttemptEvidence } from '../lib/mastery.js';
+  import { STORAGE_KEYS, normalizeStoredArray, normalizeStoredRecord, readStoredArray, readStoredJson, writeStoredJson } from '../lib/storage.js';
+  import { ensureStorageCompatibility } from '../lib/storage-migrations.js';
   import { buildGeneratedWorksheetQuestions, buildWorksheetProfileLabel, createRng, createWorksheetProfile } from '../lib/worksheet.js';
+
+  ensureStorageCompatibility(localStorage);
 
   const root = document.querySelector('.practice-stack');
   const basePath = root?.dataset.base || '/';
   const library = JSON.parse(root?.dataset.library || '[]');
-  const SESSION_KEY = 'soroban-dojo:practice-sessions';
-  const TIMER_KEY = 'soroban-dojo:timer-history';
-  const EXERCISE_STATE_KEY = 'soroban-dojo:exercise-states';
+  const SESSION_KEY = STORAGE_KEYS.practiceSessions;
+  const TIMER_KEY = STORAGE_KEYS.timerHistory;
+  const EXERCISE_STATE_KEY = STORAGE_KEYS.exerciseStates;
   let currentSession = null;
   let selectedJourneyKey = null;
   let selectedSkillKey = null;
@@ -464,16 +468,22 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     ? byId('sheet-feedback-panel')
     : byId('feedback-panel');
   const normalizePracticeSession = (entry) => {
-    if (!entry || typeof entry !== 'object' || Array.isArray(entry) || !Array.isArray(entry.questions)) return null;
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return null;
+    if (isChallengeSessionOpaque(entry)) {
+      const opaque = canonicalizeChallengeSession({ ...entry, responses: normalizeStoredRecord(entry.responses) });
+      return { ...opaque, questions: Array.isArray(entry.questions) ? entry.questions : [] };
+    }
+    if (!Array.isArray(entry.questions)) return null;
     const normalized = {
       ...entry,
       responses: normalizeStoredRecord(entry.responses),
     };
     return canonicalizeChallengeSession(normalized);
   };
+  const readRawSessions = () => normalizeStoredArray(readStoredJson(localStorage, SESSION_KEY, []));
   const readSessions = () => {
     try {
-      return normalizeStoredArray(readStoredJson(localStorage, SESSION_KEY, []))
+      return readRawSessions()
         .map(normalizePracticeSession)
         .filter(Boolean);
     } catch { return []; }
@@ -1083,9 +1093,11 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       challengeTitle: challenge?.title || null,
       challengeTarget: challenge?.target || null,
       challengeRule: challenge?.rule || null,
-      challengeRuleVersion: challenge ? 1 : null,
+      challengeRuleVersion: challenge?.ruleVersion ?? null,
       challengeSeed: challenge ? sessionId : null,
       challengeOutcome: null,
+      evidenceVersion: 1,
+      evidenceEligibility: 'prospective',
       createdAt: new Date().toISOString(),
       currentIndex: 0,
       completed: false,
@@ -1096,17 +1108,27 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   };
 
   const persistCurrent = () => {
-    if (!currentSession) return;
-    const sessions = readSessions();
-    const existingIndex = sessions.findIndex((entry) => entry.id === currentSession.id);
-    if (existingIndex >= 0) sessions.splice(existingIndex, 1);
+    if (!currentSession) return false;
+    const rawSessions = readRawSessions();
+    const opaqueSessions = rawSessions.filter(isChallengeSessionOpaque);
+    const sessions = rawSessions
+      .filter((entry) => !isChallengeSessionOpaque(entry))
+      .map(normalizePracticeSession)
+      .filter(Boolean)
+      .filter((entry) => entry.id !== currentSession.id);
     sessions.unshift(currentSession);
-    writeSessions(sessions.slice(0, 12));
+    return writeSessions([...sessions.slice(0, 12), ...opaqueSessions]);
   };
 
   const replaySession = (session) => {
     const source = normalizePracticeSession(session);
     if (!source) return;
+    if (source.challengeUnavailable) {
+      const feedback = byId('feedback-panel');
+      feedback.hidden = false;
+      feedback.textContent = 'This saved challenge uses an unsupported rule version. Its record is preserved, but it cannot be resumed or replayed.';
+      return;
+    }
     stopTimer();
     currentSession = {
       ...source,
@@ -1117,6 +1139,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       responses: {},
       finalScore: null,
       challengeOutcome: null,
+      evidenceVersion: 1,
+      evidenceEligibility: 'activity-only',
     };
     syncControlsFromSession(currentSession);
     persistCurrent();
@@ -1169,13 +1193,73 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     attempts: 0,
   };
 
+  const evidenceForQuestion = (questionIndex, response = currentSession?.responses?.[questionIndex]) => {
+    const storedEvidence = normalizeAttemptEvidence(response?.evidence);
+    if (storedEvidence) return storedEvidence;
+    const question = currentSession?.questions?.[questionIndex];
+    if (!currentSession || !question) return null;
+    const itemId = question.progressKey || question.id;
+    const seenItems = normalizeMasterySeenIndex(readStoredJson(localStorage, STORAGE_KEYS.masterySeenItems, {}));
+    const priorExposure = seenItems.claims.some((claim) => claim.itemId === itemId)
+      || readStoredArray(localStorage, STORAGE_KEYS.masteryEvidence)
+        .some((attempt) => attempt?.itemId === itemId && Array.isArray(attempt.events) && attempt.events.length > 0);
+    return createAttemptEvidence({
+      attemptId: `${currentSession.id}:question:${questionIndex}`,
+      source: currentSession.challengeKey ? 'challenge' : 'practice',
+      itemId,
+      skill: question.skill || currentSession.level,
+      level: currentSession.level,
+      rule: {
+        id: currentSession.challengeKey || question.challengeData?.kind || question.skill || 'practice-question',
+        version: currentSession.challengeRuleVersion || 1,
+      },
+      seed: currentSession.challengeSeed || currentSession.id,
+      startedAt: currentSession.createdAt,
+      eligibility: currentSession.evidenceVersion === 1
+        && currentSession.evidenceEligibility === 'prospective'
+        && !priorExposure
+        ? 'prospective'
+        : 'activity-only',
+    });
+  };
+
+  const appendQuestionEvidence = (questionIndex, response, event) => {
+    const evidence = evidenceForQuestion(questionIndex, response);
+    return evidence ? appendEvidenceEvent(evidence, event) : null;
+  };
+
+  const persistQuestionEvidence = (questionIndex) => {
+    let evidence = currentSession?.responses?.[questionIndex]?.evidence;
+    if (!evidence) return true;
+    const claim = claimMasteryItem(readStoredJson(localStorage, STORAGE_KEYS.masterySeenItems, {}), {
+      itemId: evidence.itemId,
+      attemptId: evidence.attemptId,
+      firstSeenAt: evidence.events[0]?.at || evidence.startedAt,
+    });
+    const claimSaved = !claim.changed || writeStoredJson(localStorage, STORAGE_KEYS.masterySeenItems, claim.index);
+    const claimOwned = claim.eligible
+      && claimSaved
+      && masteryClaimOwnedBy(readStoredJson(localStorage, STORAGE_KEYS.masterySeenItems, {}), evidence.itemId, evidence.attemptId);
+    if (!claimOwned) evidence = { ...evidence, eligibility: 'activity-only' };
+    let ledger = upsertAttemptEvidence(readStoredArray(localStorage, STORAGE_KEYS.masteryEvidence), evidence);
+    let persisted = ledger.find((attempt) => attempt.attemptId === evidence.attemptId) || { ...evidence, eligibility: 'activity-only' };
+    currentSession.responses[questionIndex].evidence = persisted;
+    let evidenceSaved = writeStoredJson(localStorage, STORAGE_KEYS.masteryEvidence, ledger);
+    if (!evidenceSaved) currentSession.responses[questionIndex].evidence = { ...persisted, eligibility: 'activity-only' };
+    const ownershipStable = persisted.eligibility !== 'prospective'
+      || masteryClaimOwnedBy(readStoredJson(localStorage, STORAGE_KEYS.masterySeenItems, {}), persisted.itemId, persisted.attemptId);
+    if (evidenceSaved && !ownershipStable) {
+      persisted = { ...persisted, eligibility: 'activity-only' };
+      ledger = upsertAttemptEvidence(readStoredArray(localStorage, STORAGE_KEYS.masteryEvidence), persisted);
+      currentSession.responses[questionIndex].evidence = ledger.find((attempt) => attempt.attemptId === persisted.attemptId) || persisted;
+      evidenceSaved = writeStoredJson(localStorage, STORAGE_KEYS.masteryEvidence, ledger);
+    }
+    return claimSaved && evidenceSaved;
+  };
+
   const computeQuestionScore = (response) => {
     if (!response || !response.verified) return 0;
-    if (response.correct && !response.revealedFinal && !response.revealedSteps && !response.hintsUsed) return 100;
-    if (response.correct && !response.revealedSteps) return 85;
-    if (response.correct) return 70;
-    if (response.revealedSteps || response.revealedFinal) return 40;
-    return 15;
+    return response.correct ? 100 : 0;
   };
 
   const computeSessionScore = (session) => {
@@ -1196,10 +1280,10 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   };
 
   const syncExerciseProgress = (questionIndex = currentSession?.currentIndex) => {
-    if (!currentSession) return;
+    if (!currentSession) return false;
     const question = currentSession.questions[questionIndex];
     const response = currentSession.responses?.[questionIndex];
-    if (!question || !response?.verified) return;
+    if (!question || !response?.verified) return false;
     const existing = readExerciseStates();
     existing[question.progressKey || question.id] = {
       status: response.correct ? 'got-it' : 'needs-review',
@@ -1214,7 +1298,9 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
             : 'arithmetic'),
       updatedAt: new Date().toISOString(),
     };
-    writeExerciseStates(existing);
+    const stateSaved = writeExerciseStates(existing);
+    const evidenceSaved = persistQuestionEvidence(questionIndex);
+    return stateSaved && evidenceSaved;
   };
 
   const buildRecoveryPrompt = (question, level, wrongValue) => {
@@ -1245,17 +1331,23 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
   const verificationFeedback = (response, question) => {
     if (currentSession?.challengeKey) {
-      if (response.revealedSteps) return `Method revealed. The answer is ${question.answer}; this question does not count toward the first-check target.`;
-      if (response.revealedFinal) return `Answer revealed: ${question.answer}. This question does not count toward the first-check target.`;
-      if (response.correct && response.attempts === 1 && !response.recoveryUsed) return 'Correct on the first check. This counts toward the challenge target.';
-      if (response.correct) return 'Correction is right, but it does not count toward the first-check target.';
-      if (response.attempts === 1) return 'First check missed. A correction can build skill, but it will not count toward the first-check target.';
-      return 'Not correct yet. Keep repairing the answer; first-check credit is no longer available for this question.';
+      const evidence = summarizeAttemptEvidence(response.evidence);
+      const saveNote = response.persistenceFailed ? ' This result is available in this tab but was not saved to Progress.' : '';
+      if (response.correct && evidence.qualified && evidence.firstCheckCorrect) {
+        const reviewNote = response.revealedSteps || response.revealedFinal ? ' Review opened after the scored first check.' : '';
+        return `Correct on the first check. This counts toward the challenge target.${reviewNote}${saveNote}`;
+      }
+      if (response.revealedSteps) return `Method revealed. The answer is ${question.answer}; this question does not count toward the first-check target.${saveNote}`;
+      if (response.revealedFinal) return `Answer revealed: ${question.answer}. This question does not count toward the first-check target.${saveNote}`;
+      if (response.correct) return `Correction is right, but it does not count toward the first-check target.${saveNote}`;
+      if (evidence.qualified && evidence.checks === 1) return `First check missed. A correction can build skill, but it will not count toward the first-check target.${saveNote}`;
+      return `Not correct yet. Keep repairing the answer; first-check credit is no longer available for this question.${saveNote}`;
     }
-    if (response.correct && !response.revealedFinal && !response.revealedSteps) return 'Correct. Keep your hands calm and move to the next question when ready.';
-    if (response.revealedSteps) return `Final number: ${question.answer}. The full step method is open below.`;
-    if (response.revealedFinal) return `Final number: ${question.answer}. Use this when you only want a quick result check.`;
-    return 'Not correct yet. You can try again, reveal the final number, or open the steps.';
+    const saveNote = response.persistenceFailed ? ' This result is available in this tab but was not saved to Progress.' : '';
+    if (response.correct && !response.revealedFinal && !response.revealedSteps) return `Correct. Keep your hands calm and move to the next question when ready.${saveNote}`;
+    if (response.revealedSteps) return `Final number: ${question.answer}. The full step method is open below.${saveNote}`;
+    if (response.revealedFinal) return `Final number: ${question.answer}. Use this when you only want a quick result check.${saveNote}`;
+    return `Not correct yet. You can try again, reveal the final number, or open the steps.${saveNote}`;
   };
 
   const verifyCurrentAnswer = () => {
@@ -1274,6 +1366,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       ? currentResponse.recoveryAnswer
       : question.answer;
     const correct = input !== '' && !Number.isNaN(numericInput) && numericInput === answerTarget;
+    const evidence = appendQuestionEvidence(currentSession.currentIndex, currentResponse, { kind: 'submit', value: input, correct });
     updateCurrentResponse({
       input,
       verified: true,
@@ -1281,6 +1374,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       attempts: (currentResponse.attempts || 0) + 1,
       recoveryUsed: currentResponse.recoveryUsed || currentResponse.recoveryMode,
       recoveryMode: correct ? false : currentResponse.recoveryMode,
+      evidence,
     });
     feedback.hidden = false;
     playTone(correct ? 'success' : 'error');
@@ -1294,11 +1388,11 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     }
 
     if (correct && (currentSession.checkMode === 'final' || currentSession.checkMode === 'steps')) {
-      updateCurrentResponse({ revealedFinal: true });
+      updateCurrentResponse({ reviewedFinalAfterCheck: true });
       feedback.textContent += ` Answer: ${question.answer}.`;
     }
     if (correct && currentSession.checkMode === 'steps') {
-      updateCurrentResponse({ revealedSteps: true });
+      updateCurrentResponse({ reviewedStepsAfterCheck: true });
     }
     renderSession();
     return correct;
@@ -1357,8 +1451,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       const card = document.createElement('article');
       card.className = 'session-card';
       const title = document.createElement('strong');
-      title.textContent = session.challengeTitle
-        ? `Challenge · ${session.challengeTitle}`
+      title.textContent = session.challengeTitle || session.challengeKey
+        ? `Challenge · ${session.challengeTitle || session.challengeKey}`
         : session.journeyTitle
           ? `Journey · ${session.journeyTitle}`
           : session.skill
@@ -1369,13 +1463,17 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       meta.textContent = `${session.id} · ${session.completed ? session.questions.length : session.currentIndex}/${session.questions.length} complete`;
       const score = document.createElement('div');
       score.className = 'score-band';
-      score.textContent = session.completed
+      score.textContent = session.challengeUnavailable
+        ? 'Result unavailable for this saved rule version'
+        : session.completed
         ? `${session.finalScore}/100${session.challengeOutcome ? ` · ${formatChallengeOutcome(session.challengeOutcome)}` : ''}`
         : 'In progress';
       const profile = document.createElement('p');
       profile.className = 'muted small';
-      profile.textContent = session.challengeTitle
-        ? `Target: ${session.challengeTarget}`
+      profile.textContent = session.challengeTitle || session.challengeKey
+        ? session.challengeUnavailable
+          ? 'Saved challenge rule is unavailable; record preserved without re-scoring.'
+          : `Target: ${session.challengeTarget}`
         : session.journeyTitle
           ? `${session.journeyTitle} mode`
           : session.worksheetProfile
@@ -1391,6 +1489,13 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       replay.className = 'button button-secondary';
       replay.textContent = 'Replay list';
       replay.addEventListener('click', () => replaySession(session));
+      if (session.challengeUnavailable) {
+        resume.disabled = true;
+        replay.disabled = true;
+        resume.textContent = 'Resume unavailable';
+        replay.textContent = 'Replay unavailable';
+        profile.textContent = 'Saved rule version is unsupported; record preserved without re-scoring.';
+      }
       actions.append(resume, replay);
       card.append(title, meta, profile, score, actions);
       historyList.appendChild(card);
@@ -1437,7 +1542,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       title.textContent = 'No session selected yet';
       sessionIdLabel.textContent = '—';
       progress.textContent = 'Question 0 / 0';
-      score.textContent = 'Score —';
+      score.textContent = 'Accuracy —';
       timer.textContent = 'Timer off';
       adaptiveNote.textContent = '—';
       profile.textContent = 'Profile —';
@@ -1468,7 +1573,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
           : `${currentSession.type === 'curated' ? 'Curated' : 'Generated'} ${currentSession.level} session`;
     sessionIdLabel.textContent = currentSession.id;
     progress.textContent = `Question ${currentSession.currentIndex + 1} / ${currentSession.questions.length}`;
-    score.textContent = `Score ${(currentSession.completed ? currentSession.finalScore : computeSessionScore(currentSession)) || 0}/100`;
+    score.textContent = `Accuracy ${(currentSession.completed ? currentSession.finalScore : computeSessionScore(currentSession)) || 0}/100`;
     timer.textContent = currentSession.timerEnabled ? 'Timer on' : 'Timer off';
     adaptiveNote.textContent = currentSession.challengeTitle
       ? (currentSession.challengeOutcome ? formatChallengeOutcome(currentSession.challengeOutcome) : currentSession.challengeTarget)
@@ -1496,7 +1601,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         ? 'Recovery prompt'
         : question.title;
     questionPrompt.textContent = currentSession.completed
-      ? `${currentSession.challengeOutcome ? `${formatChallengeOutcome(currentSession.challengeOutcome)}. ` : ''}Review your score, replay the same list, or start a fresh session with a new ID.`
+      ? `${currentSession.challengeOutcome ? `${formatChallengeOutcome(currentSession.challengeOutcome)}. ` : ''}Review your accuracy and first-check evidence, replay the same list, or start fresh.`
       : response.recoveryMode && response.recoveryPrompt
         ? response.recoveryPrompt
         : question.prompt;
@@ -1575,7 +1680,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       feedback.hidden = false;
       feedback.textContent = verificationFeedback(response, question);
     }
-    if (response.revealedSteps) {
+    if (response.revealedSteps || response.reviewedStepsAfterCheck) {
       stepsPanel.hidden = false;
       stepsPanel.replaceChildren();
       const list = document.createElement('ol');
@@ -1599,12 +1704,15 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   };
 
   const updateCurrentResponse = (next) => {
-    if (!currentSession) return;
+    if (!currentSession) return false;
     currentSession.responses[currentSession.currentIndex] = {
       ...responseForCurrent(),
       ...next,
     };
-    persistCurrent();
+    const evidenceSaved = next.evidence ? persistQuestionEvidence(currentSession.currentIndex) : true;
+    const sessionSaved = persistCurrent();
+    if (!evidenceSaved || !sessionSaved) currentSession.responses[currentSession.currentIndex].persistenceFailed = true;
+    return evidenceSaved && sessionSaved;
   };
 
   const completeCurrentSession = ({ finalScore = null, message }) => {
@@ -1616,13 +1724,19 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         challengeKey: currentSession.challengeKey,
         questions: currentSession.questions,
         responses: currentSession.responses,
+        ruleVersion: currentSession.challengeRuleVersion,
       })
       : null;
-    persistCurrent();
+    const sessionSaved = persistCurrent();
     renderSession();
     const feedback = feedbackForCurrent();
     feedback.hidden = false;
-    feedback.textContent = `${message} Final score: ${currentSession.finalScore}/100.${currentSession.challengeOutcome ? ` ${formatChallengeOutcome(currentSession.challengeOutcome)}.` : ''} Replay the same list or start fresh when you are ready.`;
+    const evidenceSummaries = currentSession.questions.map((_, index) => (
+      summarizeAttemptEvidence(currentSession.responses[index]?.evidence)
+    ));
+    const evidenceSamples = evidenceSummaries.filter((summary) => summary.qualified).length;
+    const evidenceCorrect = evidenceSummaries.filter((summary) => summary.qualified && summary.firstCheckCorrect).length;
+    feedback.textContent = `${message} Final accuracy including corrections: ${currentSession.finalScore}/100. Qualified first-check samples: ${evidenceSamples}/${currentSession.questions.length}; first-check correct: ${evidenceCorrect}/${evidenceSamples || 0}.${currentSession.challengeOutcome ? ` ${formatChallengeOutcome(currentSession.challengeOutcome)}.` : ''}${sessionSaved ? '' : ' This session remains in this tab but was not saved to history.'} Replay the same list or start fresh when you are ready.`;
     renderHistory();
     window.requestAnimationFrame(() => {
       feedback.focus({ preventScroll: true });
@@ -1663,6 +1777,12 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     stopTimer();
     const latest = readSessions()[0];
     if (!latest) return;
+    if (latest.challengeUnavailable) {
+      const feedback = feedbackForCurrent();
+      feedback.hidden = false;
+      feedback.textContent = 'The latest saved challenge uses an unsupported rule version. Its record remains in history, but it cannot be resumed.';
+      return;
+    }
     currentSession = latest;
     syncControlsFromSession(latest);
     renderSession();
@@ -1686,7 +1806,12 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       feedback.hidden = false;
       feedback.textContent = 'No saved session matched that ID on this device.';
       return;
-    } 
+    }
+    if (match.challengeUnavailable) {
+      feedback.hidden = false;
+      feedback.textContent = 'That saved challenge uses an unsupported rule version. Its record remains in history, but it cannot be resumed.';
+      return;
+    }
     currentSession = match;
     syncControlsFromSession(match);
     renderSession();
@@ -1705,19 +1830,36 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
   byId('reveal-final')?.addEventListener('click', () => {
     if (!currentSession || currentSession.completed) return;
-    updateCurrentResponse({ revealedFinal: true, verified: true, correct: responseForCurrent().correct || false, input: byId('answer-input').value.trim() });
+    const response = responseForCurrent();
+    updateCurrentResponse({
+      revealedFinal: true,
+      verified: true,
+      correct: response.correct || false,
+      input: byId('answer-input').value.trim(),
+      evidence: appendQuestionEvidence(currentSession.currentIndex, response, { kind: 'reveal-final' }),
+    });
     renderSession();
   });
 
   byId('reveal-steps')?.addEventListener('click', () => {
     if (!currentSession || currentSession.completed) return;
-    updateCurrentResponse({ revealedSteps: true, revealedFinal: true, verified: true, correct: responseForCurrent().correct || false, input: byId('answer-input').value.trim() });
+    const response = responseForCurrent();
+    let evidence = appendQuestionEvidence(currentSession.currentIndex, response, { kind: 'reveal-final' });
+    evidence = appendEvidenceEvent(evidence, { kind: 'reveal-steps' });
+    updateCurrentResponse({ revealedSteps: true, revealedFinal: true, verified: true, correct: response.correct || false, input: byId('answer-input').value.trim(), evidence });
     renderSession();
   });
   byId('use-recovery-prompt')?.addEventListener('click', () => {
     const response = responseForCurrent();
     if (!response.recoveryPrompt) return;
-    updateCurrentResponse({ recoveryMode: true, verified: false, correct: false, input: '' });
+    updateCurrentResponse({
+      recoveryMode: true,
+      recoveryUsed: true,
+      verified: false,
+      correct: false,
+      input: '',
+      evidence: appendQuestionEvidence(currentSession.currentIndex, response, { kind: 'recovery' }),
+    });
     renderSession();
     byId('answer-input')?.focus();
   });
@@ -1760,23 +1902,26 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   byId('check-sheet')?.addEventListener('click', () => {
     if (!currentSession || currentSession.completed) return;
     let correctCount = 0;
+    let saved = true;
     currentSession.questions.forEach((question, index) => {
       const input = currentSession.responses[index]?.input?.trim() || '';
       const correct = input !== '' && Number(input) === question.answer;
+      const previous = currentSession.responses[index] || {};
       currentSession.responses[index] = {
-        ...(currentSession.responses[index] || {}),
+        ...previous,
         input,
         verified: true,
         correct,
-        attempts: (currentSession.responses[index]?.attempts || 0) + 1,
+        attempts: (previous.attempts || 0) + 1,
+        evidence: appendQuestionEvidence(index, previous, { kind: 'submit', value: input, correct }),
       };
       if (correct) correctCount += 1;
-      syncExerciseProgress(index);
+      if (!syncExerciseProgress(index)) saved = false;
     });
     playTone(correctCount === currentSession.questions.length ? 'success' : 'error');
     completeCurrentSession({
       finalScore: Math.round((correctCount / currentSession.questions.length) * 100),
-      message: `Sheet checked. ${correctCount}/${currentSession.questions.length} correct.`,
+      message: `Sheet checked. ${correctCount}/${currentSession.questions.length} correct.${saved ? '' : ' Some results remain in this tab but were not saved to Progress.'}`,
     });
   });
 
@@ -1784,10 +1929,13 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     if (!currentSession) return;
     if (!currentSession.completed) {
       currentSession.questions.forEach((_, index) => {
+        const previous = currentSession.responses[index] || {};
         currentSession.responses[index] = {
-          ...(currentSession.responses[index] || {}),
+          ...previous,
           revealedFinal: true,
+          evidence: appendQuestionEvidence(index, previous, { kind: 'reveal-final' }),
         };
+        persistQuestionEvidence(index);
       });
       persistCurrent();
     }
@@ -1805,10 +1953,12 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
   byId('save-sheet')?.addEventListener('click', () => {
     if (!currentSession) return;
-    persistCurrent();
+    const saved = persistCurrent();
     const feedback = feedbackForCurrent();
     feedback.hidden = false;
-    feedback.textContent = 'Sheet progress saved. You can return later and continue where you left off.';
+    feedback.textContent = saved
+      ? 'Sheet progress saved. You can return later and continue where you left off.'
+      : 'Sheet progress remains in this tab, but browser storage did not save it for later.';
   });
 
   byId('print-sheet')?.addEventListener('click', () => window.print());

@@ -1,0 +1,18 @@
+{
+  "values": {
+    "soroban-dojo:path": "children",
+    "soroban-dojo:completed-lessons": "[\"lesson-l0-001\"]",
+    "soroban-dojo:exercise-states": "{\"exercise-l0-001\":{\"status\":\"got-it\",\"level\":\"L0\",\"skill\":\"abacus-orientation\"}}",
+    "soroban-dojo:timer-history": "[{\"seconds\":30}]",
+    "soroban-dojo:practice-sessions": "[]",
+    "soroban-dojo:worksheet-sessions": "[{\"accuracy\":100,\"answered\":10}]",
+    "soroban-dojo:weekly-study-plan": "{\"lesson\":{\"done\":true}}",
+    "soroban-dojo:placement-result": "{\"level\":\"L0\",\"title\":\"Foundations\",\"reason\":\"Start here\"}",
+    "soroban-dojo:minigame-scores": "{\"table-tower\":500}",
+    "soroban-dojo:minigame-medals": "{\"table-tower\":\"gold\"}",
+    "soroban-dojo:boss-rounds": "{\"L0\":true,\"L1\":false}",
+    "soroban-dojo:boss-session-progress": "{}",
+    "soroban-dojo:boss-certificates": "{\"L0\":{\"name\":\"Learner\",\"date\":\"7/29/2026\"}}",
+    "soroban-dojo:theme": "sumi"
+  }
+}

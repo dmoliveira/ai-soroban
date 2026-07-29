@@ -2,6 +2,7 @@ import { createRng } from './worksheet.js';
 
 export const MINI_GAME_DEFINITIONS = {
   'complement-dash': {
+    ruleVersion: 1,
     key: 'complement-dash',
     title: 'Number Bond Blitz',
     summary: 'Complete number bonds in a finite accuracy sprint.',
@@ -12,6 +13,7 @@ export const MINI_GAME_DEFINITIONS = {
     options: { questionCount: [5, 10, 20], timeLimitSeconds: [0, 15, 30, 60] },
   },
   'table-tower': {
+    ruleVersion: 1,
     key: 'table-tower',
     title: 'Table Tower',
     summary: 'Climb a finite set of multiplication facts without losing your streak.',
@@ -22,6 +24,7 @@ export const MINI_GAME_DEFINITIONS = {
     options: { questionCount: [5, 10, 20] },
   },
   'anzan-flash': {
+    ruleVersion: 1,
     key: 'anzan-flash',
     title: 'Flash Anzan',
     summary: 'Hold one paced signed sequence, then submit its final total.',
@@ -32,6 +35,7 @@ export const MINI_GAME_DEFINITIONS = {
     options: { termCount: [10, 20, 30], intervalMs: [500, 1000, 1500, 2000] },
   },
   'error-fix': {
+    ruleVersion: 1,
     key: 'error-fix',
     title: 'Error Fix',
     summary: 'Repair a finite queue of incorrect arithmetic results.',
@@ -195,6 +199,7 @@ export const certifyMiniGameRound = (round) => {
   const definition = MINI_GAME_DEFINITIONS[round?.gameId];
   const errors = [];
   if (!definition) return { valid: false, errors: ['unknown mini-game'] };
+  if (round.ruleVersion !== definition.ruleVersion) errors.push('rule version is unsupported');
   const normalized = normalizeMiniGameSettings(round.gameId, round.settings);
   if (JSON.stringify(normalized) !== JSON.stringify(round.settings)) errors.push('settings are not normalized');
   if (!MINI_GAME_TIERS.includes(round.tier)) errors.push('tier is invalid');
@@ -227,6 +232,7 @@ export const buildMiniGameRound = ({ gameId, tier = 'starter', settings = {}, se
   const rng = createRng(`${gameId}:${normalizedTier}:${normalizedSeed}`);
   const round = {
     gameId,
+    ruleVersion: definition.ruleVersion,
     tier: normalizedTier,
     settings: normalizedSettings,
     seed: normalizedSeed,

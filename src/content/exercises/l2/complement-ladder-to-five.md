@@ -11,6 +11,10 @@ prerequisites:
   - lesson-l2-001
 hint: Think of pairs that complete five, not separate numbers.
 answer: 1 needs 4, 2 needs 3, 3 needs 2, and 4 needs 1 to reach 5.
+evaluation:
+  kind: pairs
+  target: 5
+  pairs: [[1, 4], [2, 3], [3, 2], [4, 1]]
 explanation: This builds complement recall as a ladder of related pairs instead of isolated facts.
 tags: [complements, five, pattern]
 visualValue: 5

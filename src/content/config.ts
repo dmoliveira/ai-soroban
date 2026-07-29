@@ -28,6 +28,27 @@ const worksheetTermSchema = z.object({
   value: z.number().int(),
 });
 
+const evaluationSchema = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('numeric'),
+    accepted: z.array(z.number()).min(1),
+    tolerance: z.number().nonnegative().optional(),
+  }),
+  z.object({
+    kind: z.literal('concepts'),
+    allOf: z.array(z.array(z.string().min(1)).min(1)).min(1),
+  }),
+  z.object({
+    kind: z.literal('pairs'),
+    target: z.number().int(),
+    pairs: z.array(z.tuple([z.number().int(), z.number().int()])).min(1),
+  }),
+  z.object({
+    kind: z.literal('exact'),
+    accepted: z.array(z.string().min(1)).min(1),
+  }),
+]);
+
 const certifyWorksheetContent = (data: {
   worksheetProfile?: { digitRange: string; operationRange: string; operatorMode: 'add' | 'subtract' | 'mixed'; label?: string };
   worksheetDrill?: Array<{ operator?: '+' | '-' | null; value: number }>;
@@ -67,12 +88,17 @@ const exercises = defineCollection({
     hint: z.string(),
     answer: z.string(),
     expectedValue: z.number().optional(),
+    evaluation: evaluationSchema.optional(),
     explanation: z.string(),
     tags: z.array(z.string()).default([]),
     visualValue: z.number().int().nonnegative().optional(),
     stepValues: z.array(z.number().int().nonnegative()).default([]),
     worksheetProfile: worksheetProfileSchema.optional(),
     worksheetDrill: z.array(worksheetTermSchema).optional(),
+  }).superRefine((data, context) => {
+    if (data.expectedValue === undefined && !data.evaluation) {
+      context.addIssue({ code: z.ZodIssueCode.custom, message: 'nonnumeric exercises require structured evaluation metadata', path: ['evaluation'] });
+    }
   }).refine(certifyWorksheetContent, {
     message: 'worksheetProfile and worksheetDrill must exist together, comply with the declared worksheet profile, and use the normalized label',
   }),

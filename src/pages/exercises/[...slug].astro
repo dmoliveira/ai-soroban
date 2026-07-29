@@ -25,7 +25,18 @@ const bestFor = exercise.data.type === 'visual-check'
 ---
 
 <BaseLayout title={`${exercise.data.title} | Soroban Dojo`}>
-  <article class="panel content-prose exercise-page-panel">
+  <article
+    class="panel content-prose exercise-page-panel"
+    data-exercise={JSON.stringify({
+      answer: exercise.data.answer,
+      evaluation: exercise.data.evaluation ?? { kind: 'numeric', accepted: [exercise.data.expectedValue] },
+      hint: exercise.data.hint,
+      explanation: exercise.data.explanation,
+      id: exercise.data.id,
+      level: exercise.data.level,
+      skill: exercise.data.skill,
+    })}
+  >
     <p class="eyebrow">Exercise · {exercise.data.level}</p>
     <h1>{exercise.data.title}</h1>
     <div class="meta-row detail-meta-row">
@@ -114,14 +125,33 @@ const bestFor = exercise.data.type === 'visual-check'
     </section>
   </article>
 
-  <script is:inline define:vars={{ answer: exercise.data.answer, expectedValue: exercise.data.expectedValue, hint: exercise.data.hint, explanation: exercise.data.explanation, exerciseId: exercise.data.id, exerciseLevel: exercise.data.level, exerciseSkill: exercise.data.skill }}>
+  <script>
+    // @ts-nocheck
+    import { evaluateResponse } from '../../lib/evaluation.js';
+    import { appendEvidenceEvent, claimMasteryItem, createAttemptEvidence, masteryClaimOwnedBy, normalizeMasterySeenIndex, summarizeAttemptEvidence, upsertAttemptEvidence } from '../../lib/mastery.js';
+    import { STORAGE_KEYS, readStoredArray, readStoredJson, readStoredRecord, writeStoredJson } from '../../lib/storage.js';
+    import { ensureStorageCompatibility } from '../../lib/storage-migrations.js';
+
+    ensureStorageCompatibility(localStorage);
+
+    const exerciseRoot = document.querySelector('.exercise-page-panel');
+    const exerciseData = JSON.parse(exerciseRoot?.dataset.exercise || '{}');
+    const {
+      answer,
+      evaluation,
+      hint,
+      explanation,
+      id: exerciseId,
+      level: exerciseLevel,
+      skill: exerciseSkill,
+    } = exerciseData;
     const responseInput = document.getElementById('exercise-response');
     const feedback = document.getElementById('exercise-feedback');
     const method = document.getElementById('exercise-method');
     const responseState = document.getElementById('exercise-state-response');
     const statusState = document.getElementById('exercise-state-status');
     const memoryState = document.getElementById('exercise-state-memory');
-    const exerciseStateKey = 'soroban-dojo:exercise-states';
+    const exerciseStateKey = STORAGE_KEYS.exerciseStates;
     const audioWindow = typeof window !== 'undefined' ? /** @type {any} */ (window) : null;
     const AudioContextCtor = audioWindow
       ? audioWindow.AudioContext || (audioWindow).webkitAudioContext || null
@@ -147,25 +177,56 @@ const bestFor = exercise.data.type === 'visual-check'
       osc.stop(start + 0.22);
     };
 
-    const normalizeNumber = (value) => {
-      const parsed = Number(value.trim());
-      return Number.isNaN(parsed) ? null : parsed;
+    const readExerciseStates = () => readStoredRecord(localStorage, exerciseStateKey);
+    const writeExerciseStates = (state) => writeStoredJson(localStorage, exerciseStateKey, state);
+    const readSeenItems = () => normalizeMasterySeenIndex(readStoredJson(localStorage, STORAGE_KEYS.masterySeenItems, {}));
+    const hasPriorAnswerExposure = () => readSeenItems().claims.some((claim) => claim.itemId === exerciseId)
+      || readStoredArray(localStorage, STORAGE_KEYS.masteryEvidence)
+        .some((attempt) => attempt?.itemId === exerciseId && Array.isArray(attempt.events) && attempt.events.length > 0);
+    let attemptSequence = 0;
+    const newAttempt = () => {
+      attemptSequence += 1;
+      return createAttemptEvidence({
+        attemptId: `exercise:${exerciseId}:${Date.now().toString(36)}:${attemptSequence}`,
+        source: 'exercise',
+        itemId: exerciseId,
+        skill: exerciseSkill,
+        level: exerciseLevel,
+        rule: { id: exerciseId, version: 1 },
+        eligibility: hasPriorAnswerExposure() ? 'activity-only' : 'prospective',
+      });
     };
-
-    const normalizeText = (value) => value
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, ' ')
-      .trim();
-
-    const readExerciseStates = () => {
-      try {
-        return JSON.parse(localStorage.getItem(exerciseStateKey) || '{}');
-      } catch {
-        return {};
+    let attemptEvidence = newAttempt();
+    const persistEvidence = () => {
+      const claim = claimMasteryItem(readSeenItems(), {
+        itemId: attemptEvidence.itemId,
+        attemptId: attemptEvidence.attemptId,
+        firstSeenAt: attemptEvidence.events[0]?.at || attemptEvidence.startedAt,
+      });
+      const claimSaved = !claim.changed || writeStoredJson(localStorage, STORAGE_KEYS.masterySeenItems, claim.index);
+      const claimOwned = claim.eligible
+        && claimSaved
+        && masteryClaimOwnedBy(readSeenItems(), attemptEvidence.itemId, attemptEvidence.attemptId);
+      if (!claimOwned) attemptEvidence = { ...attemptEvidence, eligibility: 'activity-only' };
+      let ledger = upsertAttemptEvidence(readStoredArray(localStorage, STORAGE_KEYS.masteryEvidence), attemptEvidence);
+      attemptEvidence = ledger.find((attempt) => attempt.attemptId === attemptEvidence.attemptId) || attemptEvidence;
+      let evidenceSaved = writeStoredJson(localStorage, STORAGE_KEYS.masteryEvidence, ledger);
+      if (!evidenceSaved) attemptEvidence = { ...attemptEvidence, eligibility: 'activity-only' };
+      const ownershipStable = attemptEvidence.eligibility !== 'prospective'
+        || masteryClaimOwnedBy(readSeenItems(), attemptEvidence.itemId, attemptEvidence.attemptId);
+      if (evidenceSaved && !ownershipStable) {
+        attemptEvidence = { ...attemptEvidence, eligibility: 'activity-only' };
+        ledger = upsertAttemptEvidence(readStoredArray(localStorage, STORAGE_KEYS.masteryEvidence), attemptEvidence);
+        attemptEvidence = ledger.find((attempt) => attempt.attemptId === attemptEvidence.attemptId) || attemptEvidence;
+        evidenceSaved = writeStoredJson(localStorage, STORAGE_KEYS.masteryEvidence, ledger);
       }
+      return claimSaved && evidenceSaved;
     };
-
-    const writeExerciseStates = (state) => localStorage.setItem(exerciseStateKey, JSON.stringify(state));
+    const recordEvidence = (event) => {
+      attemptEvidence = appendEvidenceEvent(attemptEvidence, event);
+      const saved = persistEvidence();
+      return { summary: summarizeAttemptEvidence(attemptEvidence), saved };
+    };
 
     const applyWriteCellShortcut = (event) => {
       const input = event.currentTarget;
@@ -193,23 +254,18 @@ const bestFor = exercise.data.type === 'visual-check'
         if (memoryState) memoryState.textContent = 'Write something first.';
         return;
       }
-      const numericExpected = typeof expectedValue === 'number' ? expectedValue : null;
-      const numericActual = normalizeNumber(value);
-      const textExpected = normalizeText(answer);
-      const textActual = normalizeText(value);
-      const correct = numericExpected !== null
-        ? numericActual === numericExpected
-        : textActual.length > 0 && textActual === textExpected;
+      const evaluated = evaluateResponse(evaluation, value);
+      const correct = evaluated.valid && evaluated.correct;
+      const evidence = recordEvidence({ kind: 'submit', value, correct });
       feedback.hidden = false;
       playTone(correct ? 'success' : 'error');
       feedback.textContent = correct
         ? 'Correct. Your response matches the answer.'
-        : numericExpected !== null
+        : evaluation?.kind === 'numeric'
           ? 'Not correct yet. Revise your number, ask for a hint, or reveal the answer.'
           : 'Not correct yet. Revise your wording, ask for a hint, or reveal the answer.';
       responseState.textContent = value;
       statusState.textContent = correct ? 'Correct response' : 'Try one revision';
-      if (memoryState) memoryState.textContent = correct ? 'Saved as correct on this device.' : 'Saved for review on this device.';
       const state = readExerciseStates();
       state[exerciseId] = {
         status: correct ? 'got-it' : 'needs-review',
@@ -218,25 +274,46 @@ const bestFor = exercise.data.type === 'visual-check'
         sessionId: `exercise:${exerciseLevel}:${exerciseSkill}`,
         updatedAt: new Date().toISOString(),
       };
-      writeExerciseStates(state);
+      const stateSaved = writeExerciseStates(state);
+      const saved = evidence.saved && stateSaved;
+      const classification = !saved
+        ? 'Not saved; this result is available only in the current tab.'
+        : correct && evidence.summary.qualified && evidence.summary.firstCheckCorrect
+          ? 'Saved as unassisted first-check evidence on this device.'
+          : correct && evidence.summary.qualified
+            ? 'Saved as a first-check miss with a later correction.'
+            : correct
+              ? 'Saved as assisted or repeated activity without new first-check credit.'
+              : evidence.summary.qualified
+                ? 'Saved as an unassisted first-check miss for review.'
+                : 'Saved as activity without new first-check credit.';
+      feedback.textContent += saved
+        ? ` ${classification}`
+        : ' This result remains available in this tab, but browser storage did not save it to Progress.';
+      if (memoryState) memoryState.textContent = classification;
     });
 
     document.getElementById('hint-exercise')?.addEventListener('click', () => {
+      const { saved } = recordEvidence({ kind: 'hint' });
       feedback.hidden = false;
-      feedback.textContent = `Hint: ${hint}`;
+      feedback.textContent = `Hint: ${hint}${saved ? '' : ' This hint use could not be saved to Progress.'}`;
       statusState.textContent = 'Hint shown';
       if (memoryState) memoryState.textContent = 'Use the hint, then try one revision.';
     });
 
     document.getElementById('reveal-answer')?.addEventListener('click', () => {
+      const { saved } = recordEvidence({ kind: 'reveal-final' });
       feedback.hidden = false;
       playTone('success');
-      feedback.textContent = `Answer: ${answer}`;
+      feedback.textContent = `Answer: ${answer}${saved ? '' : ' This reveal could not be saved to Progress.'}`;
       statusState.textContent = 'Answer shown';
       if (memoryState) memoryState.textContent = 'The answer is visible now.';
     });
 
     document.getElementById('reveal-method')?.addEventListener('click', () => {
+      const { saved } = recordEvidence({ kind: 'reveal-steps' });
+      feedback.hidden = false;
+      feedback.textContent = saved ? 'Method opened for review.' : 'Method opened, but this reveal could not be saved to Progress.';
       method.hidden = false;
       method.textContent = explanation;
       statusState.textContent = 'Method shown';
@@ -251,6 +328,7 @@ const bestFor = exercise.data.type === 'visual-check'
       responseState.textContent = '—';
       statusState.textContent = 'Ready to attempt';
       if (memoryState) memoryState.textContent = 'This attempt stays on this device.';
+      attemptEvidence = newAttempt();
       responseInput.focus();
     });
     responseInput?.addEventListener('keydown', (event) => {

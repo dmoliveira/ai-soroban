@@ -14,6 +14,10 @@ const progressKeys = [
   'soroban-dojo:boss-rounds',
   'soroban-dojo:boss-session-progress',
   'soroban-dojo:boss-certificates',
+  'soroban-dojo:mastery-evidence-v1',
+  'soroban-dojo:mastery-seen-items-v1',
+  'soroban-dojo:minigame-scores-v2',
+  'soroban-dojo:boss-provenance-v1',
 ];
 
 test('placement answers and recommendation survive repeated reloads', async ({ page }) => {
@@ -63,12 +67,63 @@ test('progress reset clears every learning key and preserves preferences', async
 
   const remaining = await page.evaluate((keys) => ({
     progress: keys.filter((key) => localStorage.getItem(key) !== null),
+    evidence: JSON.parse(localStorage.getItem('soroban-dojo:mastery-evidence-v1') || 'null'),
+    seenItems: JSON.parse(localStorage.getItem('soroban-dojo:mastery-seen-items-v1') || 'null'),
+    scores: JSON.parse(localStorage.getItem('soroban-dojo:minigame-scores-v2') || 'null'),
+    provenance: JSON.parse(localStorage.getItem('soroban-dojo:boss-provenance-v1') || 'null'),
     theme: localStorage.getItem('soroban-dojo:theme'),
     unrelated: localStorage.getItem('unrelated:key'),
   }), progressKeys);
-  expect(remaining.progress).toEqual([]);
+  expect(remaining.progress).toEqual([
+    'soroban-dojo:mastery-evidence-v1',
+    'soroban-dojo:mastery-seen-items-v1',
+    'soroban-dojo:minigame-scores-v2',
+    'soroban-dojo:boss-provenance-v1',
+  ]);
+  expect(remaining.evidence).toEqual([]);
+  expect(remaining.seenItems).toEqual({ version: 1, claims: [] });
+  expect(remaining.scores).toEqual({ version: 2, legacy: { scores: {}, medals: {} }, bestByScope: {} });
+  expect(remaining.provenance).toEqual({});
   expect(remaining.theme).toBe('sakura');
   expect(remaining.unrelated).toBe('keep');
+});
+
+test('progress reset reloads another open Dojo tab', async ({ page, context }) => {
+  const sibling = await context.newPage();
+  await sibling.addInitScript(() => {
+    const loads = Number(sessionStorage.getItem('reset-test-loads') || 0) + 1;
+    sessionStorage.setItem('reset-test-loads', String(loads));
+  });
+  await page.goto('progress');
+  await sibling.goto('practice');
+  await page.evaluate(() => localStorage.setItem('soroban-dojo:completed-lessons', JSON.stringify(['lesson-l0-001'])));
+  const loadsBeforeReset = await sibling.evaluate(() => Number(sessionStorage.getItem('reset-test-loads')));
+  page.once('dialog', (dialog) => dialog.accept());
+
+  await page.getByRole('button', { name: 'Reset progress' }).click();
+
+  await expect.poll(() => sibling.evaluate(() => Number(sessionStorage.getItem('reset-test-loads')))).toBeGreaterThan(loadsBeforeReset);
+  expect(await sibling.evaluate(() => localStorage.getItem('soroban-dojo:completed-lessons'))).toBeNull();
+  await sibling.close();
+});
+
+test('progress reset warns when no cross-tab notification transport succeeds', async ({ page }) => {
+  await page.goto('progress');
+  await page.evaluate(() => {
+    Object.defineProperty(window, 'BroadcastChannel', { configurable: true, value: undefined });
+    const nativeSetItem = Storage.prototype.setItem;
+    Storage.prototype.setItem = function setItem(key, value) {
+      if (key === 'soroban-dojo:reset-epoch') throw new DOMException('blocked', 'QuotaExceededError');
+      return nativeSetItem.call(this, key, value);
+    };
+    localStorage.setItem('soroban-dojo:completed-lessons', JSON.stringify(['lesson-l0-001']));
+  });
+  page.once('dialog', (dialog) => dialog.accept());
+
+  await page.getByRole('button', { name: 'Reset progress' }).click();
+
+  await expect(page.locator('#storage-compatibility-notice')).toContainText('reload them before continuing');
+  expect(await page.evaluate(() => localStorage.getItem('soroban-dojo:completed-lessons'))).toBeNull();
 });
 
 test('completed weekly plan is not reported as an unfinished lesson', async ({ page }) => {

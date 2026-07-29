@@ -2,6 +2,7 @@
 import '../styles/global.css';
 import JapaneseLabel from '../components/JapaneseLabel.astro';
 import ThemeSelector from '../components/ThemeSelector.astro';
+import StorageBootstrap from '../components/StorageBootstrap.astro';
 import { DEFAULT_THEME_ID, THEME_BY_ID, buildThemeCss, themeBootstrapConfig } from '../lib/themes.js';
 
 interface Props {
@@ -73,6 +74,7 @@ const themeBootstrapScript = `(()=>{const config=${JSON.stringify(themeBootstrap
     <link rel="icon" href={`${base}favicon.svg`} />
   </head>
   <body>
+    <StorageBootstrap />
     <a class="skip-link" href="#main-content">Skip to content</a>
     <header class="site-header">
       <div class="shell header-shell">

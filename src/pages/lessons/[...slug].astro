@@ -271,11 +271,17 @@ const bestFor = lesson.data.skill === 'abacus-orientation'
     const nextPanel = document.getElementById('lesson-complete-next');
     const readLessons = () => {
       try {
-        return JSON.parse(localStorage.getItem(lessonKey) || '[]');
+        const value = JSON.parse(localStorage.getItem(lessonKey) || '[]');
+        return Array.isArray(value) ? value : [];
       } catch {
         return [];
       }
     };
+    const syncWritableState = (writable) => { if (button) button.disabled = !writable; };
+    if (document.documentElement.dataset.storageWritable) {
+      syncWritableState(document.documentElement.dataset.storageWritable === 'true');
+    }
+    window.addEventListener('soroban:storage-ready', (event) => syncWritableState(event.detail?.writable === true));
     const syncLabel = () => {
       const current = readLessons();
       const done = current.includes(lessonId);
@@ -284,10 +290,11 @@ const bestFor = lesson.data.skill === 'abacus-orientation'
       if (nextPanel) nextPanel.hidden = !done;
     };
     button?.addEventListener('click', () => {
+      if (document.documentElement.dataset.storageWritable !== 'true') return;
       const current = readLessons();
       const wasDone = current.includes(lessonId);
       const next = wasDone ? current.filter((entry) => entry !== lessonId) : [...current, lessonId];
-      localStorage.setItem(lessonKey, JSON.stringify(next));
+      try { localStorage.setItem(lessonKey, JSON.stringify(next)); } catch { return; }
       syncLabel();
       if (!wasDone && nextPanel) {
         nextPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });

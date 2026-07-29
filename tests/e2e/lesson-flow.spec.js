@@ -30,6 +30,13 @@ test('division lesson links into focused worksheet submodes', async ({ page }) =
   await expect(page.locator('#worksheet-focus-title')).toContainText('Division quotient building');
 });
 
+test('worked soroban visuals preserve authored chronology', async ({ page }) => {
+  await page.goto('lessons/l3/mixed-two-digit-fluency');
+  await expect(page.locator('.step-card strong')).toHaveText(['24', '31', '32']);
+  await expect(page.locator('.soroban-board')).toHaveAttribute('role', 'img');
+  await expect(page.locator('.soroban-board .rod').first()).toHaveAttribute('aria-hidden', 'true');
+});
+
 test('weekly study plan adapts to multiplication weakness', async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem('soroban-dojo:exercise-states', JSON.stringify({
