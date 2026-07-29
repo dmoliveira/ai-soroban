@@ -11,7 +11,7 @@
 
 Soroban Dojo may store:
 
-- selected learner path
+- selected learner path (`children` or `adults`) and its independent choose/clear controls
 - completed lessons and exercise review states
 - practice sessions and bounded timer history
 - worksheet sessions and weekly study-plan state
@@ -24,11 +24,13 @@ Soroban Dojo may store:
 
 The canonical key registry is `src/lib/storage.js`. New browser state must be added there and covered by reset tests before release.
 
+The learner path intentionally keeps its legacy raw-string storage format, while placement remains JSON in its compatible legacy/current shapes. Reading either value must not normalize or rewrite saved bytes. Only an explicit choose, score, clear, or reset action may change those records, and a failed browser write or removal must leave the prior saved state visible and protected.
+
 Soroban Dojo does not infer verified mastery from pre-0.4 records because those records do not contain enough attempt or assistance history. Existing records remain visible as legacy activity. New evidence uses parallel versioned keys and does not rewrite the old records or the raw theme preference. If a 0.4 versioned evidence, score, or provenance companion cannot be validated, or the schema marker names a newer version, the compatibility layer disables learning-state writes rather than overwriting those unknown records. Other malformed local records retain their safe read-time fallbacks.
 
 ## Reset contract
 
-“Reset progress” removes every learning and reward key listed above, including placement and game records. It preserves the display theme and unrelated browser data, and notifies other open Dojo tabs to reload. If cross-tab notification is unavailable, the learner receives a manual-reload warning. A missing, invalid, or inaccessible theme value falls back to Washi and never blocks the page. Some pages may immediately construct an unsaved default recommendation after reset; that default is not prior learner history.
+“Reset progress” removes every learning and reward key listed above, including route, placement, and game records. Route controls may clear only the selected path, and placement controls may clear only the saved starting point or its answers, without erasing other progress. Full reset preserves the display theme and unrelated browser data, and notifies other open Dojo tabs to reload. If cross-tab notification is unavailable, the learner receives a manual-reload warning. A missing, invalid, or inaccessible theme value falls back to Washi and never blocks the page. Some pages may immediately construct an unsaved default recommendation after reset; that default is not prior learner history.
 
 ## Disclosure
 

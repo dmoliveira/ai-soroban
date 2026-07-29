@@ -1,0 +1,139 @@
+---
+import { LEARNER_PATHS } from '../lib/learner-context.js';
+
+interface Props {
+  preferredPath?: 'children' | 'adults';
+  heading?: string;
+  compact?: boolean;
+}
+
+const {
+  preferredPath,
+  heading = 'Save the route that fits this learner',
+  compact = false,
+} = Astro.props;
+const paths = Object.values(LEARNER_PATHS).sort((left, right) => (
+  left.id === preferredPath ? -1 : right.id === preferredPath ? 1 : 0
+));
+---
+
+<section class:list={['learner-path-controls', 'subtle-panel', { 'learner-path-controls-compact': compact }]} data-learner-path-controls>
+  <div class="learner-path-copy">
+    <p class="eyebrow">Current learner route</p>
+    <h3>{heading}</h3>
+    <p class="muted small" data-learner-path-current>No route is selected yet.</p>
+  </div>
+  <div class="button-row button-row-compact learner-path-actions">
+    {paths.map((path) => (
+      <button
+        class:list={['button', { 'button-secondary': path.id !== preferredPath }]}
+        type="button"
+        data-learner-path-choice={path.id}
+        aria-pressed="false"
+      >
+        Use {path.label.toLowerCase()} route
+      </button>
+    ))}
+    <button class="button button-secondary" type="button" data-learner-path-clear>Clear saved route</button>
+  </div>
+  <p class="muted small learner-path-feedback" data-learner-path-feedback role="status" aria-live="polite">
+    Route choice stays only in this browser and can be changed at any time.
+  </p>
+</section>
+
+<script>
+  import {
+    clearLearnerPath,
+    learnerPathLabel,
+    readLearnerPath,
+    writeLearnerPath,
+  } from '../lib/learner-context.js';
+  import { storageWritesAllowed } from '../lib/storage.js';
+
+  const roots = () => Array.from(document.querySelectorAll<HTMLElement>('[data-learner-path-controls]'));
+  const writable = () => document.documentElement.dataset.storageWritable !== 'false'
+    && storageWritesAllowed(localStorage);
+
+  const renderRoot = (root: HTMLElement, announcement = '') => {
+    const selected = readLearnerPath(localStorage);
+    const selectedLabel = learnerPathLabel(selected);
+    const current = root.querySelector<HTMLElement>('[data-learner-path-current]');
+    const feedback = root.querySelector<HTMLElement>('[data-learner-path-feedback]');
+    const canWrite = writable();
+    if (current) current.textContent = selectedLabel
+      ? `Current route: ${selectedLabel}.`
+      : 'No route is selected yet.';
+    root.querySelectorAll<HTMLButtonElement>('[data-learner-path-choice]').forEach((button) => {
+      const active = button.dataset.learnerPathChoice === selected;
+      button.setAttribute('aria-pressed', String(active));
+      button.classList.toggle('is-selected', active);
+      button.disabled = !canWrite;
+    });
+    const clear = root.querySelector<HTMLButtonElement>('[data-learner-path-clear]');
+    if (clear) clear.disabled = !canWrite || !selected;
+    if (feedback) {
+      feedback.textContent = announcement || (!canWrite
+        ? 'Saved learner context is protected and read-only in this page.'
+        : selectedLabel
+          ? `${selectedLabel} route is active in this browser. You can change it without clearing progress.`
+          : 'Route choice stays only in this browser and can be changed at any time.');
+    }
+  };
+
+  const renderAll = (announcement = '') => roots().forEach((root) => renderRoot(root, announcement));
+
+  const failedChangeCopy = (action: 'save' | 'clear', previous: string | null) => {
+    const previousLabel = learnerPathLabel(previous);
+    if (action === 'clear') return previousLabel
+      ? `The saved route could not be cleared. ${previousLabel} remains active.`
+      : 'The saved route could not be cleared in this browser.';
+    return previousLabel
+      ? `The new route could not be saved. ${previousLabel} remains active.`
+      : 'The route could not be saved in this browser.';
+  };
+
+  roots().forEach((root) => {
+    if (root.dataset.learnerPathMounted === 'true') return;
+    root.dataset.learnerPathMounted = 'true';
+    root.querySelectorAll<HTMLButtonElement>('[data-learner-path-choice]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const previous = readLearnerPath(localStorage);
+        const requested = button.dataset.learnerPathChoice;
+        const saved = writeLearnerPath(localStorage, requested);
+        const actual = readLearnerPath(localStorage);
+        const label = learnerPathLabel(actual);
+        const announcement = saved && actual === requested && label
+          ? `${label} route saved in this browser.`
+          : failedChangeCopy('save', previous);
+        renderAll(announcement);
+      });
+    });
+    root.querySelector<HTMLButtonElement>('[data-learner-path-clear]')?.addEventListener('click', () => {
+      const previous = readLearnerPath(localStorage);
+      const cleared = clearLearnerPath(localStorage);
+      const actual = readLearnerPath(localStorage);
+      renderAll(cleared && !actual
+        ? 'Saved learner route cleared. Other progress is unchanged.'
+        : failedChangeCopy('clear', previous));
+    });
+  });
+
+  if (document.documentElement.dataset.storageWritable) renderAll();
+  window.addEventListener('soroban:storage-ready', () => renderAll());
+  window.addEventListener('storage', (event) => {
+    if (event.key === 'soroban-dojo:path') renderAll('Learner route changed in another open Dojo tab.');
+  });
+</script>
+
+<style>
+  .learner-path-controls { display:grid; gap:.75rem; margin-top:1rem; }
+  .learner-path-copy { display:grid; gap:.2rem; }
+  .learner-path-copy > * { margin:0; }
+  .learner-path-actions { margin-top:0; }
+  .learner-path-feedback { margin:0; }
+  .learner-path-controls-compact { padding:.85rem; }
+  @media (max-width:600px) {
+    .learner-path-actions { display:grid; grid-template-columns:1fr; }
+    .learner-path-actions .button { width:100%; }
+  }
+</style>

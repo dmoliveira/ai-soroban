@@ -10,6 +10,8 @@ import {
   normalizeStoredArray,
   normalizeStoredRecord,
   parseStoredJson,
+  removeStoredValue,
+  setStorageCompatibility,
 } from '../src/lib/storage.js';
 
 test('placement state accepts both legacy and current shapes', () => {
@@ -24,6 +26,27 @@ test('placement state accepts both legacy and current shapes', () => {
 test('malformed stored JSON falls back without throwing', () => {
   assert.deepEqual(parseStoredJson('{not-json', []), []);
   assert.deepEqual(parseStoredJson(null, {}), {});
+});
+
+test('single-key removal verifies success and respects read-only storage', () => {
+  const values = new Map([[STORAGE_KEYS.placementResult, 'saved']]);
+  const storage = {
+    getItem: (key) => values.get(key) ?? null,
+    removeItem: (key) => values.delete(key),
+  };
+  assert.equal(removeStoredValue(storage, STORAGE_KEYS.placementResult), true);
+  assert.equal(values.has(STORAGE_KEYS.placementResult), false);
+
+  values.set(STORAGE_KEYS.placementResult, 'protected');
+  setStorageCompatibility(storage, { writable: false });
+  assert.equal(removeStoredValue(storage, STORAGE_KEYS.placementResult), false);
+  assert.equal(values.get(STORAGE_KEYS.placementResult), 'protected');
+
+  const blocked = {
+    getItem: () => 'still-saved',
+    removeItem: () => { throw new Error('blocked'); },
+  };
+  assert.equal(removeStoredValue(blocked, STORAGE_KEYS.placementResult), false);
 });
 
 test('valid JSON with the wrong storage shape normalizes safely', () => {

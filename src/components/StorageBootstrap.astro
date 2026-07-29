@@ -1,21 +1,33 @@
 <div id="storage-compatibility-notice" class="storage-compatibility-notice" role="status" aria-live="polite" hidden></div>
 
 <script>
-  import { ensureStorageCompatibility } from '../lib/storage-migrations.js';
+  import { COMPATIBILITY_STORAGE_KEYS, ensureStorageCompatibility } from '../lib/storage-migrations.js';
 
-  const result = ensureStorageCompatibility(localStorage);
-  document.documentElement.dataset.storageWritable = String(result.writable);
   const notice = document.getElementById('storage-compatibility-notice');
+  let compatibilityNoticeActive = false;
   const showNotice = (message: string) => {
     if (!notice) return;
     notice.textContent = message;
     notice.hidden = false;
   };
-  if (result.future) {
-    showNotice('Newer Soroban Dojo progress was found. Saved progress is protected and read-only in this older page. You can practice in this tab, but changes will not be saved.');
-  } else if (!result.writable) {
-    showNotice('Saved progress could not be validated. Existing records are protected and read-only. You can practice in this tab, but changes will not be saved.');
-  }
+  const applyCompatibility = () => {
+    const result = ensureStorageCompatibility(localStorage);
+    document.documentElement.dataset.storageWritable = String(result.writable);
+    if (result.future) {
+      compatibilityNoticeActive = true;
+      showNotice('Newer Soroban Dojo progress was found. Saved progress is protected and read-only in this older page. You can practice in this tab, but changes will not be saved.');
+    } else if (!result.writable) {
+      compatibilityNoticeActive = true;
+      showNotice('Saved progress could not be validated. Existing records are protected and read-only. You can practice in this tab, but changes will not be saved.');
+    } else if (compatibilityNoticeActive && notice) {
+      compatibilityNoticeActive = false;
+      notice.textContent = '';
+      notice.hidden = true;
+    }
+    window.dispatchEvent(new CustomEvent('soroban:storage-ready', { detail: result }));
+    return result;
+  };
+  applyCompatibility();
   try {
     const resetNotice = sessionStorage.getItem('soroban-dojo:reset-notice');
     if (resetNotice) {
@@ -23,8 +35,8 @@
       showNotice(resetNotice);
     }
   } catch {}
-  window.dispatchEvent(new CustomEvent('soroban:storage-ready', { detail: result }));
   let resetPending = false;
+  let compatibilityTimer: ReturnType<typeof setTimeout> | null = null;
   const reloadForExternalReset = () => {
     if (resetPending) return;
     resetPending = true;
@@ -32,7 +44,31 @@
     window.location.reload();
   };
   window.addEventListener('storage', (event) => {
-    if (event.key === 'soroban-dojo:reset-epoch') reloadForExternalReset();
+    if (event.key === 'soroban-dojo:reset-epoch') {
+      if (compatibilityTimer) clearTimeout(compatibilityTimer);
+      reloadForExternalReset();
+      return;
+    }
+    if (event.key === 'soroban-dojo:state-schema') {
+      if (compatibilityTimer) clearTimeout(compatibilityTimer);
+      compatibilityTimer = null;
+      applyCompatibility();
+      return;
+    }
+    const compatibilityKeyChanged = COMPATIBILITY_STORAGE_KEYS.some((key) => key === event.key);
+    if (compatibilityKeyChanged && event.newValue !== null) {
+      if (compatibilityTimer) clearTimeout(compatibilityTimer);
+      compatibilityTimer = null;
+      applyCompatibility();
+      return;
+    }
+    if (event.key === null || compatibilityKeyChanged) {
+      if (compatibilityTimer) clearTimeout(compatibilityTimer);
+      compatibilityTimer = setTimeout(() => {
+        compatibilityTimer = null;
+        applyCompatibility();
+      }, 50);
+    }
   });
   if ('BroadcastChannel' in window) {
     const resetChannel = new BroadcastChannel('soroban-dojo:progress');

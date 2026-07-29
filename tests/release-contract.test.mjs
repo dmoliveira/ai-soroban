@@ -82,6 +82,7 @@ test('0.4 release metadata and learner notes stay aligned', () => {
   assert.match(readme, /Soroban Dojo 0\.4\.0 adds prospective first-check evidence/);
   assert.match(readme, /npm run test:release/);
   assert.match(readme, /npm run test:e2e:release-smoke/);
+  assert.match(readme, /Reading legacy route or placement state never rewrites it/);
 });
 
 test('public privacy and worksheet docs match the shipped 0.4 boundaries', () => {
@@ -90,10 +91,14 @@ test('public privacy and worksheet docs match the shipped 0.4 boundaries', () =>
   assert.match(privacyPage, /does not upgrade it into verified mastery/);
   assert.match(privacyPage, /0\.4 versioned evidence, score, or provenance record cannot be validated/);
   assert.match(privacyPage, /Other malformed local records use safe read-time fallbacks/);
+  assert.match(privacyPage, /clear only the selected learner route/);
+  assert.match(privacyPage, /without erasing other progress/);
 
   const privacySpec = read('docs/specs/privacy-and-data.md');
   assert.match(privacySpec, /pre-0\.4 records/);
   assert.match(privacySpec, /Bead Builder's in-progress rod state are not persisted/);
+  assert.match(privacySpec, /legacy raw-string storage format/);
+  assert.match(privacySpec, /Reading either value must not normalize or rewrite saved bytes/);
 
   const malformedEvidence = '"unknown-shape"';
   const malformed = new MemoryStorage({
