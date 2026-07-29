@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import ContinuityNextAction from '../components/ContinuityNextAction.astro';
 import StudioHero from '../components/StudioHero.astro';
 const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
 ---
@@ -40,19 +41,6 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         </article>
       </div>
     </article>
-    <aside class="panel support-card start-here-support">
-      <p class="eyebrow">Best next step</p>
-      <h2>Keep the first day intentionally small</h2>
-      <p>Most learners do better with one route, one lesson, and one practice round than with a full tour of the whole dojo.</p>
-      <ul class="list-clean compact-library">
-        <li><strong>Need structure?</strong> Open the curriculum map and follow the sequence.</li>
-        <li><strong>Need a weekly rhythm?</strong> Use the study plan after the first session feels right.</li>
-        <li><strong>Need a level check?</strong> Start with the placement self-check before choosing lessons.</li>
-      </ul>
-      <div class="hero-actions">
-        <a class="button" href={`${base}curriculum`}>Follow the learning map</a>
-        <a class="button button-secondary" href={`${base}study-plan`}>Open the weekly study plan</a>
-      </div>
-    </aside>
+    <ContinuityNextAction surface="start-here" />
   </section>
 </BaseLayout>

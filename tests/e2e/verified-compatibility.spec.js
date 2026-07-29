@@ -64,8 +64,7 @@ test('equivalent exercise wording passes while assistance remains outside master
 });
 
 test('practice reveals preserve correction accuracy but cannot create first-check evidence', async ({ page }) => {
-  await page.goto('practice');
-  await page.locator('#start-practice-now').click();
+  await page.goto('practice?level=L0&skill=abacus-orientation&start=1');
   await page.locator('#reveal-final').click();
   const feedback = await page.locator('#feedback-panel').textContent();
   const answer = feedback.match(/Final number:\s*(-?\d+)/)?.[1];
@@ -235,11 +234,10 @@ test('opaque future challenge payloads stay unscored and survive current history
   await page.addInitScript((session) => {
     localStorage.setItem('soroban-dojo:practice-sessions', JSON.stringify([session]));
   }, futureSession);
-  await page.goto('practice');
+  await page.goto('practice?level=L0&skill=abacus-orientation&start=1');
   const futureCard = page.locator('.session-card').filter({ hasText: 'future-bead-rule' });
   await expect(futureCard).toContainText('Result unavailable for this saved rule version');
   await expect(futureCard).not.toContainText('100/100');
-  await page.locator('#start-practice-now').click();
   const preserved = await page.evaluate(() => JSON.parse(localStorage.getItem('soroban-dojo:practice-sessions')).find((entry) => entry.id === 'future-opaque'));
   expect(preserved).toEqual(futureSession);
   await page.goto('progress');

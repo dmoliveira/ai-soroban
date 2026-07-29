@@ -16,7 +16,7 @@ Provide a calm, practical Soroban dojo that helps children, adult self-learners,
 
 1. **Learning integrity:** an answer reveal supports reflection; it does not masquerade as mastery.
 2. **Task clarity:** Start, Learn, Train, and Progress remain the four primary jobs.
-3. **Context continuity:** lesson and exercise follow-ups preserve level and skill; an explicitly chosen route and placement starting point remain editable local context for later recommendations.
+3. **Context continuity:** lesson and exercise follow-ups preserve level and skill; an explicitly chosen route and placement starting point remain editable local context for later recommendations. Saved unfinished practice, review needs, a fresh matching weekly plan, placement, route, and recent practice resolve in that order before generic setup.
 4. **Privacy by default:** no account, hidden analytics, or remote progress store is required.
 5. **Inclusive delivery:** keyboard, touch, reduced motion, mobile layout, print, and readable status feedback are release requirements.
 6. **Static reliability:** every public route must work from the GitHub Pages base path.
@@ -29,7 +29,7 @@ Provide a calm, practical Soroban dojo that helps children, adult self-learners,
 - authored lessons and exercises with validated relationships
 - guided and generated practice, journeys, certified challenges including Ten Bridge, resume, scoring, and recovery
 - prospective first-check evidence with additive legacy compatibility and read-only protection for malformed 0.4 companions or a newer schema marker
-- adaptive daily drills and weekly planning
+- context-aware next actions on Home, Start Here, Practice, Progress, and Study Plan, including exact saved-session resume and freshness-keyed weekly planning
 - configurable/certified additive, complement, multiplication, division, and anzan worksheets with print and answer-key modes
 - finite mini-games including Bead Builder, boss rounds, badges, and certificates
 - an editable learner route, placement starting point, and local progress recommendations

@@ -106,6 +106,7 @@ const paths = Object.values(LEARNER_PATHS).sort((left, right) => (
           ? `${label} route saved in this browser.`
           : failedChangeCopy('save', previous);
         renderAll(announcement);
+        if (saved && actual !== previous) window.dispatchEvent(new CustomEvent('soroban:learner-context-change'));
       });
     });
     root.querySelector<HTMLButtonElement>('[data-learner-path-clear]')?.addEventListener('click', () => {
@@ -115,6 +116,7 @@ const paths = Object.values(LEARNER_PATHS).sort((left, right) => (
       renderAll(cleared && !actual
         ? 'Saved learner route cleared. Other progress is unchanged.'
         : failedChangeCopy('clear', previous));
+      if (cleared && previous && !actual) window.dispatchEvent(new CustomEvent('soroban:learner-context-change'));
     });
   });
 

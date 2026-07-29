@@ -12,6 +12,7 @@ interface Props {
 }
 
 import { CHALLENGE_LIST } from '../lib/challenges.js';
+import ContinuityNextAction from './ContinuityNextAction.astro';
 
 const { exercises } = Astro.props;
 const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
@@ -26,15 +27,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       </div>
       <span class="badge">Attempt first · 先に挑戦</span>
     </div>
-    <div class="subtle-panel practice-fast-start">
-      <strong>Fast start</strong>
-      <p class="muted small">Launch a recommended session immediately. Open the deeper training options only if the next move is still unclear.</p>
-      <div class="button-row button-row-compact">
-        <button class="button" id="start-practice-now">Start focused practice</button>
-        <button class="button button-secondary" id="start-warmup-now">Start warm-up</button>
-        <a class="button button-secondary" href={`${base}worksheets`}>Print a worksheet instead</a>
-      </div>
-    </div>
+    <ContinuityNextAction surface="practice" headingLevel="h3" />
   </section>
 
   <div class="practice-grid practice-main-grid">
@@ -76,6 +69,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
           <strong>Recommended start</strong>
           <p class="muted">Use the focused start above for one short session. Optional journeys and setup controls follow this practice area.</p>
         </div>
+        <div id="practice-intent-feedback" class="reveal-panel" hidden role="status" aria-live="polite"></div>
         <div id="single-session-active" class="single-session-active" hidden>
           <label class="stack-sm answer-stack">
             <span>Your response · 記入</span>
@@ -223,15 +217,6 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
             </div>
           </article>
         ))}
-      </div>
-      <div class="subtle-panel practice-adaptive-next">
-        <strong id="adaptive-next-title">Adaptive next move</strong>
-        <p id="adaptive-next-copy" class="muted small">Review recommendations will appear here as your weak areas become clearer.</p>
-        <div class="button-row button-row-compact">
-          <a class="button button-secondary" id="adaptive-next-lesson" href={`${base}lessons`}>Recommended lesson</a>
-          <a class="button button-secondary" id="adaptive-next-exercise" href={`${base}exercises`}>Recommended exercise</a>
-          <a class="button button-secondary" id="adaptive-next-worksheet" href={`${base}worksheets`}>Recommended worksheet</a>
-        </div>
       </div>
       </details>
       <details class="practice-setup-block">
@@ -418,6 +403,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 <script>
   // @ts-nocheck
   import { CHALLENGE_DEFINITIONS, buildChallengeQuestions, canonicalizeChallengeSession, certifyChallengeQuestions, evaluateChallengeOutcome, formatChallengeOutcome, isChallengeSessionOpaque } from '../lib/challenges.js';
+  import { normalizeResumablePracticeSession } from '../lib/learner-continuity.js';
   import { appendEvidenceEvent, claimMasteryItem, createAttemptEvidence, masteryClaimOwnedBy, normalizeAttemptEvidence, normalizeMasterySeenIndex, summarizeAttemptEvidence, upsertAttemptEvidence } from '../lib/mastery.js';
   import { STORAGE_KEYS, normalizeStoredArray, normalizeStoredRecord, readStoredArray, readStoredJson, writeStoredJson } from '../lib/storage.js';
   import { ensureStorageCompatibility } from '../lib/storage-migrations.js';
@@ -426,7 +412,6 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   ensureStorageCompatibility(localStorage);
 
   const root = document.querySelector('.practice-stack');
-  const basePath = root?.dataset.base || '/';
   const library = JSON.parse(root?.dataset.library || '[]');
   const SESSION_KEY = STORAGE_KEYS.practiceSessions;
   const TIMER_KEY = STORAGE_KEYS.timerHistory;
@@ -528,51 +513,6 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       else acc.arithmetic += 1;
       return acc;
     }, { arithmetic: 0, complements: 0, multiplication: 0, division: 0, mental: 0 });
-  };
-
-  const adaptiveRecommendations = {
-    arithmetic: {
-      title: 'Arithmetic rhythm needs more support',
-      copy: 'Return to short mixed arithmetic until the running total feels stable again.',
-      lesson: `${basePath}lessons/l3/mixed-two-digit-fluency`,
-      exercise: `${basePath}exercises/l3/mixed-two-digit-sequence`,
-      worksheet: `${basePath}worksheets?preset=mixed-fluency`,
-    },
-    complements: {
-      title: 'Complements are the current weak point',
-      copy: 'Use complement review before longer mixed work so blocked moves feel smaller and cleaner.',
-      lesson: `${basePath}lessons/l2/complements-to-ten`,
-      exercise: `${basePath}exercises/l2/use-complement-to-ten`,
-      worksheet: `${basePath}worksheets?preset=complements`,
-    },
-    multiplication: {
-      title: 'Multiplication needs a cleaner progression',
-      copy: 'Review table families and place shifts before doing broad mixed multiplication sheets.',
-      lesson: `${basePath}lessons/l4/place-shifts-in-multiplication`,
-      exercise: `${basePath}exercises/l4/twelve-times-three`,
-      worksheet: `${basePath}worksheets?preset=multiplication-focus&submode=place-shifts`,
-    },
-    division: {
-      title: 'Division quotient-building needs more support',
-      copy: 'Focus on exact quotient families and verification before wider mixed division work.',
-      lesson: `${basePath}lessons/l4/building-quotients-in-division`,
-      exercise: `${basePath}exercises/l4/twenty-four-divided-by-six`,
-      worksheet: `${basePath}worksheets?preset=division-focus&submode=quotient-building`,
-    },
-    mental: {
-      title: 'Mental recall and rhythm need reinforcement',
-      copy: 'Short anzan sequences and sign-change review should come before faster mixed mastery work.',
-      lesson: `${basePath}lessons/l5/mental-soroban-sequences`,
-      exercise: `${basePath}exercises/l5/three-step-anzan-sequence`,
-      worksheet: `${basePath}worksheets?preset=anzan-focus&submode=anzan-recall`,
-    },
-  };
-
-  const resolveAdaptiveTarget = () => {
-    const weak = readWeakAreas();
-    if (Object.values(weak).every((count) => count === 0)) return 'arithmetic';
-    return ['mental', 'division', 'multiplication', 'complements', 'arithmetic']
-      .sort((a, b) => weak[b] - weak[a])[0];
   };
 
   const applyPracticeLevelDefaults = (level) => {
@@ -938,11 +878,6 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     const purposeCopy = byId('practice-purpose-copy');
     const journeyModeTitle = byId('journey-mode-title');
     const journeyModeCopy = byId('journey-mode-copy');
-    const adaptiveTitle = byId('adaptive-next-title');
-    const adaptiveCopy = byId('adaptive-next-copy');
-    const adaptiveLesson = byId('adaptive-next-lesson');
-    const adaptiveExercise = byId('adaptive-next-exercise');
-    const adaptiveWorksheet = byId('adaptive-next-worksheet');
     if (!target) return;
     const selectedChallenge = selectedChallengeKey ? CHALLENGE_DEFINITIONS[selectedChallengeKey] : null;
     target.textContent = `${selectedChallenge ? `Challenge: ${selectedChallenge.title} · ` : ''}Format: ${byId('session-format').value} · Source: ${byId('session-type').value} · Level: ${byId('session-level').value}${selectedSkillKey ? ` · Focus: ${selectedSkillKey.replace(/-/g, ' ')}` : ''} · Questions: ${byId('session-length').value} · Style: ${byId('question-style').value} · Terms: ${byId('term-count').value} · Timer: ${byId('timer-mode').value}`;
@@ -971,15 +906,6 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       const journey = selectedJourneyKey ? journeys[selectedJourneyKey] : null;
       journeyModeTitle.textContent = journey ? `Journey mode · ${journey.title}` : 'Journey mode';
       journeyModeCopy.textContent = journey ? journey.modeCopy : 'Pick a journey to switch from generic presets into a more distinct practice format.';
-    }
-    const adaptiveTarget = resolveAdaptiveTarget();
-    const recommendation = adaptiveRecommendations[adaptiveTarget];
-    if (adaptiveTitle && adaptiveCopy && adaptiveLesson && adaptiveExercise && adaptiveWorksheet) {
-      adaptiveTitle.textContent = recommendation.title;
-      adaptiveCopy.textContent = recommendation.copy;
-      adaptiveLesson.href = recommendation.lesson;
-      adaptiveExercise.href = recommendation.exercise;
-      adaptiveWorksheet.href = recommendation.worksheet;
     }
   };
 
@@ -1550,12 +1476,15 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     const sheetView = byId('sheet-session-view');
     const sheetList = byId('sheet-list');
     const emptyNote = byId('practice-empty-note');
+    const intentFeedback = byId('practice-intent-feedback');
     const sessionContext = byId('practice-session-context');
     const singleSessionActive = byId('single-session-active');
     const sessionHelp = byId('practice-session-help');
+    const continuityRecommendation = root?.querySelector('[data-continuity-next-action]');
     const controls = ['answer-input', 'verify-answer', 'reveal-final', 'reveal-steps', 'next-question'];
     singleFeedback.hidden = true;
     sheetFeedback.hidden = true;
+    if (intentFeedback) intentFeedback.hidden = true;
     singleCompleteActions.hidden = true;
     sheetCompleteActions.hidden = true;
     stepsPanel.hidden = true;
@@ -1563,6 +1492,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     sessionContext.hidden = !currentSession;
     singleSessionActive.hidden = !currentSession;
     sessionHelp.hidden = !currentSession;
+    if (continuityRecommendation) continuityRecommendation.hidden = Boolean(currentSession);
 
     if (!currentSession) {
       title.textContent = 'No session selected yet';
@@ -2006,8 +1936,6 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     }
     button.addEventListener('click', () => applyChallenge(button.dataset.challenge));
   });
-  byId('start-warmup-now')?.addEventListener('click', () => startFromPreset('warmup'));
-  byId('start-practice-now')?.addEventListener('click', () => startFromPreset('practice'));
   document.querySelectorAll('#session-format, #session-type, #session-level, #session-length, #check-mode, #question-style, #term-count, #timer-mode, #worksheet-digit-range, #worksheet-operation-range, #worksheet-operator-mode').forEach((node) => {
     node.addEventListener('change', () => {
       selectedChallengeKey = null;
@@ -2017,11 +1945,30 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
   renderHistory();
   const query = new URLSearchParams(window.location.search);
+  const requestedResumeId = query.get('resume');
   const requestedLevel = String(query.get('level') || '').toUpperCase();
   const requestedSkill = String(query.get('skill') || '').toLowerCase();
   const supportedSkills = new Set(['addition', 'subtraction', 'complements', 'mixed-operations', 'multiplication', 'division', 'anzan', 'mastery', 'number-reading', 'number-setting', 'place-value', 'abacus-orientation']);
   const hasRequestedLevel = /^L[0-5]$/.test(requestedLevel);
-  if (hasRequestedLevel) {
+  let resumedFromUrl = false;
+  let resumeError = '';
+  if (requestedResumeId !== null) {
+    const candidate = readSessions().find((entry) => entry.id === requestedResumeId);
+    const match = normalizeResumablePracticeSession(candidate);
+    if (match && !match.challengeUnavailable) {
+      currentSession = match;
+      syncControlsFromSession(match);
+      resumedFromUrl = true;
+    } else {
+      resumeError = candidate?.challengeUnavailable
+        ? 'That saved challenge uses an unsupported rule version. Its record remains in history, but it cannot be resumed.'
+        : candidate?.completed === true
+          ? 'That saved session is already complete. Open saved sessions to replay it instead.'
+          : candidate
+            ? 'That saved session is incomplete or malformed and cannot be resumed safely.'
+            : 'No saved session matched that exact ID on this device.';
+    }
+  } else if (hasRequestedLevel) {
     applyPreset('practice');
     selectedSkillKey = supportedSkills.has(requestedSkill) ? requestedSkill : null;
     byId('session-level').value = requestedLevel;
@@ -2032,7 +1979,15 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   }
   syncPracticeSetupCopy();
   renderSession();
-  if (hasRequestedLevel && query.get('start') === '1') byId('start-session')?.click();
+  if (resumeError) {
+    const feedback = byId('practice-intent-feedback');
+    if (feedback) {
+      feedback.hidden = false;
+      feedback.textContent = resumeError;
+    }
+  }
+  if (resumedFromUrl) focusCurrentQuestion();
+  else if (requestedResumeId === null && hasRequestedLevel && query.get('start') === '1') byId('start-session')?.click();
 </script>
 
 <style>

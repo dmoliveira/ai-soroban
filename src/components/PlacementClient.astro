@@ -224,6 +224,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       result.hidden = true;
       result.replaceChildren();
       announceSaveStatus('Saved starting point cleared. Your selected answers are still available.');
+      window.dispatchEvent(new CustomEvent('soroban:learner-context-change'));
       scoreButton?.focus();
     });
     context.append(contextCopy, clearChoice);
@@ -298,6 +299,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
             currentChoice = null;
             result.hidden = true;
             result.replaceChildren();
+            if (previousChoice) window.dispatchEvent(new CustomEvent('soroban:learner-context-change'));
             announceSaveStatus(previousChoice
               ? 'Answer saved. The previous starting point was cleared; score again to activate a new one.'
               : 'Answer saved in this browser.');
@@ -336,6 +338,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     announceSaveStatus(saved
       ? `${choice.level} ${choice.title} starting point saved in this browser. ${choice.reason}`
       : `${choice.level} ${choice.title} recommendation is ready for this visit but could not be saved. ${choice.reason}`);
+    if (saved) window.dispatchEvent(new CustomEvent('soroban:learner-context-change'));
   });
 
   resetButton?.addEventListener('click', () => {
@@ -353,6 +356,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     result.replaceChildren();
     updateScoreButton();
     announceSaveStatus('Saved recommendation and answers cleared. Other progress is unchanged.');
+    window.dispatchEvent(new CustomEvent('soroban:learner-context-change'));
   });
 
   renderQuestions();

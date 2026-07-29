@@ -51,21 +51,17 @@ test('practice Enter verifies and advances on correct answer', async ({ page }) 
   await expect(page.locator('#session-progress')).toContainText('Question 2 / 5');
 });
 
-test('practice fast start launches a warm-up session immediately', async ({ page }) => {
-  await page.goto('practice');
+test('explicit foundations intent launches a focused session immediately', async ({ page }) => {
+  await page.goto('practice?level=L0&skill=abacus-orientation&start=1');
 
-  await page.getByRole('button', { name: 'Start warm-up' }).click();
-
-  await expect(page.locator('#session-title')).toContainText('Curated L0 session');
+  await expect(page.locator('#session-title')).toContainText('abacus orientation · L0 session');
   await expect(page.locator('#session-progress')).toContainText('Question 1 / 5');
 });
 
 test('focused practice defaults new learners to foundations and focuses the answer', async ({ page }) => {
-  await page.goto('practice');
+  await page.goto('practice?level=L0&skill=abacus-orientation&start=1');
 
-  await page.locator('#start-practice-now').click();
-
-  await expect(page.locator('#session-title')).toContainText('Generated L0 session');
+  await expect(page.locator('#session-title')).toContainText('abacus orientation · L0 session');
   await expect(page.locator('#session-progress')).toContainText('Question 1 / 5');
   await expect(page.locator('#answer-input')).toBeFocused();
   await expect(page.locator('#question-prompt')).toBeInViewport();
@@ -75,8 +71,7 @@ test('focused practice defaults new learners to foundations and focuses the answ
 });
 
 test('history resume returns keyboard focus to the active question', async ({ page }) => {
-  await page.goto('practice');
-  await page.locator('#start-practice-now').click();
+  await page.goto('practice?level=L0&skill=abacus-orientation&start=1');
   await page.reload();
 
   await page.locator('#history-list .session-card').first().getByRole('button', { name: 'Resume', exact: true }).click();
@@ -141,8 +136,10 @@ test('practice adaptive next move updates from weakness history', async ({ page 
 
   await page.goto('practice');
 
-  await expect(page.locator('#adaptive-next-title')).toContainText('Division quotient-building');
-  await expect(page.locator('#adaptive-next-worksheet')).toHaveAttribute('href', /submode=quotient-building/);
+  const recommendation = page.locator('[data-continuity-next-action]');
+  await expect(recommendation).toHaveAttribute('data-continuity-kind', 'review');
+  await expect(recommendation).toContainText('Repair quotient building next');
+  await expect(recommendation.getByRole('link', { name: 'Open matching worksheet' })).toHaveAttribute('href', /submode=quotient-building/);
 });
 
 test('worksheet shortcuts clear, backspace, and advance after correct Enter', async ({ page }) => {

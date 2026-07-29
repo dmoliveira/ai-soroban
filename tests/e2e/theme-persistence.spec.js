@@ -119,8 +119,7 @@ test('theme changes synchronize across tabs without reload', async ({ context, p
 });
 
 test('changing theme during practice preserves the active answer and session', async ({ page }) => {
-  await page.goto('practice');
-  await page.locator('#start-practice-now').click();
+  await page.goto('practice?level=L0&skill=abacus-orientation&start=1');
   const sessionId = await page.locator('#session-id').textContent();
   await page.locator('#answer-input').fill('42');
   await page.getByLabel('Theme').selectOption('sumi');
