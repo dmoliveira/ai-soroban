@@ -9,11 +9,12 @@ on:
 permissions: {}
 
 concurrency:
-  group: pages
+  group: pages-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   build:
+    if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -33,6 +34,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Audit dependency baseline
+        run: npm run audit:dependencies
+
       - name: Validate project
         run: |
           npm run check
@@ -41,6 +45,9 @@ jobs:
 
       - name: Build site
         run: npm run build
+
+      - name: Verify built content routes
+        run: npm run test:content-build
 
       - name: Verify built theme bootstrap
         run: npm run test:theme-build
@@ -52,7 +59,7 @@ jobs:
         run: npm run test:e2e:theme-preview
 
       - name: Validate browser flows
-        run: npm run test:e2e
+        run: PLAYWRIGHT_SERVER_MODE=preview npm run test:e2e
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v5
@@ -60,6 +67,7 @@ jobs:
           path: ./dist
 
   deploy:
+    if: ${{ github.ref == 'refs/heads/main' }}
     permissions:
       pages: write
       id-token: write

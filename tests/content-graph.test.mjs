@@ -5,8 +5,8 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const contentRoot = fileURLToPath(new URL('../src/content/', import.meta.url));
-const lessonIdPattern = /^lesson-l[0-5]-\d{3}$/;
-const exerciseIdPattern = /^exercise-l[0-5]-\d{3}$/;
+const lessonIdPattern = /^lesson-l[0-5]-(?!000)\d{3}$/;
+const exerciseIdPattern = /^exercise-l[0-5]-(?!000)\d{3}$/;
 
 const markdownFiles = async (directory) => {
   const entries = await readdir(directory, { withFileTypes: true });
@@ -43,6 +43,15 @@ const parseFrontmatter = async (path) => {
     nextLessons: list('nextLessons'),
   };
 };
+
+test('content id patterns reserve sequence zero', () => {
+  assert.match('lesson-l0-001', lessonIdPattern);
+  assert.match('lesson-l5-999', lessonIdPattern);
+  assert.doesNotMatch('lesson-l0-000', lessonIdPattern);
+  assert.match('exercise-l0-001', exerciseIdPattern);
+  assert.match('exercise-l5-999', exerciseIdPattern);
+  assert.doesNotMatch('exercise-l0-000', exerciseIdPattern);
+});
 
 test('lesson and exercise ids are unique and every content link resolves', async () => {
   const lessonPaths = await markdownFiles(join(contentRoot, 'lessons'));

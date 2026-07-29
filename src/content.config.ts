@@ -4,11 +4,11 @@ import { z } from 'astro/zod';
 import { certifyWorksheetContentData } from './lib/worksheet.js';
 
 const lessonIdSchema = z.string().regex(
-  /^lesson-l[0-5]-\d{3}$/,
+  /^lesson-l[0-5]-(?!000)\d{3}$/,
   'lesson IDs must use lesson-l0-001 through lesson-l5-999',
 );
 const exerciseIdSchema = z.string().regex(
-  /^exercise-l[0-5]-\d{3}$/,
+  /^exercise-l[0-5]-(?!000)\d{3}$/,
   'exercise IDs must use exercise-l0-001 through exercise-l5-999',
 );
 
