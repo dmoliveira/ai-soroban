@@ -4,6 +4,7 @@ const viewports = [
   { name: 'small phone', width: 320, height: 568 },
   { name: 'phone', width: 390, height: 844 },
   { name: 'tablet', width: 768, height: 1024 },
+  { name: 'desktop edge', width: 861, height: 900 },
   { name: 'desktop', width: 1440, height: 900 },
 ];
 
@@ -31,8 +32,24 @@ for (const viewport of viewports) {
       expect(headerBox.height).toBeLessThanOrEqual(120);
     }
 
+    if (viewport.width <= 860) {
+      const primaryNavBoxes = await page.locator('.nav-primary > a').evaluateAll((links) => links.map((link) => {
+        const rect = link.getBoundingClientRect();
+        return { left: rect.left, right: rect.right };
+      }));
+      expect(primaryNavBoxes).toHaveLength(4);
+      primaryNavBoxes.forEach((box) => {
+        expect(box.left).toBeGreaterThanOrEqual(0);
+        expect(box.right).toBeLessThanOrEqual(viewport.width + 1);
+      });
+    }
+
     await page.goto('practice');
+    await expect(page.locator('#practice-session-context')).toBeHidden();
+    await expect(page.locator('#single-session-active')).toBeHidden();
     await page.locator('#start-practice-now').click();
+    await expect(page.locator('#practice-session-context')).toBeVisible();
+    await expect(page.locator('#single-session-active')).toBeVisible();
     await expect(page.locator('#question-prompt')).toBeInViewport({ ratio: 1 });
     await expect(page.locator('#visual-mount')).toBeInViewport({ ratio: 1 });
     await expect(page.locator('#answer-input')).toBeInViewport({ ratio: 1 });

@@ -18,7 +18,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 ---
 
 <section id="practice-client" class="practice-stack" data-library={JSON.stringify(exercises)} data-base={base}>
-  <section class="panel practice-options">
+  <section class="panel practice-options practice-start-panel">
     <div class="section-head">
       <div>
         <p class="eyebrow">Dojo practice</p>
@@ -35,212 +35,6 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         <a class="button button-secondary" href={`${base}worksheets`}>Print a worksheet instead</a>
       </div>
     </div>
-    <details class="practice-discovery-block">
-      <summary>More ways to train</summary>
-    <div class="option-grid option-grid-compact practice-journey-grid">
-      <article class="choice-card">
-        <p class="eyebrow">Journey</p>
-        <h3>Build foundations</h3>
-        <p>Short visual-first drills for reading, one-rod moves, and calm confidence.</p>
-        <div class="button-row button-row-compact">
-          <button class="button button-secondary practice-journey-button" data-journey="foundations" aria-label="Use foundations journey preset">Use foundations journey</button>
-          <button class="button button-secondary practice-journey-start" data-journey="foundations" aria-label="Start foundations journey now">Start foundations now</button>
-        </div>
-      </article>
-      <article class="choice-card">
-        <p class="eyebrow">Journey</p>
-        <h3>Strengthen complements</h3>
-        <p>Train five and ten complements until blocked moves feel cleaner and smaller.</p>
-        <div class="button-row button-row-compact">
-          <button class="button button-secondary practice-journey-button" data-journey="complements" aria-label="Use complements journey preset">Use complements journey</button>
-          <button class="button button-secondary practice-journey-start" data-journey="complements" aria-label="Start complements journey now">Start complements now</button>
-        </div>
-      </article>
-      <article class="choice-card">
-        <p class="eyebrow">Journey</p>
-        <h3>Mixed fluency</h3>
-        <p>Hold full numbers through short mixed sequences before pushing speed.</p>
-        <div class="button-row button-row-compact">
-          <button class="button button-secondary practice-journey-button" data-journey="fluency" aria-label="Use mixed fluency journey preset">Use mixed fluency journey</button>
-          <button class="button button-secondary practice-journey-start" data-journey="fluency" aria-label="Start mixed fluency journey now">Start mixed fluency now</button>
-        </div>
-      </article>
-      <article class="choice-card">
-        <p class="eyebrow">Journey</p>
-        <h3>Multiply and divide</h3>
-        <p>Work through table facts, place shifts, and quotient building in a steadier order.</p>
-        <div class="button-row button-row-compact">
-          <button class="button button-secondary practice-journey-button" data-journey="muldiv" aria-label="Use multiply and divide journey preset">Use mul/div journey</button>
-          <button class="button button-secondary practice-journey-start" data-journey="muldiv" aria-label="Start multiply and divide journey now">Start mul/div now</button>
-        </div>
-      </article>
-      <article class="choice-card">
-        <p class="eyebrow">Journey</p>
-        <h3>Mental mastery</h3>
-        <p>Use anzan-style sessions to stabilize mental totals, rhythm, and error recovery.</p>
-        <div class="button-row button-row-compact">
-          <button class="button button-secondary practice-journey-button" data-journey="mastery" aria-label="Use mental mastery journey preset">Use mental mastery journey</button>
-          <button class="button button-secondary practice-journey-start" data-journey="mastery" aria-label="Start mental mastery journey now">Start mental mastery now</button>
-        </div>
-      </article>
-    </div>
-    <div class="option-grid option-grid-compact practice-challenge-grid">
-      {CHALLENGE_LIST.map((challenge) => (
-        <article class="choice-card" data-challenge-card={challenge.key}>
-          <p class="eyebrow">Challenge</p>
-          <h3>{challenge.title}</h3>
-          <p>{challenge.summary}</p>
-          <p class="muted small"><strong>Target:</strong> {challenge.target}</p>
-          <p class="muted small"><strong>Rule:</strong> {challenge.rule}</p>
-          <div class="button-row button-row-compact">
-            <button class="button button-secondary practice-challenge-button" data-challenge={challenge.key} aria-label={`Use ${challenge.title} challenge preset`}>Use {challenge.title}</button>
-            <button class="button button-secondary practice-challenge-start" data-challenge={challenge.key} aria-label={`Start ${challenge.title} challenge now`}>Start {challenge.title}</button>
-          </div>
-        </article>
-      ))}
-    </div>
-    <div class="subtle-panel practice-adaptive-next">
-      <strong id="adaptive-next-title">Adaptive next move</strong>
-      <p id="adaptive-next-copy" class="muted small">Review recommendations will appear here as your weak areas become clearer.</p>
-      <div class="button-row button-row-compact">
-        <a class="button button-secondary" id="adaptive-next-lesson" href={`${base}lessons`}>Recommended lesson</a>
-        <a class="button button-secondary" id="adaptive-next-exercise" href={`${base}exercises`}>Recommended exercise</a>
-        <a class="button button-secondary" id="adaptive-next-worksheet" href={`${base}worksheets`}>Recommended worksheet</a>
-      </div>
-    </div>
-    </details>
-    <details class="practice-setup-block">
-      <summary>Adjust session setup</summary>
-      <div class="practice-grid">
-      <div class="stack-sm subtle-panel practice-config-panel">
-        <p class="eyebrow">Session shape</p>
-        <label class="stack-sm">
-          <span>Practice format · 形式</span>
-          <select id="session-format" class="select">
-            <option value="single">One by one</option>
-            <option value="sheet">Question sheet</option>
-          </select>
-        </label>
-        <label class="stack-sm">
-          <span>Session type · 稽古</span>
-          <select id="session-type" class="select">
-            <option value="curated">Curated list</option>
-            <option value="generated">Generated drill</option>
-          </select>
-        </label>
-        <label class="stack-sm">
-          <span>Level focus · 段階</span>
-          <select id="session-level" class="select">
-            <option value="L0">L0 Foundations</option>
-            <option value="L1">L1 Beginner</option>
-            <option value="L2">L2 Complements</option>
-            <option value="L3">L3 Mixed fluency</option>
-            <option value="L4">L4 Multiplication &amp; division</option>
-            <option value="L5">L5 Mastery review</option>
-          </select>
-        </label>
-        <label class="stack-sm">
-          <span>List length · 問題数</span>
-          <select id="session-length" class="select">
-            <option value="5">5 questions</option>
-            <option value="10" selected>10 questions</option>
-            <option value="15">15 questions</option>
-            <option value="20">20 questions</option>
-          </select>
-        </label>
-        <label class="stack-sm">
-          <span>Digit range · 桁数</span>
-          <select id="worksheet-digit-range" class="select">
-            <option value="2-2">2 digits</option>
-            <option value="2-3" selected>2-3 digits</option>
-            <option value="3-4">3-4 digits</option>
-            <option value="4-4">4 digits</option>
-          </select>
-        </label>
-      </div>
-      <div class="stack-sm subtle-panel practice-config-panel">
-        <p class="eyebrow">Answering</p>
-        <label class="stack-sm">
-          <span>Operation range · 手順数</span>
-          <select id="worksheet-operation-range" class="select">
-            <option value="2-3" selected>2-3 ops</option>
-            <option value="3-4">3-4 ops</option>
-            <option value="4-6">4-6 ops</option>
-            <option value="2-10">2-10 ops</option>
-          </select>
-        </label>
-        <label class="stack-sm">
-          <span>Operator mode · 記号</span>
-          <select id="worksheet-operator-mode" class="select">
-            <option value="add">Addition only</option>
-            <option value="subtract">Subtraction only</option>
-            <option value="mixed" selected>Mixed</option>
-          </select>
-        </label>
-        <label class="stack-sm">
-          <span>Check style · 確認</span>
-          <select id="check-mode" class="select">
-            <option value="verify">Verify only</option>
-            <option value="final">Verify and show final number</option>
-            <option value="steps">Verify and show steps</option>
-            <option value="self-mark">Self-mark after reveal</option>
-          </select>
-        </label>
-        <label class="stack-sm">
-          <span>Timer · 時間</span>
-          <select id="timer-mode" class="select">
-            <option value="off">Timer off</option>
-            <option value="on">Timer on</option>
-          </select>
-        </label>
-        <label class="stack-sm">
-          <span>Question style · 問題</span>
-          <select id="question-style" class="select">
-            <option value="mixed">Mixed</option>
-            <option value="visual">Visual first</option>
-            <option value="visual-read">Visual bead read</option>
-            <option value="visual-five">Clean five read</option>
-            <option value="mental">Mental prompt</option>
-            <option value="adaptive">Adaptive weak-area</option>
-          </select>
-        </label>
-        <label class="stack-sm">
-          <span>Term count · 項数</span>
-          <select id="term-count" class="select">
-            <option value="auto" selected>Auto</option>
-            <option value="2">2 terms</option>
-            <option value="3">3 terms</option>
-            <option value="4">4 terms</option>
-          </select>
-        </label>
-        <div class="button-row">
-          <button class="button" id="start-session">Start new session</button>
-          <button class="button button-secondary" id="resume-latest">Resume latest</button>
-        </div>
-        <label class="stack-sm">
-          <span>Resume by session ID · 続き</span>
-          <input id="session-id-input" class="input" type="text" placeholder="Paste a saved session ID" />
-        </label>
-        <button class="button button-secondary" id="resume-by-id">Open saved ID</button>
-      </div>
-    </div>
-    </details>
-    <div class="subtle-panel practice-current-setup" role="status" aria-live="polite">
-      <strong>Current setup</strong>
-      <span id="practice-current-setup-copy" class="muted small">Format: single · Source: curated · Level: L0 · Questions: 10 · Style: mixed · Terms: auto · Timer: off</span>
-    </div>
-    <div class="subtle-panel practice-mode-guide">
-      <strong id="practice-guide-title">Recommended use</strong>
-      <p id="practice-guide-copy" class="muted small">Use this setup for short focused repetition before moving to sheets or review.</p>
-    </div>
-    <div class="subtle-panel practice-purpose-strip">
-      <strong>Best for</strong>
-      <span id="practice-purpose-copy" class="muted small">short guided repetitions</span>
-    </div>
-    <div class="subtle-panel practice-journey-mode">
-      <strong id="journey-mode-title">Journey mode</strong>
-      <p id="journey-mode-copy" class="muted small">Pick a journey to switch from generic presets into a more distinct practice format.</p>
-    </div>
   </section>
 
   <div class="practice-grid practice-main-grid">
@@ -251,23 +45,25 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
           <h2 id="session-title">No session selected yet</h2>
         </div>
       </div>
-      <div class="practice-session-stats">
-        <article class="stat-card stat-card-soft"><small>Progress:</small><span id="session-progress">0 / 0</span></article>
-        <article class="stat-card stat-card-soft"><small>Accuracy:</small><span id="session-score">—</span></article>
-        <article class="stat-card stat-card-soft"><small>Timer:</small><span id="session-timer">Off</span></article>
-      </div>
-      <div class="practice-session-meta">
-        <div class="subtle-panel practice-meta-card"><strong>Session ID:</strong><span id="session-id" class="muted small">—</span></div>
-        <div class="subtle-panel practice-meta-card"><strong>Adaptive focus:</strong><span id="session-adaptive-note" class="muted small">—</span></div>
-        <div class="subtle-panel practice-meta-card"><strong>Profile:</strong><span id="session-profile" class="muted small">—</span></div>
-        <div class="subtle-panel practice-meta-card" id="session-challenge-summary" hidden><strong>Challenge:</strong><span id="session-challenge-copy" class="muted small">—</span></div>
-      </div>
-      <div class="practice-learning-strip">
-        <strong>Learning path</strong>
-        <div class="button-row button-row-compact">
-          <a class="button button-secondary" href={`${base}lessons`}>Browse lessons</a>
-          <a class="button button-secondary" href={`${base}exercises`}>Open exercises</a>
-          <a class="button button-secondary" href={`${base}worksheets`}>Open worksheets</a>
+      <div id="practice-session-context" class="practice-session-context" hidden>
+        <div class="practice-session-stats">
+          <article class="stat-card stat-card-soft"><small>Progress:</small><span id="session-progress">0 / 0</span></article>
+          <article class="stat-card stat-card-soft"><small>Accuracy:</small><span id="session-score">—</span></article>
+          <article class="stat-card stat-card-soft"><small>Timer:</small><span id="session-timer">Off</span></article>
+        </div>
+        <div class="practice-session-meta">
+          <div class="subtle-panel practice-meta-card"><strong>Session ID:</strong><span id="session-id" class="muted small">—</span></div>
+          <div class="subtle-panel practice-meta-card"><strong>Adaptive focus:</strong><span id="session-adaptive-note" class="muted small">—</span></div>
+          <div class="subtle-panel practice-meta-card"><strong>Profile:</strong><span id="session-profile" class="muted small">—</span></div>
+          <div class="subtle-panel practice-meta-card" id="session-challenge-summary" hidden><strong>Challenge:</strong><span id="session-challenge-copy" class="muted small">—</span></div>
+        </div>
+        <div class="practice-learning-strip">
+          <strong>Learning path</strong>
+          <div class="button-row button-row-compact">
+            <a class="button button-secondary" href={`${base}lessons`}>Browse lessons</a>
+            <a class="button button-secondary" href={`${base}exercises`}>Open exercises</a>
+            <a class="button button-secondary" href={`${base}worksheets`}>Open worksheets</a>
+          </div>
         </div>
       </div>
 
@@ -278,40 +74,38 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         <div id="visual-mount" class="subtle-panel visual-stage" hidden></div>
         <div class="practice-empty-note" id="practice-empty-note">
           <strong>Recommended start</strong>
-          <p class="muted">Pick a preset above, then start one short session before moving into longer sheets.</p>
-          <div class="button-row button-row-compact">
-            <button class="button" id="empty-warmup">Start focused practice</button>
-            <button class="button button-secondary practice-preset" data-preset="review">Review weak areas</button>
-          </div>
+          <p class="muted">Use the focused start above for one short session. Optional journeys and setup controls follow this practice area.</p>
         </div>
-        <label class="stack-sm answer-stack">
-          <span>Your response · 記入</span>
-          <input id="answer-input" class="input" type="text" inputmode="numeric" placeholder="Write your response before checking" />
-        </label>
+        <div id="single-session-active" class="single-session-active" hidden>
+          <label class="stack-sm answer-stack">
+            <span>Your response · 記入</span>
+            <input id="answer-input" class="input" type="text" inputmode="numeric" placeholder="Write your response before checking" />
+          </label>
 
-        <div class="button-row button-row-compact">
-          <button class="button" id="verify-answer">Verify response</button>
-          <button class="button button-secondary" id="reveal-final">Reveal answer</button>
-          <button class="button button-secondary" id="reveal-steps">Reveal method</button>
-          <button class="button button-secondary" id="next-question">Save and continue</button>
-        </div>
-        <div id="feedback-panel" class="reveal-panel" hidden role="status" aria-live="polite" tabindex="-1"></div>
-        <div id="session-complete-actions" class="button-row button-row-compact session-complete-actions" hidden>
-          <button class="button button-secondary session-replay-current" id="session-replay-current">Replay this list</button>
-          <button class="button session-start-fresh" id="session-start-fresh">Start fresh</button>
-        </div>
-        <div class="question-flow-note">
-          <span class="review-chip">1. Solve first</span>
-          <span class="review-chip">2. Write your response</span>
-          <span class="review-chip">3. Verify or reveal the answer</span>
-        </div>
-        <pre id="question-ledger" class="worksheet-ledger" hidden></pre>
-        <div class="practice-next-strip">
-          <strong>Quick path</strong>
           <div class="button-row button-row-compact">
-            <button class="button button-secondary practice-preset" data-preset="practice">Focused practice preset</button>
-            <button class="button button-secondary practice-preset" data-preset="review">Review weak areas</button>
-            <a class="button button-secondary" href={`${base}worksheets`}>Open worksheet</a>
+            <button class="button" id="verify-answer">Verify response</button>
+            <button class="button button-secondary" id="reveal-final">Reveal answer</button>
+            <button class="button button-secondary" id="reveal-steps">Reveal method</button>
+            <button class="button button-secondary" id="next-question">Save and continue</button>
+          </div>
+          <div id="feedback-panel" class="reveal-panel" hidden role="status" aria-live="polite" tabindex="-1"></div>
+          <div id="session-complete-actions" class="button-row button-row-compact session-complete-actions" hidden>
+            <button class="button button-secondary session-replay-current" id="session-replay-current">Replay this list</button>
+            <button class="button session-start-fresh" id="session-start-fresh">Start fresh</button>
+          </div>
+          <div class="question-flow-note">
+            <span class="review-chip">1. Solve first</span>
+            <span class="review-chip">2. Write your response</span>
+            <span class="review-chip">3. Verify or reveal the answer</span>
+          </div>
+          <pre id="question-ledger" class="worksheet-ledger" hidden></pre>
+          <div class="practice-next-strip">
+            <strong>Quick path</strong>
+            <div class="button-row button-row-compact">
+              <button class="button button-secondary practice-preset" data-preset="practice">Focused practice preset</button>
+              <button class="button button-secondary practice-preset" data-preset="review">Review weak areas</button>
+              <a class="button button-secondary" href={`${base}worksheets`}>Open worksheet</a>
+            </div>
           </div>
         </div>
       </div>
@@ -348,13 +142,233 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
           <button class="button button-secondary" id="reveal-recovery-method">Reveal method</button>
         </div>
       </div>
-      <details class="practice-help-block">
+      <details class="practice-help-block" id="practice-session-help" hidden>
         <summary>How to use this session</summary>
         <div class="review-chip-row">
           <span class="review-chip">Verify only if you just want confirmation</span>
           <span class="review-chip">Reveal the final number when you want a quick check</span>
           <span class="review-chip">Reveal steps when you want to study the method</span>
           <span class="review-chip">Resume or replay later with the saved session ID</span>
+        </div>
+      </details>
+    </section>
+
+    <section class="panel practice-options practice-more-panel" aria-labelledby="practice-more-title">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">More practice routes</p>
+          <h2 id="practice-more-title">Personalize the next session</h2>
+        </div>
+      </div>
+      <details class="practice-discovery-block">
+        <summary>More ways to train</summary>
+      <div class="option-grid option-grid-compact practice-journey-grid">
+        <article class="choice-card">
+          <p class="eyebrow">Journey</p>
+          <h3>Build foundations</h3>
+          <p>Short visual-first drills for reading, one-rod moves, and calm confidence.</p>
+          <div class="button-row button-row-compact">
+            <button class="button button-secondary practice-journey-button" data-journey="foundations" aria-label="Use foundations journey preset">Use foundations journey</button>
+            <button class="button button-secondary practice-journey-start" data-journey="foundations" aria-label="Start foundations journey now">Start foundations now</button>
+          </div>
+        </article>
+        <article class="choice-card">
+          <p class="eyebrow">Journey</p>
+          <h3>Strengthen complements</h3>
+          <p>Train five and ten complements until blocked moves feel cleaner and smaller.</p>
+          <div class="button-row button-row-compact">
+            <button class="button button-secondary practice-journey-button" data-journey="complements" aria-label="Use complements journey preset">Use complements journey</button>
+            <button class="button button-secondary practice-journey-start" data-journey="complements" aria-label="Start complements journey now">Start complements now</button>
+          </div>
+        </article>
+        <article class="choice-card">
+          <p class="eyebrow">Journey</p>
+          <h3>Mixed fluency</h3>
+          <p>Hold full numbers through short mixed sequences before pushing speed.</p>
+          <div class="button-row button-row-compact">
+            <button class="button button-secondary practice-journey-button" data-journey="fluency" aria-label="Use mixed fluency journey preset">Use mixed fluency journey</button>
+            <button class="button button-secondary practice-journey-start" data-journey="fluency" aria-label="Start mixed fluency journey now">Start mixed fluency now</button>
+          </div>
+        </article>
+        <article class="choice-card">
+          <p class="eyebrow">Journey</p>
+          <h3>Multiply and divide</h3>
+          <p>Work through table facts, place shifts, and quotient building in a steadier order.</p>
+          <div class="button-row button-row-compact">
+            <button class="button button-secondary practice-journey-button" data-journey="muldiv" aria-label="Use multiply and divide journey preset">Use mul/div journey</button>
+            <button class="button button-secondary practice-journey-start" data-journey="muldiv" aria-label="Start multiply and divide journey now">Start mul/div now</button>
+          </div>
+        </article>
+        <article class="choice-card">
+          <p class="eyebrow">Journey</p>
+          <h3>Mental mastery</h3>
+          <p>Use anzan-style sessions to stabilize mental totals, rhythm, and error recovery.</p>
+          <div class="button-row button-row-compact">
+            <button class="button button-secondary practice-journey-button" data-journey="mastery" aria-label="Use mental mastery journey preset">Use mental mastery journey</button>
+            <button class="button button-secondary practice-journey-start" data-journey="mastery" aria-label="Start mental mastery journey now">Start mental mastery now</button>
+          </div>
+        </article>
+      </div>
+      <div class="option-grid option-grid-compact practice-challenge-grid">
+        {CHALLENGE_LIST.map((challenge) => (
+          <article class="choice-card" data-challenge-card={challenge.key}>
+            <p class="eyebrow">Challenge</p>
+            <h3>{challenge.title}</h3>
+            <p>{challenge.summary}</p>
+            <p class="muted small"><strong>Target:</strong> {challenge.target}</p>
+            <p class="muted small"><strong>Rule:</strong> {challenge.rule}</p>
+            <div class="button-row button-row-compact">
+              <button class="button button-secondary practice-challenge-button" data-challenge={challenge.key} aria-label={`Use ${challenge.title} challenge preset`}>Use {challenge.title}</button>
+              <button class="button button-secondary practice-challenge-start" data-challenge={challenge.key} aria-label={`Start ${challenge.title} challenge now`}>Start {challenge.title}</button>
+            </div>
+          </article>
+        ))}
+      </div>
+      <div class="subtle-panel practice-adaptive-next">
+        <strong id="adaptive-next-title">Adaptive next move</strong>
+        <p id="adaptive-next-copy" class="muted small">Review recommendations will appear here as your weak areas become clearer.</p>
+        <div class="button-row button-row-compact">
+          <a class="button button-secondary" id="adaptive-next-lesson" href={`${base}lessons`}>Recommended lesson</a>
+          <a class="button button-secondary" id="adaptive-next-exercise" href={`${base}exercises`}>Recommended exercise</a>
+          <a class="button button-secondary" id="adaptive-next-worksheet" href={`${base}worksheets`}>Recommended worksheet</a>
+        </div>
+      </div>
+      </details>
+      <details class="practice-setup-block">
+        <summary>Adjust session setup</summary>
+        <div class="practice-grid">
+        <div class="stack-sm subtle-panel practice-config-panel">
+          <p class="eyebrow">Session shape</p>
+          <label class="stack-sm">
+            <span>Practice format · 形式</span>
+            <select id="session-format" class="select">
+              <option value="single">One by one</option>
+              <option value="sheet">Question sheet</option>
+            </select>
+          </label>
+          <label class="stack-sm">
+            <span>Session type · 稽古</span>
+            <select id="session-type" class="select">
+              <option value="curated">Curated list</option>
+              <option value="generated">Generated drill</option>
+            </select>
+          </label>
+          <label class="stack-sm">
+            <span>Level focus · 段階</span>
+            <select id="session-level" class="select">
+              <option value="L0">L0 Foundations</option>
+              <option value="L1">L1 Beginner</option>
+              <option value="L2">L2 Complements</option>
+              <option value="L3">L3 Mixed fluency</option>
+              <option value="L4">L4 Multiplication &amp; division</option>
+              <option value="L5">L5 Mastery review</option>
+            </select>
+          </label>
+          <label class="stack-sm">
+            <span>List length · 問題数</span>
+            <select id="session-length" class="select">
+              <option value="5">5 questions</option>
+              <option value="10" selected>10 questions</option>
+              <option value="15">15 questions</option>
+              <option value="20">20 questions</option>
+            </select>
+          </label>
+          <label class="stack-sm">
+            <span>Digit range · 桁数</span>
+            <select id="worksheet-digit-range" class="select">
+              <option value="2-2">2 digits</option>
+              <option value="2-3" selected>2-3 digits</option>
+              <option value="3-4">3-4 digits</option>
+              <option value="4-4">4 digits</option>
+            </select>
+          </label>
+        </div>
+        <div class="stack-sm subtle-panel practice-config-panel">
+          <p class="eyebrow">Answering</p>
+          <label class="stack-sm">
+            <span>Operation range · 手順数</span>
+            <select id="worksheet-operation-range" class="select">
+              <option value="2-3" selected>2-3 ops</option>
+              <option value="3-4">3-4 ops</option>
+              <option value="4-6">4-6 ops</option>
+              <option value="2-10">2-10 ops</option>
+            </select>
+          </label>
+          <label class="stack-sm">
+            <span>Operator mode · 記号</span>
+            <select id="worksheet-operator-mode" class="select">
+              <option value="add">Addition only</option>
+              <option value="subtract">Subtraction only</option>
+              <option value="mixed" selected>Mixed</option>
+            </select>
+          </label>
+          <label class="stack-sm">
+            <span>Check style · 確認</span>
+            <select id="check-mode" class="select">
+              <option value="verify">Verify only</option>
+              <option value="final">Verify and show final number</option>
+              <option value="steps">Verify and show steps</option>
+              <option value="self-mark">Self-mark after reveal</option>
+            </select>
+          </label>
+          <label class="stack-sm">
+            <span>Timer · 時間</span>
+            <select id="timer-mode" class="select">
+              <option value="off">Timer off</option>
+              <option value="on">Timer on</option>
+            </select>
+          </label>
+          <label class="stack-sm">
+            <span>Question style · 問題</span>
+            <select id="question-style" class="select">
+              <option value="mixed">Mixed</option>
+              <option value="visual">Visual first</option>
+              <option value="visual-read">Visual bead read</option>
+              <option value="visual-five">Clean five read</option>
+              <option value="mental">Mental prompt</option>
+              <option value="adaptive">Adaptive weak-area</option>
+            </select>
+          </label>
+          <label class="stack-sm">
+            <span>Term count · 項数</span>
+            <select id="term-count" class="select">
+              <option value="auto" selected>Auto</option>
+              <option value="2">2 terms</option>
+              <option value="3">3 terms</option>
+              <option value="4">4 terms</option>
+            </select>
+          </label>
+          <div class="button-row">
+            <button class="button" id="start-session">Start new session</button>
+            <button class="button button-secondary" id="resume-latest">Resume latest</button>
+          </div>
+          <label class="stack-sm">
+            <span>Resume by session ID · 続き</span>
+            <input id="session-id-input" class="input" type="text" placeholder="Paste a saved session ID" />
+          </label>
+          <button class="button button-secondary" id="resume-by-id">Open saved ID</button>
+        </div>
+      </div>
+      </details>
+      <div class="subtle-panel practice-current-setup" role="status" aria-live="polite">
+        <strong>Current setup</strong>
+        <span id="practice-current-setup-copy" class="muted small">Format: single · Source: curated · Level: L0 · Questions: 10 · Style: mixed · Terms: auto · Timer: off</span>
+      </div>
+      <details class="disclosure-block practice-guidance-block">
+        <summary>Why this setup fits</summary>
+        <div class="practice-guidance-content">
+          <div class="subtle-panel practice-mode-guide">
+            <strong id="practice-guide-title">Recommended use</strong>
+            <p id="practice-guide-copy" class="muted small">Use this setup for short focused repetition before moving to sheets or review.</p>
+          </div>
+          <div class="subtle-panel practice-purpose-strip">
+            <strong>Best for</strong>
+            <span id="practice-purpose-copy" class="muted small">short guided repetitions</span>
+          </div>
+          <div class="subtle-panel practice-journey-mode">
+            <strong id="journey-mode-title">Journey mode</strong>
+            <p id="journey-mode-copy" class="muted small">Pick a journey to switch from generic presets into a more distinct practice format.</p>
+          </div>
         </div>
       </details>
     </section>
@@ -1484,7 +1498,13 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       const resume = document.createElement('button');
       resume.className = 'button button-secondary';
       resume.textContent = 'Resume';
-      resume.addEventListener('click', () => { stopTimer(); currentSession = session; syncControlsFromSession(session); renderSession(); });
+      resume.addEventListener('click', () => {
+        stopTimer();
+        currentSession = session;
+        syncControlsFromSession(session);
+        renderSession();
+        focusCurrentQuestion();
+      });
       const replay = document.createElement('button');
       replay.className = 'button button-secondary';
       replay.textContent = 'Replay list';
@@ -1530,6 +1550,9 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     const sheetView = byId('sheet-session-view');
     const sheetList = byId('sheet-list');
     const emptyNote = byId('practice-empty-note');
+    const sessionContext = byId('practice-session-context');
+    const singleSessionActive = byId('single-session-active');
+    const sessionHelp = byId('practice-session-help');
     const controls = ['answer-input', 'verify-answer', 'reveal-final', 'reveal-steps', 'next-question'];
     singleFeedback.hidden = true;
     sheetFeedback.hidden = true;
@@ -1537,6 +1560,9 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     sheetCompleteActions.hidden = true;
     stepsPanel.hidden = true;
     if (recoveryPanel) recoveryPanel.hidden = true;
+    sessionContext.hidden = !currentSession;
+    singleSessionActive.hidden = !currentSession;
+    sessionHelp.hidden = !currentSession;
 
     if (!currentSession) {
       title.textContent = 'No session selected yet';
@@ -1980,7 +2006,6 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     }
     button.addEventListener('click', () => applyChallenge(button.dataset.challenge));
   });
-  byId('empty-warmup')?.addEventListener('click', () => startFromPreset('practice'));
   byId('start-warmup-now')?.addEventListener('click', () => startFromPreset('warmup'));
   byId('start-practice-now')?.addEventListener('click', () => startFromPreset('practice'));
   document.querySelectorAll('#session-format, #session-type, #session-level, #session-length, #check-mode, #question-style, #term-count, #timer-mode, #worksheet-digit-range, #worksheet-operation-range, #worksheet-operator-mode').forEach((node) => {
