@@ -18,16 +18,13 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   <StudioHero
     eyebrow="Practice studio · 修練"
     title="Start one short session"
-    summary="Begin with one clear practice run, then open journeys, challenges, or extra controls only if they help the next move feel easier."
+    summary="Begin with one focused run. The live practice area comes first; journeys, challenges, setup, and saved sessions follow only when you need them."
     stats={[
-      { label: 'Best starting move', value: 'One focused session' },
-      { label: 'Fast alternatives', value: 'Daily pack or worksheet' },
-      { label: 'Current tone', value: 'Attempt first · 先に挑戦' },
+      { label: 'First move', value: 'One focused session' },
+      { label: 'Optional next', value: 'Journeys, setup, or review' },
     ]}
     actions={[
       { href: '#practice-client', label: 'Start focused practice' },
-      { href: `${base}daily-drills`, label: 'Use a daily pack', secondary: true },
-      { href: `${base}worksheets`, label: 'Print a worksheet instead', secondary: true },
     ]}
   />
 

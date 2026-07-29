@@ -23,9 +23,25 @@ test('practice keeps a single h1 and reveals stacked journeys on mobile', async 
 
   await expect(page.getByRole('heading', { level: 1, name: /start one short session/i })).toBeVisible();
   await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
+  await expect(page.locator('.studio-hero .hero-actions .button')).toHaveCount(1);
   await expect(page.getByRole('heading', { level: 2, name: /choose one training mode and begin/i })).toBeVisible();
 
   await expect(page.locator('#start-practice-now')).toBeVisible();
+  await expect(page.locator('.practice-start-panel .button:not(.button-secondary)')).toHaveCount(1);
+  await expect(page.locator('#practice-session-context')).toBeHidden();
+  await expect(page.locator('#single-session-active')).toBeHidden();
+
+  const [sessionBox, moreOptionsBox, sidePanelBox] = await Promise.all([
+    page.locator('#practice-session').boundingBox(),
+    page.locator('.practice-more-panel').boundingBox(),
+    page.locator('.side-panel').boundingBox(),
+  ]);
+  expect(sessionBox).not.toBeNull();
+  expect(moreOptionsBox).not.toBeNull();
+  expect(sidePanelBox).not.toBeNull();
+  expect(sessionBox.y).toBeLessThan(moreOptionsBox.y);
+  expect(moreOptionsBox.y).toBeLessThan(sidePanelBox.y);
+
   await page.getByText('More ways to train').click();
   const cards = page.locator('.practice-journey-grid > .choice-card');
   await expect(cards).toHaveCount(5);
@@ -37,6 +53,24 @@ test('practice keeps a single h1 and reveals stacked journeys on mobile', async 
   expect(secondBox).not.toBeNull();
   expect(Math.abs(firstBox.x - secondBox.x)).toBeLessThan(2);
   expect(secondBox.y).toBeGreaterThan(firstBox.y);
+});
+
+test('practice keeps optional routes below the live session beside history on desktop', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('practice');
+
+  const [sessionBox, moreOptionsBox, sidePanelBox] = await Promise.all([
+    page.locator('#practice-session').boundingBox(),
+    page.locator('.practice-more-panel').boundingBox(),
+    page.locator('.side-panel').boundingBox(),
+  ]);
+  expect(sessionBox).not.toBeNull();
+  expect(moreOptionsBox).not.toBeNull();
+  expect(sidePanelBox).not.toBeNull();
+  expect(Math.abs(sessionBox.x - moreOptionsBox.x)).toBeLessThan(2);
+  expect(moreOptionsBox.y).toBeGreaterThan(sessionBox.y);
+  expect(sidePanelBox.x).toBeGreaterThan(sessionBox.x + sessionBox.width);
+  expect(Math.abs(sidePanelBox.y - sessionBox.y)).toBeLessThan(2);
 });
 
 test('secondary routes stay discoverable and expose current page', async ({ page }) => {
@@ -69,6 +103,24 @@ test('mobile header is compact and keeps task navigation usable', async ({ page 
   expect(headerBox).not.toBeNull();
   expect(headerBox.height).toBeLessThanOrEqual(190);
   await expect(page.locator('.site-header')).toHaveCSS('position', 'static');
+
+  const skipLink = page.getByRole('link', { name: 'Skip to content' });
+  await skipLink.focus();
+  await expect(skipLink).toBeFocused();
+  await expect(skipLink).toHaveAttribute('href', '#main-content');
+  await expect(page.getByRole('main')).toHaveCount(1);
+  await expect(page.getByRole('navigation', { name: 'Primary' })).toHaveCount(1);
+
+  await moreRoutes.getByText('Explore more').click();
+  const secondaryBoxes = await page.locator('.nav-secondary > a').evaluateAll((links) => links.map((link) => {
+    const rect = link.getBoundingClientRect();
+    return { left: rect.left, right: rect.right };
+  }));
+  expect(secondaryBoxes).toHaveLength(12);
+  secondaryBoxes.forEach((box) => {
+    expect(box.left).toBeGreaterThanOrEqual(0);
+    expect(box.right).toBeLessThanOrEqual(391);
+  });
 });
 
 test('curriculum uses lighter stage guidance and clear stage actions', async ({ page }) => {

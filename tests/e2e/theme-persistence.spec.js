@@ -180,12 +180,20 @@ for (const themeId of themeIds) {
       await page.goto('');
       const header = page.locator('.site-header');
       const selector = page.getByLabel('Theme');
-      const [headerBox, selectorBox] = await Promise.all([header.boundingBox(), selector.boundingBox()]);
+      const [headerBox, selectorBox, pickerBox] = await Promise.all([
+        header.boundingBox(),
+        selector.boundingBox(),
+        page.locator('.theme-picker').boundingBox(),
+      ]);
       expect(headerBox).not.toBeNull();
       expect(selectorBox).not.toBeNull();
+      expect(pickerBox).not.toBeNull();
       expect(selectorBox.height).toBeGreaterThanOrEqual(44);
       expect(selectorBox.x).toBeGreaterThanOrEqual(0);
       expect(selectorBox.x + selectorBox.width).toBeLessThanOrEqual(viewport.width + 1);
+      expect(pickerBox.x).toBeGreaterThanOrEqual(0);
+      expect(pickerBox.x + pickerBox.width).toBeLessThanOrEqual(viewport.width + 1);
+      expect(pickerBox.width).toBeLessThanOrEqual(180);
       expect(headerBox.height).toBeLessThanOrEqual(viewport.width <= 860 ? 190 : 120);
       await expect(header).toHaveCSS('position', viewport.width <= 860 ? 'static' : 'sticky');
       if (viewport.width <= 360) await expect(page.locator('.brand-mark')).toBeHidden();

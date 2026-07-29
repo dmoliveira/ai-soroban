@@ -74,6 +74,17 @@ test('focused practice defaults new learners to foundations and focuses the answ
   await expect(page.locator('#visual-mount')).toHaveAttribute('aria-label', /showing \d+/);
 });
 
+test('history resume returns keyboard focus to the active question', async ({ page }) => {
+  await page.goto('practice');
+  await page.locator('#start-practice-now').click();
+  await page.reload();
+
+  await page.locator('#history-list .session-card').first().getByRole('button', { name: 'Resume', exact: true }).click();
+
+  await expect(page.locator('#answer-input')).toBeFocused();
+  await expect(page.locator('#practice-session-context')).toBeVisible();
+});
+
 test('lesson practice link preserves its level and starts immediately', async ({ page }) => {
   await page.goto('lessons/l4/first-division-patterns');
 
