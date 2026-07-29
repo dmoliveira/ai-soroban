@@ -24,6 +24,12 @@ An attempt enters the evidence sample when it is the learner's first recorded ex
 
 The browser retains at most 400 detailed evidence attempts. A separate monotonic v1 item-claim index remembers the first attempt ID for each exposed item, so eviction cannot make a retry prospective again. If that claim cannot be saved, the attempt receives activity credit only. Reset progress removes both records while preserving the display theme.
 
+## Retained review signals
+
+Review guidance may derive unresolved misses from the retained detailed evidence ledger. Claim-index order is authoritative; timestamps are display metadata only. With complete retained claim detail, each later, distinct, claim-owned, unassisted same-skill first-check success resolves one earlier miss in first-in-first-out order. A correction on the missed item, an assisted check, a retry, or success in another skill cannot resolve it and never rewrites the original first-check outcome.
+
+The bounded ledger is not a permanent full-history claim. If a claim-owned detail has been evicted or is unavailable, guidance marks retained history incomplete and does not use later successes to resolve the retained misses. Evicted outcomes are not reconstructed. When retained evidence contains an unresolved miss, that evidence determines review focus before activity fallback. Compatible `needs-review` activity may guide an item only when that item has no qualified claim-owned detail, and it remains labelled activity rather than first-check evidence or mastery.
+
 ## Comparable scores v2
 
 `soroban-dojo:minigame-scores-v2` stores results on a 0–100 scale:

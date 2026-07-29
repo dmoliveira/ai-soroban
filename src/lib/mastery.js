@@ -1,11 +1,16 @@
 export const MASTERY_EVIDENCE_VERSION = 1;
 export const MASTERY_SEEN_INDEX_VERSION = 1;
 export const DEFAULT_EVIDENCE_LIMIT = 400;
+export const REVIEW_BUCKET_ORDER = Object.freeze(['mental', 'division', 'multiplication', 'complements', 'arithmetic']);
 
 const SOURCES = new Set(['exercise', 'practice', 'worksheet', 'challenge', 'game', 'boss']);
 const ELIGIBILITY = new Set(['prospective', 'activity-only']);
 const EVENT_KINDS = new Set(['submit', 'hint', 'reveal-final', 'reveal-steps', 'recovery', 'manual']);
 const ASSISTANCE_KINDS = new Set(['hint', 'reveal-final', 'reveal-steps', 'recovery', 'manual']);
+const REVIEW_SKILLS = new Set([
+  'abacus-orientation', 'number-reading', 'place-value', 'number-setting', 'addition', 'subtraction',
+  'complements', 'mixed-operations', 'multiplication', 'division', 'anzan', 'mastery',
+]);
 
 const isRecord = (value) => value && typeof value === 'object' && !Array.isArray(value);
 const hasExactKeys = (value, keys) => isRecord(value)
@@ -215,6 +220,129 @@ export const summarizeAttemptEvidence = (attempt) => {
     assisted,
     checks: submits.length,
     assistance,
+  };
+};
+
+export const reviewBucketForSignal = ({ skill, level, sessionId } = {}) => {
+  const normalizedSkill = typeof skill === 'string' ? skill.trim().toLowerCase() : '';
+  const normalizedLevel = typeof level === 'string' ? level.trim().toUpperCase() : '';
+  const normalizedSessionId = typeof sessionId === 'string' ? sessionId.toUpperCase() : '';
+  if (normalizedSkill === 'anzan' || normalizedSkill === 'mastery' || normalizedLevel === 'L5' || normalizedSessionId.includes('L5')) return 'mental';
+  if (normalizedSkill === 'division') return 'division';
+  if (normalizedSkill === 'multiplication' || normalizedLevel === 'L4' || normalizedSessionId.includes('L4')) return 'multiplication';
+  if (normalizedSkill === 'complements' || normalizedLevel === 'L2' || normalizedSessionId.includes('L2')) return 'complements';
+  return 'arithmetic';
+};
+
+const emptyReviewBuckets = () => Object.fromEntries(REVIEW_BUCKET_ORDER.map((key) => [key, {
+  evidenceCount: 0,
+  activityCount: 0,
+  unresolvedItemIds: [],
+  legacyItemIds: [],
+}]));
+
+const selectReviewBucket = (buckets, field) => REVIEW_BUCKET_ORDER
+  .reduce((selected, key) => buckets[key][field] > buckets[selected][field] ? key : selected, REVIEW_BUCKET_ORDER[0]);
+
+export const deriveReviewProfile = ({ evidenceLedger, seenIndex, activityStates } = {}) => {
+  const normalizedLedger = normalizeEvidenceLedger(evidenceLedger);
+  const canonicalLedger = normalizedLedger.filter(isCanonicalAttemptEvidence);
+  const claimIndexValid = isCanonicalMasterySeenIndex(seenIndex);
+  const claims = claimIndexValid ? seenIndex.claims : [];
+  const attemptsById = new Map();
+  const duplicateAttemptIds = new Set();
+  canonicalLedger.forEach((attempt) => {
+    if (attemptsById.has(attempt.attemptId)) duplicateAttemptIds.add(attempt.attemptId);
+    attemptsById.set(attempt.attemptId, attempt);
+  });
+
+  let missingClaimDetails = 0;
+  const ownedQualified = [];
+  const qualifiedItemIds = new Set();
+  const claimedAttemptIds = new Set(claims.map((claim) => claim.attemptId));
+  claims.forEach((claim, claimIndex) => {
+    const attempt = attemptsById.get(claim.attemptId);
+    const ownsExactDetail = attempt
+      && !duplicateAttemptIds.has(claim.attemptId)
+      && attempt.itemId === claim.itemId;
+    if (!ownsExactDetail) {
+      missingClaimDetails += 1;
+      return;
+    }
+    const summary = summarizeAttemptEvidence(attempt);
+    const skill = typeof attempt.skill === 'string' ? attempt.skill.trim().toLowerCase() : '';
+    if (!summary.qualified || !REVIEW_SKILLS.has(skill)) return;
+    qualifiedItemIds.add(attempt.itemId);
+    ownedQualified.push({ attempt, summary, skill, claimIndex });
+  });
+
+  const unownedProspectiveDetails = canonicalLedger.filter((attempt) => attempt.eligibility === 'prospective'
+    && attempt.events.length > 0
+    && !claimedAttemptIds.has(attempt.attemptId)).length;
+  const claimIndexIncomplete = !claimIndexValid && canonicalLedger.some((attempt) => attempt.events.length > 0);
+  const historyIncomplete = claimIndexIncomplete || missingClaimDetails > 0;
+  const unresolvedMisses = [];
+  if (historyIncomplete) {
+    ownedQualified.forEach((record) => {
+      if (!record.summary.firstCheckCorrect) unresolvedMisses.push(record);
+    });
+  } else {
+    const unresolvedBySkill = new Map();
+    ownedQualified.forEach((record) => {
+      const queue = unresolvedBySkill.get(record.skill) || [];
+      if (!record.summary.firstCheckCorrect) {
+        queue.push(record);
+        unresolvedBySkill.set(record.skill, queue);
+        return;
+      }
+      const missIndex = queue.findIndex((candidate) => candidate.attempt.itemId !== record.attempt.itemId);
+      if (missIndex >= 0) queue.splice(missIndex, 1);
+      unresolvedBySkill.set(record.skill, queue);
+    });
+    unresolvedBySkill.forEach((queue) => unresolvedMisses.push(...queue));
+    unresolvedMisses.sort((left, right) => left.claimIndex - right.claimIndex);
+  }
+
+  const buckets = emptyReviewBuckets();
+  unresolvedMisses.forEach(({ attempt }) => {
+    const key = reviewBucketForSignal(attempt);
+    buckets[key].evidenceCount += 1;
+    buckets[key].unresolvedItemIds.push(attempt.itemId);
+  });
+
+  if (isRecord(activityStates)) {
+    Object.entries(activityStates).forEach(([itemId, entry]) => {
+      if (!isRecord(entry) || entry.status !== 'needs-review' || qualifiedItemIds.has(itemId)) return;
+      const key = reviewBucketForSignal(entry);
+      buckets[key].activityCount += 1;
+      buckets[key].legacyItemIds.push(itemId);
+    });
+  }
+
+  const evidenceTotal = REVIEW_BUCKET_ORDER.reduce((sum, key) => sum + buckets[key].evidenceCount, 0);
+  const activityTotal = REVIEW_BUCKET_ORDER.reduce((sum, key) => sum + buckets[key].activityCount, 0);
+  const basis = evidenceTotal > 0 ? 'first-check' : activityTotal > 0 ? 'activity' : 'none';
+  const field = basis === 'first-check' ? 'evidenceCount' : 'activityCount';
+  const focusKey = basis === 'none' ? null : selectReviewBucket(buckets, field);
+  const focus = focusKey ? {
+    key: focusKey,
+    basis,
+    count: buckets[focusKey][field],
+    evidenceCount: buckets[focusKey].evidenceCount,
+    activityCount: buckets[focusKey].activityCount,
+  } : null;
+
+  return {
+    basis,
+    focus,
+    total: basis === 'first-check' ? evidenceTotal : activityTotal,
+    evidenceTotal,
+    activityTotal,
+    retainedQualifiedCount: ownedQualified.length,
+    historyIncomplete,
+    missingClaimDetails,
+    unownedProspectiveDetails,
+    buckets,
   };
 };
 
