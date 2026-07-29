@@ -17,14 +17,18 @@ Soroban Dojo may store:
 - worksheet sessions and weekly study-plan state
 - placement answers and recommendation
 - naturally completed mini-game best scores and medals; session settings and stopped partial results are not persisted
-- boss-round, active boss-session, badge, and certificate state
+- prospective first-check evidence, including whether a hint, reveal, recovery, or manual action happened before the first check, plus a monotonic item-claim index that prevents retries from becoming new evidence
+- comparable mini-game results stored separately from legacy raw scores
+- boss-round, active boss-session, badge, certificate, and playable/offline/legacy completion-source state
 - one display-theme preference under `soroban-dojo:theme`: the raw identifier `washi`, `sakura`, or `sumi`
 
 The canonical key registry is `src/lib/storage.js`. New browser state must be added there and covered by reset tests before release.
 
+Soroban Dojo does not infer verified mastery from pre-0.4 records because those records do not contain enough attempt or assistance history. Existing records remain visible as legacy activity. New evidence uses parallel versioned keys and does not rewrite the old records or the raw theme preference. If saved state is malformed or belongs to a newer schema, learning-state controls become read-only instead of downgrading it.
+
 ## Reset contract
 
-“Reset progress” removes every learning and reward key listed above, including placement and game records. It preserves the display theme and unrelated browser data. A missing, invalid, or inaccessible theme value falls back to Washi and never blocks the page. Some pages may immediately construct an unsaved default recommendation after reset; that default is not prior learner history.
+“Reset progress” removes every learning and reward key listed above, including placement and game records. It preserves the display theme and unrelated browser data, and notifies other open Dojo tabs to reload. If cross-tab notification is unavailable, the learner receives a manual-reload warning. A missing, invalid, or inaccessible theme value falls back to Washi and never blocks the page. Some pages may immediately construct an unsaved default recommendation after reset; that default is not prior learner history.
 
 ## Disclosure
 

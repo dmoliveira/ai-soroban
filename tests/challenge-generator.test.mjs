@@ -8,19 +8,42 @@ import {
   certifyChallengeQuestions,
   evaluateChallengeOutcome,
 } from '../src/lib/challenges.js';
+import { appendEvidenceEvent, createAttemptEvidence } from '../src/lib/mastery.js';
 
-const responseFor = (question, overrides = {}) => ({
-  input: String(question.answer),
-  verified: true,
-  attempts: 1,
-  hintsUsed: 0,
-  revealedFinal: false,
-  revealedSteps: false,
-  recoveryUsed: false,
-  recoveryMode: false,
-  correct: false,
-  ...overrides,
-});
+const responseFor = (question, overrides = {}) => {
+  const response = {
+    input: String(question.answer),
+    verified: true,
+    attempts: 1,
+    hintsUsed: 0,
+    revealedFinal: false,
+    revealedSteps: false,
+    recoveryUsed: false,
+    recoveryMode: false,
+    correct: false,
+    ...overrides,
+  };
+  let evidence = createAttemptEvidence({
+    attemptId: `attempt-${question.id}`,
+    source: 'challenge',
+    itemId: question.id,
+    skill: question.skill || 'challenge',
+    level: question.level || 'L0',
+    rule: { id: question.challengeData?.kind || 'challenge', version: 1 },
+    startedAt: '2026-07-29T00:00:00.000Z',
+  });
+  let seconds = 1;
+  const add = (event) => {
+    evidence = appendEvidenceEvent(evidence, { ...event, at: `2026-07-29T00:00:0${seconds}.000Z` });
+    seconds += 1;
+  };
+  if (response.revealedFinal) add({ kind: 'reveal-final' });
+  if (response.revealedSteps) add({ kind: 'reveal-steps' });
+  if (response.recoveryUsed || response.recoveryMode) add({ kind: 'recovery' });
+  if (response.attempts > 1) add({ kind: 'submit', value: String(question.answer + 1), correct: false });
+  add({ kind: 'submit', value: response.input, correct: Number(response.input) === question.answer });
+  return { ...response, evidence };
+};
 
 test('every challenge is deterministic and certifies its exact rule', () => {
   Object.keys(CHALLENGE_DEFINITIONS).forEach((challengeKey) => {
@@ -86,6 +109,7 @@ test('saved challenge sessions restore canonical questions and outcome from key 
     id: 'saved-id',
     challengeKey: 'bead-match',
     challengeSeed: 'saved-seed',
+    challengeRuleVersion: 1,
     completed: true,
     questions: questions.map((question) => ({ ...question, prompt: `Answer: ${question.answer}`, steps: [`Answer: ${question.answer}`] })),
     responses,
@@ -100,4 +124,43 @@ test('saved challenge sessions restore canonical questions and outcome from key 
   assert.equal(restored.challengeTitle, CHALLENGE_DEFINITIONS['bead-match'].title);
   assert.equal(restored.challengeOutcome.met, true);
   assert.equal(restored.challengeOutcome.value, 8);
+});
+
+test('saved challenges never silently upgrade an unsupported rule version', () => {
+  const storedQuestions = [{ id: 'legacy-question', prompt: 'Preserve me' }];
+  const restored = canonicalizeChallengeSession({
+    id: 'future-session',
+    challengeKey: 'bead-match',
+    challengeSeed: 'future-seed',
+    challengeRuleVersion: 99,
+    completed: true,
+    questions: storedQuestions,
+  });
+  assert.equal(restored.challengeUnavailable, true);
+  assert.deepEqual(restored.questions, storedQuestions);
+  assert.equal(restored.challengeOutcome.valid, false);
+  assert.match(restored.challengeOutcome.errors[0], /unsupported.*99/i);
+  assert.throws(() => buildChallengeQuestions({ challengeKey: 'bead-match', seed: 'future', ruleVersion: 99 }), /unsupported/i);
+
+  for (const malformedVersion of ['1', true]) {
+    const malformed = canonicalizeChallengeSession({
+      id: `malformed-${String(malformedVersion)}`,
+      challengeKey: 'bead-match',
+      challengeSeed: 'stored-seed',
+      challengeRuleVersion: malformedVersion,
+      questions: storedQuestions,
+    });
+    assert.equal(malformed.challengeUnavailable, true);
+    assert.deepEqual(malformed.questions, storedQuestions);
+  }
+});
+
+test('unknown and unversioned challenge records remain opaque instead of disappearing', () => {
+  const unknown = { id: 'unknown', challengeKey: 'future-mode', challengeRuleVersion: 1, questions: [{ id: 'q' }] };
+  assert.deepEqual(canonicalizeChallengeSession(unknown).questions, unknown.questions);
+  assert.equal(canonicalizeChallengeSession(unknown).challengeUnavailable, true);
+
+  const unversioned = { id: 'old', challengeKey: 'bead-match', challengeSeed: 'old', questions: [{ id: 'q' }] };
+  assert.equal(canonicalizeChallengeSession(unversioned).challengeUnavailable, true);
+  assert.match(canonicalizeChallengeSession(unversioned).challengeOutcome.errors[0], /missing.*version/i);
 });

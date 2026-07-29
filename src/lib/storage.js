@@ -12,6 +12,12 @@ export const STORAGE_KEYS = Object.freeze({
   bossRounds: 'soroban-dojo:boss-rounds',
   bossSessionProgress: 'soroban-dojo:boss-session-progress',
   bossCertificates: 'soroban-dojo:boss-certificates',
+  stateSchema: 'soroban-dojo:state-schema',
+  masteryEvidence: 'soroban-dojo:mastery-evidence-v1',
+  masterySeenItems: 'soroban-dojo:mastery-seen-items-v1',
+  miniGameScoresV2: 'soroban-dojo:minigame-scores-v2',
+  bossProvenance: 'soroban-dojo:boss-provenance-v1',
+  resetEpoch: 'soroban-dojo:reset-epoch',
   theme: 'soroban-dojo:theme',
 });
 
@@ -29,7 +35,22 @@ export const PROGRESS_STORAGE_KEYS = Object.freeze([
   STORAGE_KEYS.bossRounds,
   STORAGE_KEYS.bossSessionProgress,
   STORAGE_KEYS.bossCertificates,
+  STORAGE_KEYS.masteryEvidence,
+  STORAGE_KEYS.masterySeenItems,
+  STORAGE_KEYS.miniGameScoresV2,
+  STORAGE_KEYS.bossProvenance,
 ]);
+
+const compatibilityByStorage = new WeakMap();
+
+export const setStorageCompatibility = (storage, result) => {
+  if (storage && (typeof storage === 'object' || typeof storage === 'function')) {
+    compatibilityByStorage.set(storage, result);
+  }
+  return result;
+};
+
+export const storageWritesAllowed = (storage) => compatibilityByStorage.get(storage)?.writable !== false;
 
 export const parseStoredJson = (rawValue, fallback) => {
   if (rawValue === null || rawValue === undefined || rawValue === '') return fallback;
@@ -55,6 +76,7 @@ export const readStoredArray = (storage, key) => normalizeStoredArray(readStored
 export const readStoredRecord = (storage, key) => normalizeStoredRecord(readStoredJson(storage, key, {}));
 
 export const writeStoredJson = (storage, key, value) => {
+  if (!storageWritesAllowed(storage)) return false;
   try {
     storage?.setItem(key, JSON.stringify(value));
     return true;
@@ -87,5 +109,20 @@ export const firstIncompletePlanStep = (state) => (
 );
 
 export const clearProgressStorage = (storage) => {
-  PROGRESS_STORAGE_KEYS.forEach((key) => storage?.removeItem(key));
+  const failedKeys = [];
+  PROGRESS_STORAGE_KEYS.forEach((key) => {
+    try {
+      storage?.removeItem(key);
+    } catch {
+      failedKeys.push(key);
+    }
+  });
+  let broadcast = false;
+  if (failedKeys.length === 0) {
+    try {
+      storage?.setItem?.(STORAGE_KEYS.resetEpoch, `${Date.now()}:${Math.random().toString(36).slice(2)}`);
+      broadcast = true;
+    } catch {}
+  }
+  return { complete: failedKeys.length === 0, failedKeys, broadcast };
 };

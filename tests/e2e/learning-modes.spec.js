@@ -33,6 +33,39 @@ test('a first-check challenge answer explains whether it counts', async ({ page 
   await expect(page.locator('#feedback-panel')).toBeInViewport();
 });
 
+test('review opened after a correct first check does not contradict earned credit', async ({ page }) => {
+  await page.goto('practice');
+  await page.getByText('More ways to train').click();
+  await page.locator('.practice-challenge-start[data-challenge="bead-match"]').click();
+  const session = await readLatestSession(page);
+  await page.locator('#answer-input').fill(String(session.questions[0].answer));
+  await page.locator('#verify-answer').click();
+  await page.locator('#reveal-steps').click();
+  await expect(page.locator('#feedback-panel')).toContainText('counts toward the challenge target');
+  await expect(page.locator('#feedback-panel')).toContainText('Review opened after the scored first check');
+});
+
+test('a stale challenge tab cannot replace a reveal with first-check credit', async ({ page, context }) => {
+  await page.goto('practice');
+  await page.getByText('More ways to train').click();
+  await page.locator('.practice-challenge-start[data-challenge="bead-match"]').click();
+  const session = await readLatestSession(page);
+
+  const staleTab = await context.newPage();
+  await staleTab.goto('practice');
+  await staleTab.locator('.practice-setup-block > summary').click();
+  await staleTab.locator('#resume-latest').click();
+
+  await page.locator('#reveal-final').click();
+  await staleTab.locator('#answer-input').fill(String(session.questions[0].answer));
+  await staleTab.locator('#verify-answer').click();
+  await expect(staleTab.locator('#feedback-panel')).toContainText('does not count toward the first-check target');
+  const merged = await staleTab.evaluate(() => JSON.parse(localStorage.getItem('soroban-dojo:mastery-evidence-v1'))[0]);
+  expect(merged.eligibility).toBe('activity-only');
+  expect(merged.events.map((event) => event.kind)).toEqual(['reveal-final', 'submit']);
+  await staleTab.close();
+});
+
 test('challenge completion stores a measured outcome and replays the certified list', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('practice');
@@ -175,13 +208,17 @@ test('Number Bond Blitz completes its finite queue and Play Again keeps settings
   await expect(results).toBeVisible();
   await expect(page.locator('#mini-game-result-title')).toBeFocused();
   await expect(page.locator('#mini-game-result-reason')).toContainText('end of the question list');
-  await expect(page.locator('#mini-game-result-score')).toHaveText('80');
+  await expect(page.locator('#mini-game-result-score')).toHaveText('100');
+  await expect(page.locator('#mini-game-result-points')).toHaveText('80');
   await expect(page.locator('#mini-game-result-accuracy')).toHaveText('5 / 5');
   await expect(page.locator('#mini-game-result-time')).toHaveText(/\d+:\d{2}/);
   await expect(page.locator('#mini-game-play-again')).toBeVisible();
   await expect(page.locator('#mini-game-play-again')).toBeInViewport();
   const savedBest = await page.evaluate(() => JSON.parse(localStorage.getItem('soroban-dojo:minigame-scores') || '{}')['complement-dash']);
-  expect(savedBest).toBe(80);
+  expect(savedBest).toBeUndefined();
+  const comparableBest = await page.evaluate(() => Object.values(JSON.parse(localStorage.getItem('soroban-dojo:minigame-scores-v2') || '{}').bestByScope)[0]);
+  expect(comparableBest.normalized).toBe(100);
+  expect(comparableBest.rawPoints).toBe(80);
 
   await page.locator('#mini-game-play-again').click();
   await expect(page.locator('#mini-game-question-count')).toHaveValue('5');
@@ -189,7 +226,7 @@ test('Number Bond Blitz completes its finite queue and Play Again keeps settings
   await page.locator('#mini-game-stop').click();
   await expect(page.locator('#mini-game-result-reason')).toContainText('partial score was not saved');
   const bestAfterStop = await page.evaluate(() => JSON.parse(localStorage.getItem('soroban-dojo:minigame-scores') || '{}')['complement-dash']);
-  expect(bestAfterStop).toBe(80);
+  expect(bestAfterStop).toBeUndefined();
 });
 
 test('Number Bond deadline completes through the browser clock without a real wait', async ({ page }) => {
@@ -250,6 +287,9 @@ test('Stop completes every mini-game without changing legacy best scores', async
     }));
   });
   await page.goto('mini-games');
+  await expect(page.locator('#mini-game-best')).toContainText('Legacy record only');
+  await expect(page.locator('#mini-game-tier')).toHaveText('Unlocked tier: starter');
+  await expect(page.locator('#mini-game-difficulty option[value="bronze"]')).toHaveAttribute('disabled', '');
 
   for (const gameId of ['complement-dash', 'table-tower', 'anzan-flash', 'error-fix']) {
     await page.locator(`.minigame-select[data-game="${gameId}"]`).click();

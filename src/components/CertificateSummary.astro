@@ -2,8 +2,8 @@
   <div class="section-head">
     <div>
       <p class="eyebrow">Certificates</p>
-      <h2>Earned printable milestones</h2>
-      <p class="muted">Each cleared boss round can become a certificate entry you can print or share as text.</p>
+      <h2>Source-labelled printable milestones</h2>
+      <p class="muted">Each certificate keeps playable, offline, and legacy clears distinct.</p>
     </div>
   </div>
   <div id="certificate-summary-list" class="session-list"></div>
@@ -11,13 +11,20 @@
 
 <script>
   // @ts-nocheck
-  const key = 'soroban-dojo:boss-certificates';
+  import { bossProvenanceLabel, isBossComplete, normalizeBossCertificateRecord, normalizeBossCompletionRecord, normalizeBossProvenanceRecord, resolveBossProvenance } from '../lib/boss-provenance.js';
+  import { STORAGE_KEYS, readStoredRecord } from '../lib/storage.js';
+  import { ensureStorageCompatibility } from '../lib/storage-migrations.js';
+
+  ensureStorageCompatibility(localStorage);
+
+  const key = STORAGE_KEYS.bossCertificates;
   const mount = document.getElementById('certificate-summary-list');
-  const read = () => { try { return JSON.parse(localStorage.getItem(key) || '{}'); } catch { return {}; } };
-  const certificates = read();
+  const certificates = normalizeBossCertificateRecord(readStoredRecord(localStorage, key));
+  const completedBosses = normalizeBossCompletionRecord(readStoredRecord(localStorage, STORAGE_KEYS.bossRounds));
+  const provenance = normalizeBossProvenanceRecord(readStoredRecord(localStorage, STORAGE_KEYS.bossProvenance));
   const levels = ['L0', 'L1', 'L2', 'L3', 'L4', 'L5'];
 
-  if (!levels.some((level) => certificates[level])) {
+  if (!levels.some((level) => certificates[level] && isBossComplete(completedBosses[level]))) {
     const note = document.createElement('div');
     note.className = 'empty-state-card muted';
     note.innerHTML = '<div class="empty-state-head"><span class="empty-state-mark">✦</span><strong>No certificates yet</strong></div><p>Clear one boss round to begin your certificate record.</p>';
@@ -25,7 +32,7 @@
   } else {
     levels.forEach((level) => {
       const entry = certificates[level];
-      if (!entry) return;
+      if (!entry || !isBossComplete(completedBosses[level])) return;
       const card = document.createElement('article');
       card.className = 'reward-state-card';
       const head = document.createElement('div');
@@ -39,15 +46,17 @@
 
       const meta = document.createElement('div');
       meta.className = 'meta-row';
+      const source = resolveBossProvenance(true, provenance[level]);
       const name = document.createElement('span');
       name.textContent = entry.name;
       const date = document.createElement('span');
-      date.textContent = entry.date;
+      const storedDate = source.completedAt || entry.date;
+      date.textContent = Number.isFinite(Date.parse(storedDate)) ? new Date(storedDate).toLocaleDateString() : storedDate;
       meta.append(name, date);
 
       const copy = document.createElement('p');
       copy.className = 'muted small';
-      copy.textContent = `${entry.name} cleared the ${level} boss round.`;
+      copy.textContent = `${entry.name} cleared the ${level} boss round. ${bossProvenanceLabel(source)}.`;
 
       card.append(head, meta, copy);
       mount.appendChild(card);

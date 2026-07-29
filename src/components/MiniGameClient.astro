@@ -8,7 +8,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     <div>
       <p class="eyebrow">Mini games</p>
       <h2>Play one complete round, then review the result</h2>
-      <p class="muted">Every mode now has a clear finish. Choose the session size, play the round, and use the score and elapsed time to decide what to repeat.</p>
+      <p class="muted">Every mode has a clear finish. Compare normalized results on a 0–100 scale while round points and streaks stay playful.</p>
     </div>
     <span class="badge">Finite, focused, replayable</span>
   </div>
@@ -30,7 +30,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   <div class="subtle-panel mini-game-summary">
     <h3 id="mini-game-title" tabindex="-1">Number Bond Blitz</h3>
     <p id="mini-game-copy" class="muted small">Complete number bonds in a finite accuracy sprint.</p>
-    <div id="mini-game-best" class="muted small">Best score: 0</div>
+    <div id="mini-game-best" class="muted small">No comparable result yet</div>
     <div id="mini-game-tier" class="muted small">Unlocked tier: starter</div>
     <div id="mini-game-medal" class="muted small">Medal targets will appear here.</div>
     <div id="mini-game-rule" class="muted small">Rule details will appear here.</div>
@@ -107,7 +107,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       <p id="mini-game-feedback" class="muted small" role="status" aria-live="polite" aria-atomic="true">Choose a finite session, then start when you are ready.</p>
     </div>
     <div class="stats-grid mini-game-live-stats">
-      <article class="stat-card stat-card-soft"><small>Score</small><span id="mini-game-score">0</span></article>
+      <article class="stat-card stat-card-soft"><small>Round points</small><span id="mini-game-score">0</span></article>
       <article class="stat-card stat-card-soft"><small>Streak</small><span id="mini-game-streak">0</span></article>
       <article class="stat-card stat-card-soft"><small>Progress</small><span id="mini-game-progress">0 / 10</span></article>
       <article class="stat-card stat-card-soft"><small>Time</small><span id="mini-game-time">0:00</span></article>
@@ -118,7 +118,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       <h3 id="mini-game-result-title" tabindex="-1">Round complete</h3>
       <p id="mini-game-result-reason" class="muted">Completion reason</p>
       <p class="mini-game-result-line">
-        <strong>Score <span id="mini-game-result-score">0</span></strong>
+        <strong>Comparable result <span id="mini-game-result-score">0</span>/100</strong>
+        <span>Round points <strong id="mini-game-result-points">0</strong></span>
         <span>Accuracy <strong id="mini-game-result-accuracy">0 / 0</strong></span>
         <span>Time <strong id="mini-game-result-time">0:00</strong></span>
       </p>
@@ -139,7 +140,11 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     reduceMiniGameState,
     shouldPersistMiniGameResult,
   } from '../lib/mini-games.js';
-  import { STORAGE_KEYS, readStoredRecord, writeStoredJson } from '../lib/storage.js';
+  import { buildScoreSummary, medalForNormalizedScore, normalizeScoreStore, scoreScopeKey, storeComparableScore } from '../lib/scoring.js';
+  import { STORAGE_KEYS, readStoredJson, writeStoredJson } from '../lib/storage.js';
+  import { ensureStorageCompatibility } from '../lib/storage-migrations.js';
+
+  ensureStorageCompatibility(localStorage);
 
   const byId = (id) => document.getElementById(id);
   const activeStatuses = new Set(['running', 'awaiting-answer']);
@@ -156,14 +161,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   let elapsedInterval = null;
   const pendingTimeouts = new Set();
 
-  const readScores = () => readStoredRecord(localStorage, STORAGE_KEYS.miniGameScores);
-  const readMedals = () => readStoredRecord(localStorage, STORAGE_KEYS.miniGameMedals);
-  const medalForScore = (definition, best) => {
-    if (best >= definition.thresholds.gold) return 'gold';
-    if (best >= definition.thresholds.silver) return 'silver';
-    if (best >= definition.thresholds.bronze) return 'bronze';
-    return 'starter';
-  };
+  const readScoreStore = () => normalizeScoreStore(readStoredJson(localStorage, STORAGE_KEYS.miniGameScoresV2, {}));
   const isActive = () => currentState && activeStatuses.has(currentState.status);
   const formatTime = (milliseconds) => {
     const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000));
@@ -191,16 +189,27 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
   const syncTierPicker = () => {
     const definition = MINI_GAME_DEFINITIONS[currentGame];
-    const scores = readScores();
-    const medals = readMedals();
-    const best = Number(scores[currentGame]) || 0;
-    const medal = medals[currentGame] || medalForScore(definition, best);
+    const scoreStore = readScoreStore();
+    const legacyBest = Number(scoreStore.legacy.scores[currentGame]) || 0;
+    const legacyMedal = scoreStore.legacy.medals[currentGame] || 'starter';
+    const summaries = Object.values(scoreStore.bestByScope)
+      .filter((summary) => summary.scope.mode === currentGame)
+      .sort((left, right) => right.normalized - left.normalized);
+    const normalizedMedal = medalForNormalizedScore(summaries[0]?.normalized || 0);
+    const medal = normalizedMedal;
     const unlockedIndex = Math.max(0, MINI_GAME_TIERS.indexOf(medal));
     const picker = byId('mini-game-difficulty');
     [...picker.options].forEach((option, index) => { option.disabled = index > unlockedIndex; });
     if (MINI_GAME_TIERS.indexOf(currentTier) > unlockedIndex) currentTier = MINI_GAME_TIERS[unlockedIndex];
     picker.value = currentTier;
-    return { best, medal };
+    const selectedScope = {
+      mode: currentGame,
+      tier: currentTier,
+      ruleVersion: definition.ruleVersion,
+      settings: normalizeMiniGameSettings(currentGame, settingsByGame[currentGame]),
+    };
+    const bestSummary = scoreStore.bestByScope[scoreScopeKey(selectedScope)] || null;
+    return { bestSummary, legacyBest, legacyMedal, medal };
   };
 
   const syncSettings = () => {
@@ -219,12 +228,16 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
   const syncGameMeta = () => {
     const definition = MINI_GAME_DEFINITIONS[currentGame];
-    const { best, medal } = syncTierPicker();
+    const { bestSummary, legacyBest, legacyMedal, medal } = syncTierPicker();
     byId('mini-game-title').textContent = definition.title;
     byId('mini-game-copy').textContent = definition.summary;
-    byId('mini-game-best').textContent = `Best score: ${best}`;
+    byId('mini-game-best').textContent = bestSummary
+      ? `Best comparable result: ${bestSummary.normalized}/100 · ${bestSummary.scope.tier}`
+      : legacyBest
+        ? `Legacy record only: ${legacyBest} points · ${legacyMedal} legacy medal · comparable tier progress starts with your next round`
+        : 'No comparable result yet';
     byId('mini-game-tier').textContent = `Unlocked tier: ${medal}`;
-    byId('mini-game-medal').textContent = `Medal targets: bronze ${definition.thresholds.bronze}, silver ${definition.thresholds.silver}, gold ${definition.thresholds.gold}`;
+    byId('mini-game-medal').textContent = 'Comparable medal targets: bronze 60, silver 80, gold 95';
     byId('mini-game-rule').textContent = `Rule: ${definition.rule}`;
     document.querySelectorAll('.minigame-select').forEach((button) => {
       const selected = button.dataset.game === currentGame;
@@ -318,14 +331,23 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   };
 
   const persistCompletedResult = () => {
-    if (!currentState || !shouldPersistMiniGameResult(currentState)) return;
-    const definition = MINI_GAME_DEFINITIONS[currentGame];
-    const scores = readScores();
-    scores[currentGame] = Math.max(Number(scores[currentGame]) || 0, currentState.score);
-    writeStoredJson(localStorage, STORAGE_KEYS.miniGameScores, scores);
-    const medals = readMedals();
-    medals[currentGame] = medalForScore(definition, scores[currentGame]);
-    writeStoredJson(localStorage, STORAGE_KEYS.miniGameMedals, medals);
+    if (!currentState || !shouldPersistMiniGameResult(currentState)) return null;
+    const total = currentGame === 'anzan-flash' ? 1 : currentState.round.questions.length;
+    const summary = buildScoreSummary({
+      mode: currentGame,
+      tier: currentState.round.tier,
+      ruleVersion: currentState.round.ruleVersion || 1,
+      settings: currentState.round.settings,
+      rawPoints: currentState.score,
+      correct: currentState.correctCount,
+      answered: currentState.answeredCount,
+      total,
+      completedNaturally: true,
+      completedAt: new Date(currentState.completedAt).toISOString(),
+    });
+    const scoreStore = readScoreStore();
+    const saved = writeStoredJson(localStorage, STORAGE_KEYS.miniGameScoresV2, storeComparableScore(scoreStore, summary));
+    return { summary, saved };
   };
 
   const completionReason = (state) => ({
@@ -340,12 +362,25 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     if (currentState?.status !== 'complete' || completionHandledToken === runToken) return;
     completionHandledToken = runToken;
     clearSchedulers();
-    persistCompletedResult();
+    const persisted = persistCompletedResult();
+    const total = currentGame === 'anzan-flash' ? 1 : currentState.round.questions.length;
+    const resultSummary = persisted?.summary || buildScoreSummary({
+      mode: currentGame,
+      tier: currentState.round.tier,
+      ruleVersion: currentState.round.ruleVersion || 1,
+      settings: currentState.round.settings,
+      rawPoints: currentState.score,
+      correct: currentState.correctCount,
+      answered: currentState.answeredCount,
+      total,
+      completedNaturally: false,
+    });
     const results = byId('mini-game-results');
     const resultTitle = byId('mini-game-result-title');
     resultTitle.textContent = `${MINI_GAME_DEFINITIONS[currentGame].title} complete`;
-    byId('mini-game-result-reason').textContent = completionReason(currentState);
-    byId('mini-game-result-score').textContent = String(currentState.score);
+    byId('mini-game-result-reason').textContent = `${completionReason(currentState)}${persisted && !persisted.saved ? ' This result is available in this tab, but browser storage did not save it as a best.' : ''}`;
+    byId('mini-game-result-score').textContent = String(resultSummary.normalized);
+    byId('mini-game-result-points').textContent = String(currentState.score);
     byId('mini-game-result-accuracy').textContent = currentGame === 'anzan-flash' && currentState.reason !== 'answer-submitted'
       ? `${currentState.termsShown}/${currentState.round.terms.length} terms shown`
       : `${currentState.correctCount} / ${currentState.answeredCount}`;
@@ -480,6 +515,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       ...settingsByGame[currentGame],
       [key]: Number(event.target.value),
     });
+    syncGameMeta();
     renderState();
   }));
   document.addEventListener('visibilitychange', () => {

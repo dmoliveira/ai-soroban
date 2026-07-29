@@ -2,8 +2,8 @@
   <div class="section-head">
     <div>
       <p class="eyebrow">Boss badges</p>
-      <h2>Earned level milestones</h2>
-      <p class="muted">Complete boss rounds to earn visible badges that mark each cleared level.</p>
+      <h2>Recorded level milestones</h2>
+      <p class="muted">Each badge identifies whether its boss clear happened in the Dojo, offline, or before source tracking.</p>
     </div>
   </div>
   <div id="boss-badge-strip" class="milestone-row"></div>
@@ -15,24 +15,31 @@
 
 <script>
   // @ts-nocheck
-  const key = 'soroban-dojo:boss-rounds';
+  import { bossProvenanceLabel, isBossComplete, normalizeBossCompletionRecord, normalizeBossProvenanceRecord, resolveBossProvenance } from '../lib/boss-provenance.js';
+  import { STORAGE_KEYS, readStoredRecord } from '../lib/storage.js';
+  import { ensureStorageCompatibility } from '../lib/storage-migrations.js';
+
+  ensureStorageCompatibility(localStorage);
+
+  const key = STORAGE_KEYS.bossRounds;
   const strip = document.getElementById('boss-badge-strip');
   const copy = document.getElementById('boss-badge-copy');
   const levels = ['L0', 'L1', 'L2', 'L3', 'L4', 'L5'];
-  const read = () => { try { return JSON.parse(localStorage.getItem(key) || '{}'); } catch { return {}; } };
-  const state = read();
+  const state = normalizeBossCompletionRecord(readStoredRecord(localStorage, key));
+  const provenance = normalizeBossProvenanceRecord(readStoredRecord(localStorage, STORAGE_KEYS.bossProvenance));
   let earned = 0;
   levels.forEach((level) => {
     const chip = document.createElement('div');
-    const done = !!state[level];
+    const done = isBossComplete(state[level]);
     if (done) earned += 1;
     chip.className = `milestone-chip ${done ? 'active' : ''}`;
-    chip.textContent = done ? `${level} badge` : `${level} available later`;
+    const source = resolveBossProvenance(done, provenance[level]);
+    chip.textContent = done ? `${level} · ${bossProvenanceLabel(source)}` : `${level} available later`;
     strip.appendChild(chip);
   });
   if (earned) {
     copy.className = 'reward-state-card muted small';
-    copy.innerHTML = `<div class="reward-state-head"><span class="reward-state-mark">✓</span><strong>${earned} badge${earned === 1 ? '' : 's'} earned</strong></div><p>Keep clearing levels to fill the full row.</p>`;
+    copy.innerHTML = `<div class="reward-state-head"><span class="reward-state-mark">✓</span><strong>${earned} completion${earned === 1 ? '' : 's'} recorded</strong></div><p>Each source remains visible so offline and playable clears are never confused.</p>`;
   } else {
     copy.className = 'empty-state-card muted small';
     copy.innerHTML = '<div class="empty-state-head"><span class="empty-state-mark">✦</span><strong>No badges yet</strong></div><p>Clear one boss round to begin your earned badge row.</p>';

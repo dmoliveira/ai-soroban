@@ -1,5 +1,6 @@
 ---
 import { numberToKanji } from '../lib/japanese';
+import { normalizeStepTimeline, numberToSorobanState, rodStateToDigit } from '../lib/soroban.js';
 
 interface Props {
   value: number;
@@ -9,16 +10,15 @@ interface Props {
 
 const { value, label = 'Soroban visual', stepValues = [] } = Astro.props;
 
-const toDigits = (input: number) => String(Math.max(0, input)).split('').map((digit) => Number(digit));
-const renderValue = (input: number) => toDigits(input).map((digit, index, digits) => ({
+const renderValue = (input: number) => numberToSorobanState(input).rods.map((state, index, rods) => ({
   key: `${input}-${index}`,
-  digit,
-  position: digits.length - index,
-  upperActive: digit >= 5,
-  lowerActive: digit % 5,
+  digit: rodStateToDigit(state),
+  position: rods.length - index,
+  upperActive: state.upperActive,
+  lowerActive: state.lowerActive,
 }));
 
-const stepSeries = [value, ...stepValues.filter((entry) => entry !== value)];
+const stepSeries = normalizeStepTimeline(stepValues, value);
 ---
 
 <section class="soroban-visual panel">
@@ -29,9 +29,9 @@ const stepSeries = [value, ...stepValues.filter((entry) => entry !== value)];
     </div>
     <span class="badge">Value {value} · {numberToKanji(value)}</span>
   </div>
-  <div class="soroban-board" aria-label={`${label}: value ${value}`}>
+  <div class="soroban-board" role="img" aria-label={`${label}: value ${value}`}>
     {renderValue(value).map((rod) => (
-      <div class="rod" aria-label={`Digit ${rod.digit}`}>
+      <div class="rod" aria-hidden="true">
         <div class:list={["bead", "upper", rod.upperActive && 'active']} />
         <div class="beam" />
         {Array.from({ length: 4 }, (_, index) => (
