@@ -438,9 +438,8 @@ test('wrong-shape local data falls back without crashing learning flows', async 
 
   await page.goto('progress');
   await expect(page.locator('#finished-sessions')).toHaveText('0');
-  await page.goto('practice');
-  await page.locator('#start-practice-now').click();
-  await expect(page.locator('#session-title')).toContainText('Generated L0 session');
+  await page.goto('practice?level=L0&skill=abacus-orientation&start=1');
+  await expect(page.locator('#session-title')).toContainText('abacus orientation · L0 session');
   await page.goto('mini-games');
   await page.locator('#mini-game-start-selected').click();
   await page.locator('#mini-game-stop').click();

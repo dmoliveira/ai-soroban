@@ -14,7 +14,7 @@ test('start here presents a small-session onboarding flow', async ({ page }) => 
 
   await expect(page.getByRole('heading', { level: 1, name: /start in one calm sitting/i })).toBeVisible();
   await expect(page.getByRole('heading', { level: 2, name: /use this three-step order/i })).toBeVisible();
-  await expect(page.getByRole('link', { name: /follow the learning map/i })).toBeVisible();
+  await expect(page.getByRole('link', { name: /choose a learner route/i }).last()).toBeVisible();
 });
 
 test('practice keeps a single h1 and reveals stacked journeys on mobile', async ({ page }) => {
@@ -26,7 +26,7 @@ test('practice keeps a single h1 and reveals stacked journeys on mobile', async 
   await expect(page.locator('.studio-hero .hero-actions .button')).toHaveCount(1);
   await expect(page.getByRole('heading', { level: 2, name: /choose one training mode and begin/i })).toBeVisible();
 
-  await expect(page.locator('#start-practice-now')).toBeVisible();
+  await expect(page.locator('[data-continuity-primary]')).toBeVisible();
   await expect(page.locator('.practice-start-panel .button:not(.button-secondary)')).toHaveCount(1);
   await expect(page.locator('#practice-session-context')).toBeHidden();
   await expect(page.locator('#single-session-active')).toBeHidden();
@@ -132,17 +132,16 @@ test('curriculum uses lighter stage guidance and clear stage actions', async ({ 
   await expect(page.getByRole('link', { name: /take the best next step/i }).first()).toBeVisible();
 });
 
-test('progress prioritizes next move and weekly plan before milestone rewards', async ({ page }) => {
+test('progress prioritizes one next move before milestone rewards', async ({ page }) => {
   await page.goto('progress');
 
   await expect(page.getByRole('heading', { level: 1, name: /see the next move before everything else/i })).toBeVisible();
-  await expect(page.getByRole('heading', { level: 2, name: /your next 7 days/i })).toBeVisible();
-
-  const weeklyPlanTop = await page.locator('.weekly-plan-panel').boundingBox();
-  const progressSummaryTop = await page.locator('.progress-panel').boundingBox();
-  expect(weeklyPlanTop).not.toBeNull();
-  expect(progressSummaryTop).not.toBeNull();
-  expect(weeklyPlanTop.y).toBeLessThan(progressSummaryTop.y);
+  await expect(page.locator('.weekly-plan-panel')).toHaveCount(0);
+  const recommendationTop = await page.locator('[data-continuity-next-action]').boundingBox();
+  const statsTop = await page.locator('.progress-stats-grid').boundingBox();
+  expect(recommendationTop).not.toBeNull();
+  expect(statsTop).not.toBeNull();
+  expect(recommendationTop.y).toBeLessThan(statsTop.y);
 });
 
 test('worksheets presents a live preset flow with one dominant solve action', async ({ page }) => {

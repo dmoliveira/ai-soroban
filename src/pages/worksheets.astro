@@ -637,6 +637,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       createWorksheetFamilyConfig,
       formatWorksheetFamilyQuestion,
     } from '../lib/worksheet.js';
+    import { resolveWorksheetTarget } from '../lib/learner-continuity.js';
 
     const levelBands = {
       L0: '1',
@@ -1408,11 +1409,15 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         renderSheet();
       });
     });
-    const initialPreset = new URLSearchParams(window.location.search).get('preset');
-    if (initialPreset && presets[initialPreset]) {
-      applyPreset(initialPreset);
-    } else {
-      applyPreset('foundations-focus');
+    const initialQuery = new URLSearchParams(window.location.search);
+    const initialTarget = resolveWorksheetTarget({
+      preset: initialQuery.get('preset'),
+      submode: initialQuery.get('submode'),
+    });
+    applyPreset(initialTarget.preset);
+    if (initialTarget.submode && byId('worksheet-submode').value !== initialTarget.submode) {
+      byId('worksheet-submode').value = initialTarget.submode;
+      renderSheet();
     }
     document.querySelectorAll('.start-solving-worksheet').forEach((button) => {
       button.addEventListener('click', () => {

@@ -1,6 +1,7 @@
 ---
 import PathCards from '../components/PathCards.astro';
 import LevelGrid from '../components/LevelGrid.astro';
+import ContinuityNextAction from '../components/ContinuityNextAction.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
 
 const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
@@ -23,15 +24,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
           </div>
         </div>
       </div>
-      <aside class="subtle-panel home-next-panel">
-        <p class="eyebrow">First session plan</p>
-        <h2>Use this order</h2>
-        <ol class="home-step-list">
-          <li><strong>Choose the learner route</strong><span>Children or adults, depending on who is training.</span></li>
-          <li><strong>Read one short lesson</strong><span>Keep the first lesson small and practical.</span></li>
-          <li><strong>Try one exercise</strong><span>Attempt before checking the answer or method.</span></li>
-        </ol>
-      </aside>
+      <ContinuityNextAction surface="home" />
     </div>
     <div class="home-studio-stats">
       <article class="subtle-panel home-studio-stat"><span>Best first step</span><strong>Start here</strong></article>
@@ -98,11 +91,6 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     .home-studio-mark { width:4.5rem; height:4.5rem; border-radius:1.5rem; background:color-mix(in srgb, var(--panel-raised) 80%, transparent); display:grid; place-items:center; box-shadow:0 12px 32px color-mix(in srgb, var(--accent) 12%, transparent); flex:0 0 auto; }
     .home-studio-mark img { width:3.25rem; height:3.25rem; }
     .home-hero-actions { margin-top: 0.5rem; }
-    .home-next-panel { display:grid; gap:0.85rem; align-content:start; }
-    .home-next-panel h2 { margin: 0; }
-    .home-step-list { margin:0; padding-left:1.2rem; display:grid; gap:0.75rem; }
-    .home-step-list li { display:grid; gap:0.15rem; }
-    .home-step-list span { color:var(--muted); }
     .home-studio-stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:0.85rem; }
     .home-studio-stat { display:grid; gap:0.35rem; }
     .home-studio-stat span { font-size:0.75rem; text-transform:uppercase; letter-spacing:0.06em; color:var(--accent); }

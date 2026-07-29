@@ -1,4 +1,6 @@
 ---
+import ContinuityNextAction from './ContinuityNextAction.astro';
+
 interface EntrySummary {
   id: string;
   skill: string;
@@ -23,16 +25,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     </div>
   </div>
 
-  <section class="panel ink-panel progress-next-panel">
-    <p class="eyebrow">Recommended next move</p>
-    <div class="next-move-grid">
-      <div>
-        <h3 id="next-move-title">Start your first lesson</h3>
-        <p id="next-move-copy" class="muted">Begin with a calm lesson, then move into one short practice session.</p>
-      </div>
-      <div class="button-row" id="next-move-actions"></div>
-    </div>
-  </section>
+  <ContinuityNextAction surface="progress" headingLevel="h3" />
 
   <div class="progress-hero-grid">
     <section class="panel ink-panel">
@@ -132,6 +125,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   // @ts-nocheck
   import { isBossComplete, normalizeBossCompletionRecord } from '../lib/boss-provenance.js';
   import { canonicalizeChallengeSession, isChallengeSessionOpaque } from '../lib/challenges.js';
+  import { buildFocusedPracticeHref, buildFocusedWorksheetHref, resolveWorksheetTarget, toBaseHref } from '../lib/learner-continuity.js';
   import { isCanonicalAttemptEvidence, masteryClaimOwnedBy, normalizeMasterySeenIndex, summarizeAttemptEvidence } from '../lib/mastery.js';
   import { STORAGE_KEYS, clearProgressStorage, normalizeStoredRecord, readStoredArray, readStoredJson, readStoredRecord } from '../lib/storage.js';
   import { ensureStorageCompatibility } from '../lib/storage-migrations.js';
@@ -197,7 +191,6 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   const reflectionChips = document.getElementById('reflection-chips');
    const skillMap = document.getElementById('skill-map');
    const worksheetFocusMount = document.getElementById('worksheet-focus-map');
-  const nextMoveActions = document.getElementById('next-move-actions');
 
   document.getElementById('completed-lessons').textContent = String(lessonData.length);
   document.getElementById('attempted-exercises').textContent = String(attempted.length);
@@ -219,41 +212,6 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     : 'Small steps, steady hands.';
   document.getElementById('journey-title').textContent = journeyTitle;
   document.getElementById('journey-copy').textContent = journeyCopy;
-
-  const setNextMove = (title, copy, actions) => {
-    document.getElementById('next-move-title').textContent = title;
-    document.getElementById('next-move-copy').textContent = copy;
-    nextMoveActions.replaceChildren();
-    actions.forEach(({ href, label, secondary }) => {
-      const link = document.createElement('a');
-      link.href = href;
-      link.className = secondary ? 'button button-secondary' : 'button';
-      link.textContent = label;
-      nextMoveActions.appendChild(link);
-    });
-  };
-
-  if (!lessonData.length) {
-    setNextMove('Start your first lesson', 'Begin with a calm lesson, then move into one short practice session.', [
-      { href: `${base}start-here`, label: 'Start here' },
-      { href: `${base}lessons`, label: 'Browse lessons', secondary: true },
-    ]);
-  } else if (reviewItems.length) {
-    setNextMove('Review weak areas next', 'You have items marked for review. Repairing them now is the best way to steady your progress.', [
-      { href: `${base}practice`, label: 'Open practice' },
-      { href: `${base}worksheets`, label: 'Open worksheet', secondary: true },
-    ]);
-  } else if (!finishedSessions.length) {
-    setNextMove('Complete a full session', 'You have started learning; now complete one focused session to build rhythm.', [
-      { href: `${base}practice`, label: 'Start practice' },
-      { href: `${base}worksheets`, label: 'Generate worksheet', secondary: true },
-    ]);
-  } else {
-    setNextMove('Advance with stronger drills', 'Your recent progress is steady. Push forward with a worksheet or a fresh practice session.', [
-      { href: `${base}worksheets`, label: 'Open worksheet' },
-      { href: `${base}practice`, label: 'New practice session', secondary: true },
-    ]);
-  }
 
   const gardenPieces = [
     ...Array.from({ length: Math.min(lessonData.length, 6) }, () => 'stone'),
@@ -364,11 +322,11 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     const actions = document.createElement('div');
     actions.className = 'skill-actions';
     const practiceLink = document.createElement('a');
-    practiceLink.href = `${base}practice`;
+    practiceLink.href = toBaseHref(base, buildFocusedPracticeHref(exerciseMeta.find((entry) => entry.skill === skill)?.level, skill, { start: false }));
     practiceLink.className = 'text-link';
     practiceLink.textContent = 'Practice';
     const worksheetLink = document.createElement('a');
-    worksheetLink.href = `${base}worksheets`;
+    worksheetLink.href = toBaseHref(base, buildFocusedWorksheetHref(skill, exerciseMeta.find((entry) => entry.skill === skill)?.level));
     worksheetLink.className = 'text-link';
     worksheetLink.textContent = 'Worksheet';
     actions.append(practiceLink, worksheetLink);
@@ -389,15 +347,21 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
      meter.className = 'skill-meter';
      const fill = document.createElement('div');
      fill.className = 'skill-meter-fill';
-     fill.style.width = `${Math.max(8, bestAccuracy)}%`;
+     const hasTraining = completed > 0;
+     fill.style.width = `${hasTraining ? bestAccuracy : 0}%`;
+     meter.setAttribute('role', 'img');
+     meter.setAttribute('aria-label', hasTraining
+       ? `${labelize(submode)}: best ${bestAccuracy}% accuracy from ${completed} answered worksheet sessions`
+       : `${labelize(submode)}: not trained yet`);
      meter.appendChild(fill);
      const meta = document.createElement('span');
      meta.className = 'muted small';
-     meta.textContent = sessions.length ? `best ${bestAccuracy}% accuracy` : 'not trained yet';
+     meta.textContent = hasTraining ? `best ${bestAccuracy}% accuracy` : 'not trained yet';
      const actions = document.createElement('div');
      actions.className = 'skill-actions';
      const worksheetLink = document.createElement('a');
-     worksheetLink.href = `${base}worksheets?submode=${submode}`;
+     const worksheetTarget = resolveWorksheetTarget({ submode });
+     worksheetLink.href = toBaseHref(base, `worksheets?preset=${worksheetTarget.preset}&submode=${worksheetTarget.submode}`);
      worksheetLink.className = 'text-link';
      worksheetLink.textContent = 'Train';
      actions.append(worksheetLink);

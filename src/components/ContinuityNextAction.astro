@@ -1,0 +1,86 @@
+---
+interface Props {
+  surface: 'home' | 'start-here' | 'practice' | 'progress';
+  headingLevel?: 'h2' | 'h3';
+}
+
+const { surface, headingLevel = 'h2' } = Astro.props;
+const Heading = headingLevel;
+const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
+---
+
+<section
+  class:list={['continuity-next-action', surface === 'home' || surface === 'practice' ? 'subtle-panel' : 'panel']}
+  data-continuity-next-action
+  data-surface={surface}
+  data-base={base}
+>
+  <p class="eyebrow">Your next move</p>
+  <div class="continuity-next-copy" aria-live="polite">
+    <Heading data-continuity-title>Choose a calm starting context</Heading>
+    <p class="muted" data-continuity-copy>Select a learner route or take the placement self-check before opening broad practice.</p>
+  </div>
+  <div class="review-chip-row continuity-context" data-continuity-context hidden></div>
+  <div class="button-row button-row-compact continuity-actions">
+    <a class="button" data-continuity-primary href={`${base}start-here`}>Choose a learner route</a>
+    <a class="button button-secondary" data-continuity-secondary href={`${base}assessments`}>Take placement self-check</a>
+  </div>
+  <p class="muted small continuity-local-note">Based only on learning context and progress saved in this browser.</p>
+</section>
+
+<script>
+  import { buildContinuityRecommendation, readContinuitySnapshot, toBaseHref } from '../lib/learner-continuity.js';
+
+  const roots = () => Array.from(document.querySelectorAll<HTMLElement>('[data-continuity-next-action]'));
+
+  const renderRoot = (root: HTMLElement) => {
+    const recommendation = buildContinuityRecommendation(readContinuitySnapshot(localStorage));
+    const base = root.dataset.base || '/soroban-dojo/';
+    const title = root.querySelector<HTMLElement>('[data-continuity-title]');
+    const copy = root.querySelector<HTMLElement>('[data-continuity-copy]');
+    const primary = root.querySelector<HTMLAnchorElement>('[data-continuity-primary]');
+    const secondary = root.querySelector<HTMLAnchorElement>('[data-continuity-secondary]');
+    const context = root.querySelector<HTMLElement>('[data-continuity-context]');
+    root.dataset.continuityKind = recommendation.kind;
+    if (title) title.textContent = recommendation.title;
+    if (copy) copy.textContent = recommendation.copy;
+    if (primary) {
+      primary.href = toBaseHref(base, recommendation.primary.href);
+      primary.textContent = recommendation.primary.label;
+    }
+    if (secondary) {
+      secondary.href = toBaseHref(base, recommendation.secondary.href);
+      secondary.textContent = recommendation.secondary.label;
+    }
+    if (context) {
+      context.replaceChildren(...recommendation.contextLabels.map((label) => {
+        const chip = document.createElement('span');
+        chip.className = 'review-chip';
+        chip.textContent = label;
+        return chip;
+      }));
+      context.hidden = recommendation.contextLabels.length === 0;
+    }
+  };
+
+  const renderAll = () => roots().forEach(renderRoot);
+  renderAll();
+  window.addEventListener('soroban:storage-ready', renderAll);
+  window.addEventListener('soroban:learner-context-change', renderAll);
+  window.addEventListener('storage', (event) => {
+    if (!event.key || event.key.startsWith('soroban-dojo:')) renderAll();
+  });
+</script>
+
+<style>
+  .continuity-next-action{display:grid;gap:.85rem;align-content:start}
+  .continuity-next-action h2,.continuity-next-action h3,.continuity-next-action p{margin:0}
+  .continuity-next-copy{display:grid;gap:.45rem}
+  .continuity-context{margin-top:-.1rem}
+  .continuity-actions{margin-top:.15rem}
+  .continuity-local-note{padding-top:.15rem;border-top:1px solid color-mix(in srgb,var(--border) 65%,transparent)}
+  @media (max-width:600px){
+    .continuity-actions{display:grid;grid-template-columns:1fr}
+    .continuity-actions .button{width:100%}
+  }
+</style>

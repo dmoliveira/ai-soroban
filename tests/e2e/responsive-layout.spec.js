@@ -44,10 +44,7 @@ for (const viewport of viewports) {
       });
     }
 
-    await page.goto('practice');
-    await expect(page.locator('#practice-session-context')).toBeHidden();
-    await expect(page.locator('#single-session-active')).toBeHidden();
-    await page.locator('#start-practice-now').click();
+    await page.goto('practice?level=L0&skill=abacus-orientation&start=1');
     await expect(page.locator('#practice-session-context')).toBeVisible();
     await expect(page.locator('#single-session-active')).toBeVisible();
     await expect(page.locator('#question-prompt')).toBeInViewport({ ratio: 1 });

@@ -3,7 +3,6 @@ import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import StudioHero from '../components/StudioHero.astro';
 import ProgressSummary from '../components/ProgressSummary.astro';
-import WeeklyStudyPlan from '../components/WeeklyStudyPlan.astro';
 import BossBadgeSummary from '../components/BossBadgeSummary.astro';
 import CertificateSummary from '../components/CertificateSummary.astro';
 
@@ -29,7 +28,6 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     ]}
     mistVar="--progress-mist"
   />
-  <WeeklyStudyPlan lessons={lessons} exercises={exercises} />
   <ProgressSummary lessons={lessons} exercises={exercises} />
   <section class="split-grid progress-milestone-grid">
     <BossBadgeSummary />

@@ -20,6 +20,8 @@ Secondary routes live in the **Explore more** disclosure. Support, About, Privac
 5. Active primary and secondary routes expose `aria-current="page"` where the link exactly matches.
 6. Mobile navigation does not remain sticky or obstruct anchor targets.
 7. Privacy and progress controls are always reachable from persistent navigation or the footer.
+8. Home, Start Here, Practice, and Progress show one shared local next action instead of stacking competing recommendation cards. Practice URL intent (`resume`, then `level`/`skill`) outranks passive saved context.
+9. Weekly plans may be promoted outside Study Plan only when their saved continuity key still matches the current review, placement, or route inputs.
 
 ## Route families
 
