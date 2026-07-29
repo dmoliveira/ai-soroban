@@ -1,5 +1,16 @@
-import { defineCollection, z } from 'astro:content';
-import { certifyWorksheetContentData } from '../lib/worksheet.js';
+import { defineCollection } from 'astro:content';
+import { glob } from 'astro/loaders';
+import { z } from 'astro/zod';
+import { certifyWorksheetContentData } from './lib/worksheet.js';
+
+const lessonIdSchema = z.string().regex(
+  /^lesson-l[0-5]-\d{3}$/,
+  'lesson IDs must use lesson-l0-001 through lesson-l5-999',
+);
+const exerciseIdSchema = z.string().regex(
+  /^exercise-l[0-5]-\d{3}$/,
+  'exercise IDs must use exercise-l0-001 through exercise-l5-999',
+);
 
 const skillSchema = z.enum([
   'abacus-orientation',
@@ -55,18 +66,18 @@ const certifyWorksheetContent = (data: {
 }) => certifyWorksheetContentData(data).valid;
 
 const lessons = defineCollection({
-  type: 'content',
+  loader: glob({ pattern: '**/[^_]*.md', base: './src/content/lessons' }),
   schema: z.object({
-    id: z.string(),
+    id: lessonIdSchema,
     title: z.string(),
     audience: z.array(z.enum(['child', 'adult', 'both'])),
     level: z.enum(['L0', 'L1', 'L2', 'L3', 'L4', 'L5']),
     skill: skillSchema,
     estimatedMinutes: z.number().int().positive(),
-    prerequisites: z.array(z.string()).default([]),
+    prerequisites: z.array(lessonIdSchema).default([]),
     objectives: z.array(z.string()).min(1),
-    relatedExercises: z.array(z.string()).default([]),
-    nextLessons: z.array(z.string()).default([]),
+    relatedExercises: z.array(exerciseIdSchema).default([]),
+    nextLessons: z.array(lessonIdSchema).default([]),
     summary: z.string(),
     visualValue: z.number().int().nonnegative().optional(),
     stepValues: z.array(z.number().int().nonnegative()).default([]),
@@ -74,9 +85,9 @@ const lessons = defineCollection({
 });
 
 const exercises = defineCollection({
-  type: 'content',
+  loader: glob({ pattern: '**/[^_]*.md', base: './src/content/exercises' }),
   schema: z.object({
-    id: z.string(),
+    id: exerciseIdSchema,
     title: z.string(),
     audience: z.array(z.enum(['child', 'adult', 'both'])),
     level: z.enum(['L0', 'L1', 'L2', 'L3', 'L4', 'L5']),
@@ -84,7 +95,7 @@ const exercises = defineCollection({
     difficulty: z.number().int().min(1).max(5),
     estimatedMinutes: z.number().int().positive(),
     type: z.string(),
-    prerequisites: z.array(z.string()).default([]),
+    prerequisites: z.array(lessonIdSchema).default([]),
     hint: z.string(),
     answer: z.string(),
     expectedValue: z.number().optional(),
@@ -97,7 +108,7 @@ const exercises = defineCollection({
     worksheetDrill: z.array(worksheetTermSchema).optional(),
   }).superRefine((data, context) => {
     if (data.expectedValue === undefined && !data.evaluation) {
-      context.addIssue({ code: z.ZodIssueCode.custom, message: 'nonnumeric exercises require structured evaluation metadata', path: ['evaluation'] });
+      context.addIssue({ code: 'custom', message: 'nonnumeric exercises require structured evaluation metadata', path: ['evaluation'] });
     }
   }).refine(certifyWorksheetContent, {
     message: 'worksheetProfile and worksheetDrill must exist together, comply with the declared worksheet profile, and use the normalized label',
@@ -105,7 +116,7 @@ const exercises = defineCollection({
 });
 
 const references = defineCollection({
-  type: 'content',
+  loader: glob({ pattern: '**/[^_]*.md', base: './src/content/references' }),
   schema: z.object({
     title: z.string(),
     summary: z.string(),

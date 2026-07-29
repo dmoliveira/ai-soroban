@@ -41,8 +41,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       { label: 'Best route', value: 'Lesson → exercise → circuits' },
     ]}
     actions={[
-      { href: recommendedLesson ? `${base}lessons/${recommendedLesson.slug}` : `${base}curriculum`, label: recommendedLesson ? 'Start with the first lesson' : 'Open the curriculum map' },
-      { href: recommendedExercise ? `${base}exercises/${recommendedExercise.slug}` : `${base}practice`, label: recommendedExercise ? 'Try the first exercise' : 'Open structured practice', secondary: true },
+      { href: recommendedLesson ? `${base}lessons/${recommendedLesson.id}` : `${base}curriculum`, label: recommendedLesson ? 'Start with the first lesson' : 'Open the curriculum map' },
+      { href: recommendedExercise ? `${base}exercises/${recommendedExercise.id}` : `${base}practice`, label: recommendedExercise ? 'Try the first exercise' : 'Open structured practice', secondary: true },
       { href: `${base}levels/${level.id.toLowerCase()}/circuits`, label: 'Use circuits after that', secondary: true },
     ]}
   />
@@ -58,7 +58,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
               <p class="eyebrow">{index === 0 ? 'Start here' : 'Then continue'}</p>
               <strong>{lesson.data.title}</strong>
               <p>{lesson.data.summary}</p>
-              <a class="library-action-link" href={`${base}lessons/${lesson.slug}`} aria-label={`Open lesson: ${lesson.data.title}`}>Open lesson →</a>
+              <a class="library-action-link" href={`${base}lessons/${lesson.id}`} aria-label={`Open lesson: ${lesson.data.title}`}>Open lesson →</a>
             </li>
           ))}
         </ul>
@@ -76,7 +76,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
               <p class="eyebrow">{index === 0 ? 'Try first' : 'Keep going'}</p>
               <strong>{exercise.data.title}</strong>
               <p>{exercise.data.hint}</p>
-              <a class="library-action-link" href={`${base}exercises/${exercise.slug}`} aria-label={`Open exercise: ${exercise.data.title}`}>Open exercise →</a>
+              <a class="library-action-link" href={`${base}exercises/${exercise.id}`} aria-label={`Open exercise: ${exercise.data.title}`}>Open exercise →</a>
             </li>
           ))}
         </ul>

@@ -7,7 +7,7 @@ import { numberToKanji } from '../../lib/japanese';
 
 export async function getStaticPaths() {
   const lessons = await getCollection('lessons');
-  return lessons.map((lesson) => ({ params: { slug: lesson.slug }, props: { lesson } }));
+  return lessons.map((lesson) => ({ params: { slug: lesson.id }, props: { lesson } }));
 }
 
 const { lesson } = Astro.props;
@@ -178,8 +178,8 @@ const bestFor = lesson.data.skill === 'abacus-orientation'
           <div class="reward-state-head"><span class="reward-state-mark">✓</span><strong>Lesson completed</strong></div>
           <p id="lesson-complete-saved" class="muted small">Saved on this device. Keep the path moving with one quiet next step.</p>
           <div class="button-row lesson-complete-actions">
-            {recommendedNextLesson && <a class="button button-secondary" href={`${base}lessons/${recommendedNextLesson.slug}`}>Next lesson</a>}
-            {recommendedExercise && <a class="button button-secondary" href={`${base}exercises/${recommendedExercise.slug}`}>Next exercise</a>}
+            {recommendedNextLesson && <a class="button button-secondary" href={`${base}lessons/${recommendedNextLesson.id}`}>Next lesson</a>}
+            {recommendedExercise && <a class="button button-secondary" href={`${base}exercises/${recommendedExercise.id}`}>Next exercise</a>}
             <a class="button button-secondary" href={worksheetPreset ? `${base}worksheets?preset=${worksheetPreset}` : `${base}worksheets`}>Matching worksheet</a>
           </div>
         </div>
@@ -214,7 +214,7 @@ const bestFor = lesson.data.skill === 'abacus-orientation'
         <a class="button button-secondary" href={worksheetPreset ? `${base}worksheets?preset=${worksheetPreset}` : `${base}worksheets`}>Open worksheet</a>
         {worksheetActions.map((action) => <a class="button button-secondary" href={action.href}>{action.label}</a>)}
         {prerequisiteLesson && (
-          <a class="button button-secondary" href={`${base}lessons/${prerequisiteLesson.slug}`}>Review prerequisite</a>
+          <a class="button button-secondary" href={`${base}lessons/${prerequisiteLesson.id}`}>Review prerequisite</a>
         )}
       </div>
       <p class="muted">Use practice mode for immediate repetition, or open worksheets for denser drill sets tied to this level and skill.</p>
@@ -228,7 +228,7 @@ const bestFor = lesson.data.skill === 'abacus-orientation'
             <p>{prerequisiteLesson.data.summary}</p>
             <div class="route-card-footer">
               <span class="muted small">Best next step: stabilize the prerequisite first</span>
-              <a class="text-link" href={`${base}lessons/${prerequisiteLesson.slug}`}>Open previous lesson →</a>
+              <a class="text-link" href={`${base}lessons/${prerequisiteLesson.id}`}>Open previous lesson →</a>
             </div>
           </article>
         )}
@@ -239,7 +239,7 @@ const bestFor = lesson.data.skill === 'abacus-orientation'
             <p>{nextLesson.data.summary}</p>
             <div class="route-card-footer">
               <span class="muted small">Best next step: continue while the pattern is still clear</span>
-              <a class="text-link" href={`${base}lessons/${nextLesson.slug}`}>Open next lesson →</a>
+              <a class="text-link" href={`${base}lessons/${nextLesson.id}`}>Open next lesson →</a>
             </div>
           </article>
         ))}
@@ -258,7 +258,7 @@ const bestFor = lesson.data.skill === 'abacus-orientation'
           <p>{exercise.data.explanation}</p>
           <div class="route-card-footer">
             <span class="muted small">Best next step: attempt before checking</span>
-            <a class="text-link" href={`${base}exercises/${exercise.slug}`}>Try exercise →</a>
+            <a class="text-link" href={`${base}exercises/${exercise.id}`}>Try exercise →</a>
           </div>
         </li>
       ))}
