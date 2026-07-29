@@ -4,6 +4,13 @@ import { isCanonicalScoreStore, normalizeScoreStore } from './scoring.js';
 import { STORAGE_KEYS, parseStoredJson, normalizeStoredRecord, setStorageCompatibility } from './storage.js';
 
 export const CURRENT_STATE_SCHEMA_VERSION = 1;
+export const COMPATIBILITY_STORAGE_KEYS = Object.freeze([
+  STORAGE_KEYS.stateSchema,
+  STORAGE_KEYS.masteryEvidence,
+  STORAGE_KEYS.masterySeenItems,
+  STORAGE_KEYS.miniGameScoresV2,
+  STORAGE_KEYS.bossProvenance,
+]);
 
 const safeGet = (storage, key) => {
   try {

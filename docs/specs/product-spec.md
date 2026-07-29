@@ -16,7 +16,7 @@ Provide a calm, practical Soroban dojo that helps children, adult self-learners,
 
 1. **Learning integrity:** an answer reveal supports reflection; it does not masquerade as mastery.
 2. **Task clarity:** Start, Learn, Train, and Progress remain the four primary jobs.
-3. **Context continuity:** lesson and exercise follow-ups preserve the learner's level and skill.
+3. **Context continuity:** lesson and exercise follow-ups preserve level and skill; an explicitly chosen route and placement starting point remain editable local context for later recommendations.
 4. **Privacy by default:** no account, hidden analytics, or remote progress store is required.
 5. **Inclusive delivery:** keyboard, touch, reduced motion, mobile layout, print, and readable status feedback are release requirements.
 6. **Static reliability:** every public route must work from the GitHub Pages base path.
@@ -32,7 +32,7 @@ Provide a calm, practical Soroban dojo that helps children, adult self-learners,
 - adaptive daily drills and weekly planning
 - configurable/certified additive, complement, multiplication, division, and anzan worksheets with print and answer-key modes
 - finite mini-games including Bead Builder, boss rounds, badges, and certificates
-- placement and local progress recommendations
+- an editable learner route, placement starting point, and local progress recommendations
 - persistent Washi, Sakura, and Sumi display themes, with Washi as the safe default
 
 ## Release quality bar

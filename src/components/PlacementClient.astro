@@ -19,10 +19,14 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
   <div class="button-row">
     <button class="button" id="score-placement">Get my recommendation</button>
-    <button class="button button-secondary" id="reset-placement">Reset answers</button>
+    <button class="button button-secondary" id="reset-placement">Clear recommendation and answers</button>
   </div>
 
-  <div id="placement-result" class="reveal-panel" hidden role="status" aria-live="polite"></div>
+  <p id="placement-save-status" class="muted small placement-save-status" role="status" aria-live="polite">
+    Answers and recommendations stay only in this browser.
+  </p>
+
+  <div id="placement-result" class="reveal-panel" hidden></div>
 </section>
 
 <style is:global>
@@ -39,11 +43,14 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   .placement-result-secondary{display:grid;gap:.75rem;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr))}
   .placement-result-secondary .subtle-panel{display:grid;gap:.35rem}
   .placement-result-secondary .text-link{margin-top:.15rem}
+  .placement-save-status{margin:.75rem 0 0}
+  .placement-result-context{display:grid;gap:.5rem}
+  .placement-result-context p{margin:0}
 </style>
 
 <script>
   // @ts-nocheck
-  import { STORAGE_KEYS, normalizePlacementState, readStoredJson, storageWritesAllowed, writeStoredJson } from '../lib/storage.js';
+  import { STORAGE_KEYS, normalizePlacementState, readStoredJson, removeStoredValue, storageWritesAllowed, writeStoredJson } from '../lib/storage.js';
 
   const STORAGE_KEY = STORAGE_KEYS.placementResult;
   const base = document.querySelector('.placement-shell')?.dataset.base || '/soroban-dojo/';
@@ -152,9 +159,20 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   const mount = document.getElementById('placement-questions');
   const result = document.getElementById('placement-result');
   const scoreButton = document.getElementById('score-placement');
+  const resetButton = document.getElementById('reset-placement');
   const progressCopy = document.getElementById('placement-progress-copy');
   const progressBadge = document.getElementById('placement-progress-badge');
+  const saveStatus = document.getElementById('placement-save-status');
   let currentChoice = null;
+
+  const announceSaveStatus = (message) => { if (saveStatus) saveStatus.textContent = message; };
+  const canWrite = () => document.documentElement.dataset.storageWritable !== 'false'
+    && storageWritesAllowed(localStorage);
+  const syncWritableState = () => {
+    if (resetButton instanceof HTMLButtonElement) resetButton.disabled = !canWrite();
+    const clearChoice = result?.querySelector('button');
+    if (clearChoice instanceof HTMLButtonElement) clearChoice.disabled = !canWrite();
+  };
 
   const chosenInputs = () => Array.from(document.querySelectorAll('.placement-option input:checked'));
   const updateScoreButton = () => {
@@ -166,7 +184,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     progressBadge.textContent = complete ? 'Ready' : `${questions.length - answered} left`;
   };
 
-  const renderResult = (choice) => {
+  const renderResult = (choice, { saved = true } = {}) => {
     const route = followUps[choice.level] || followUps.L0;
     result.hidden = false;
     result.replaceChildren();
@@ -180,6 +198,35 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     const copy = document.createElement('p');
     copy.className = 'muted';
     copy.textContent = choice.reason;
+
+    const context = document.createElement('div');
+    context.className = 'subtle-panel placement-result-context';
+    const contextCopy = document.createElement('p');
+    contextCopy.className = 'muted small';
+    contextCopy.textContent = saved
+      ? 'This starting point is active in this browser. Change answers and score again whenever it no longer fits.'
+      : 'This recommendation is available for this visit, but it could not be saved in this browser.';
+    const clearChoice = document.createElement('button');
+    clearChoice.className = 'button button-secondary';
+    clearChoice.type = 'button';
+    clearChoice.textContent = 'Clear saved starting point';
+    clearChoice.disabled = !canWrite();
+    clearChoice.addEventListener('click', () => {
+      const cleared = writeStoredJson(localStorage, STORAGE_KEY, {
+        choice: null,
+        answers: collectAnswers(),
+      });
+      if (!cleared) {
+        announceSaveStatus('The saved starting point could not be cleared. The current recommendation remains active.');
+        return;
+      }
+      currentChoice = null;
+      result.hidden = true;
+      result.replaceChildren();
+      announceSaveStatus('Saved starting point cleared. Your selected answers are still available.');
+      scoreButton?.focus();
+    });
+    context.append(contextCopy, clearChoice);
 
     const primaryRow = document.createElement('div');
     primaryRow.className = 'button-row placement-result-actions';
@@ -207,15 +254,16 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       secondaryGrid.appendChild(panel);
     });
 
-    card.append(title, copy, primaryRow, secondaryGrid);
+    card.append(title, copy, context, primaryRow, secondaryGrid);
     result.appendChild(card);
   };
 
   const collectAnswers = () => Object.fromEntries(chosenInputs().map((input) => [input.name, input.id]));
-  const persistState = () => writeStoredJson(localStorage, STORAGE_KEY, {
-    choice: currentChoice,
+  const persistState = (choice = currentChoice) => writeStoredJson(localStorage, STORAGE_KEY, {
+    choice,
     answers: collectAnswers(),
   });
+  const readSavedState = () => normalizePlacementState(readStoredJson(localStorage, STORAGE_KEY, null));
 
   const renderQuestions = () => {
     questions.forEach((question) => {
@@ -244,7 +292,28 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         label.textContent = option.label;
         input.addEventListener('change', () => {
           status.textContent = `Selected: ${option.label}.`;
-          persistState();
+          const previousChoice = currentChoice;
+          const saved = persistState(null);
+          if (saved) {
+            currentChoice = null;
+            result.hidden = true;
+            result.replaceChildren();
+            announceSaveStatus(previousChoice
+              ? 'Answer saved. The previous starting point was cleared; score again to activate a new one.'
+              : 'Answer saved in this browser.');
+          } else {
+            const savedChoice = readSavedState().choice;
+            if (savedChoice?.level && savedChoice?.title && savedChoice?.reason) {
+              currentChoice = savedChoice;
+              renderResult(savedChoice);
+              announceSaveStatus('Answer selected for this visit but could not be saved. The saved starting point remains active.');
+            } else {
+              currentChoice = null;
+              result.hidden = true;
+              result.replaceChildren();
+              announceSaveStatus('Answer selected for this visit, but it could not be saved. Score again when the answers are ready.');
+            }
+          }
           updateScoreButton();
         });
         wrapper.append(input, label);
@@ -261,38 +330,71 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   scoreButton?.addEventListener('click', () => {
     const score = chosenScore();
     const choice = recommendations.find((entry) => score <= entry.max) || recommendations[recommendations.length - 1];
+    const saved = persistState(choice);
     currentChoice = choice;
-    persistState();
-    renderResult(choice);
+    renderResult(choice, { saved });
+    announceSaveStatus(saved
+      ? `${choice.level} ${choice.title} starting point saved in this browser. ${choice.reason}`
+      : `${choice.level} ${choice.title} recommendation is ready for this visit but could not be saved. ${choice.reason}`);
   });
 
-  document.getElementById('reset-placement')?.addEventListener('click', () => {
+  resetButton?.addEventListener('click', () => {
+    if (!removeStoredValue(localStorage, STORAGE_KEY)) {
+      announceSaveStatus('The saved recommendation and answers could not be cleared. Existing saved state is unchanged.');
+      return;
+    }
     document.querySelectorAll('.placement-option input').forEach((node) => { node.checked = false; });
     questions.forEach((question) => {
       const status = document.getElementById(`${question.id}-status`);
       if (status) status.textContent = 'No answer selected yet.';
     });
     currentChoice = null;
-    if (storageWritesAllowed(localStorage)) {
-      try { localStorage.removeItem(STORAGE_KEY); } catch {}
-    }
     result.hidden = true;
     result.replaceChildren();
     updateScoreButton();
+    announceSaveStatus('Saved recommendation and answers cleared. Other progress is unchanged.');
   });
 
   renderQuestions();
-  const savedState = normalizePlacementState(readStoredJson(localStorage, STORAGE_KEY, null));
-  Object.entries(savedState.answers).forEach(([questionId, inputId]) => {
-    const input = document.getElementById(inputId);
-    if (!(input instanceof HTMLInputElement)) return;
-    input.checked = true;
-    const status = document.getElementById(`${questionId}-status`);
-    const label = document.querySelector(`label[for="${CSS.escape(input.id)}"]`);
-    if (status && label) status.textContent = `Selected: ${label.textContent}.`;
+  const hydrateSavedState = (announcement = '') => {
+    document.querySelectorAll('.placement-option input').forEach((node) => { node.checked = false; });
+    questions.forEach((question) => {
+      const status = document.getElementById(`${question.id}-status`);
+      if (status) status.textContent = 'No answer selected yet.';
+    });
+    const savedState = readSavedState();
+    Object.entries(savedState.answers).forEach(([questionId, inputId]) => {
+      const input = document.getElementById(inputId);
+      if (!(input instanceof HTMLInputElement)) return;
+      input.checked = true;
+      const status = document.getElementById(`${questionId}-status`);
+      const label = document.querySelector(`label[for="${CSS.escape(input.id)}"]`);
+      if (status && label) status.textContent = `Selected: ${label.textContent}.`;
+    });
+    currentChoice = savedState.choice;
+    updateScoreButton();
+    if (currentChoice?.level && currentChoice?.title && currentChoice?.reason) {
+      renderResult(currentChoice);
+    } else {
+      result.hidden = true;
+      result.replaceChildren();
+    }
+    syncWritableState();
+    announceSaveStatus(announcement || (!canWrite()
+      ? 'Saved placement context is protected and read-only. You can use the self-check for this visit, but changes will not be saved.'
+      : currentChoice
+        ? `Saved starting point loaded: ${currentChoice.level} ${currentChoice.title}. ${currentChoice.reason}`
+        : Object.keys(savedState.answers).length
+          ? 'Saved answers loaded. Complete the self-check to activate a starting point.'
+          : 'Answers and recommendations stay only in this browser.'));
+  };
+
+  hydrateSavedState();
+  window.addEventListener('soroban:storage-ready', () => {
+    syncWritableState();
+    if (!canWrite()) announceSaveStatus('Saved placement context is protected and read-only. You can use the self-check for this visit, but changes will not be saved.');
   });
-  currentChoice = savedState.choice;
-  updateScoreButton();
-  if (currentChoice?.level && currentChoice?.title && currentChoice?.reason) renderResult(currentChoice);
-  if (currentChoice || Object.keys(savedState.answers).length) persistState();
+  window.addEventListener('storage', (event) => {
+    if (event.key === STORAGE_KEY) hydrateSavedState('Placement context changed in another open Dojo tab.');
+  });
 </script>

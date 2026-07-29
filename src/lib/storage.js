@@ -85,6 +85,16 @@ export const writeStoredJson = (storage, key, value) => {
   }
 };
 
+export const removeStoredValue = (storage, key) => {
+  if (!storageWritesAllowed(storage) || typeof storage?.removeItem !== 'function') return false;
+  try {
+    storage.removeItem(key);
+    return typeof storage.getItem !== 'function' || storage.getItem(key) === null;
+  } catch {
+    return false;
+  }
+};
+
 export const normalizePlacementState = (value) => {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return { choice: null, answers: {} };

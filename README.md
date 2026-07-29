@@ -61,7 +61,7 @@ Soroban Dojo 0.4.0 adds prospective first-check evidence, additive compatibility
 
 ## Local data
 
-Soroban Dojo stores lesson completion, exercise state, practice/timer/worksheet history, prospective first-check evidence, weekly-plan and placement state, mini-game scores and medals, boss progress and certificates, a selected learner path, and the selected display theme. Pre-0.4 activity is not promoted into verified mastery. If a 0.4 versioned companion record is malformed or the schema marker names a newer version, learning-state writes are disabled rather than overwriting those unknown records; other malformed local records use safe read-time fallbacks. The Progress page can clear all learning records while preserving display preferences. See `docs/specs/privacy-and-data.md` for the exact contract.
+Soroban Dojo stores lesson completion, exercise state, practice/timer/worksheet history, prospective first-check evidence, weekly-plan and placement state, mini-game scores and medals, boss progress and certificates, an explicitly selected learner route, and the selected display theme. Route and placement controls can clear their own context without erasing other progress. Reading legacy route or placement state never rewrites it. Pre-0.4 activity is not promoted into verified mastery. If a 0.4 versioned companion record is malformed or the schema marker names a newer version, learning-state writes are disabled rather than overwriting those unknown records; other malformed local records use safe read-time fallbacks. The Progress page can clear all learning records while preserving display preferences. See `docs/specs/privacy-and-data.md` for the exact contract.
 
 ## Display themes
 

@@ -84,6 +84,8 @@ test('primary home and worksheet actions appear before secondary detail on a sma
 test('core non-inline learning controls meet the 44px target', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   const routes = [
+    { path: '', selector: '[data-learner-path-controls] .button' },
+    { path: 'paths/children', selector: '[data-learner-path-controls] .button' },
     { path: 'worksheets', selector: '.operation-chip, .worksheet-input, .mini-action, .preset-button' },
     { path: 'lessons/l0/reading-a-single-digit', selector: '.detail-utility-row a, .lesson-nav-strip a, .button' },
     { path: 'exercises/l1/add-two-and-three', selector: '.detail-utility-row a, .button' },
