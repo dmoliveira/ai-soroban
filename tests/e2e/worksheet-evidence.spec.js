@@ -19,6 +19,8 @@ test('worksheet prompts and row actions use one atomic status', async ({ page })
   await expect(page.locator('#worksheet-save-status')).toContainText('Question 1: Answer revealed:');
   await expect(page.locator('#worksheet-save-status')).toContainText('First-check evidence: no unassisted first checks saved');
   await expect(page.locator('#worksheet-save-status')).toContainText('Worksheet activity and evidence history saved');
+  const statusBeforeRerender = await page.locator('#worksheet-save-status').textContent();
+  const feedbackBeforeRerender = await rowFor(first).locator('.worksheet-feedback').textContent();
 
   await page.getByText('Advanced options').click();
   await page.selectOption('#worksheet-orientation', 'vertical');
@@ -26,7 +28,8 @@ test('worksheet prompts and row actions use one atomic status', async ({ page })
   expect(verticalPromptId).toBe('worksheet-prompt-1');
   await expect(page.locator(`#${verticalPromptId}`)).toHaveClass(/v-arith-block/);
   await expect(page.locator('.worksheet-feedback[aria-live]')).toHaveCount(0);
-  await expect(page.locator('#worksheet-save-status')).toBeEmpty();
+  await expect(page.locator('#worksheet-save-status')).toHaveText(statusBeforeRerender || '');
+  await expect(rowFor(inputAt(page, 0)).locator('.worksheet-feedback')).toHaveText(feedbackBeforeRerender || '');
 });
 
 test('worksheet bulk actions announce one mixed, blank, or maximum-size summary', async ({ page }) => {
@@ -151,6 +154,184 @@ test('worksheet evidence survives same-sheet rerenders and repeat reveals stay i
 
   await page.selectOption('#worksheet-level', 'L3');
   await expect(page.locator('#worksheet-first-check-copy')).toContainText('No unassisted first checks saved for this sheet yet');
+});
+
+test('presentation-only rerenders preserve exact live worksheet work, focus, time, and stored bytes', async ({ page }) => {
+  await page.clock.install({ time: new Date('2026-07-30T00:00:00Z') });
+  await page.goto('worksheets?preset=sequence-mix');
+  await page.getByText('Advanced options').click();
+  await page.getByText('After you generate').click();
+  await page.selectOption('#worksheet-timer-mode', 'on');
+  await page.getByRole('button', { name: 'Start timer' }).click();
+  await page.clock.fastForward(4_000);
+  await expect(page.locator('#worksheet-time')).toHaveText('4s');
+
+  const inputs = page.locator('.worksheet-input');
+  const questionIds = await inputs.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-question-id')));
+  const answers = await inputs.evaluateAll((nodes) => nodes.slice(0, 4).map((node) => node.getAttribute('data-answer') || ''));
+  await inputAt(page, 0).fill(answers[0]);
+  await rowFor(inputAt(page, 0)).getByRole('button', { name: 'Check worksheet question 1', exact: true }).click();
+  await inputAt(page, 1).fill(String(Number(answers[1]) + 1));
+  await rowFor(inputAt(page, 1)).getByRole('button', { name: 'Check worksheet question 2', exact: true }).click();
+  await inputAt(page, 2).fill('12345');
+  await rowFor(inputAt(page, 3)).getByRole('button', { name: 'Reveal answer for worksheet question 4', exact: true }).click();
+  await inputAt(page, 2).focus();
+  await inputAt(page, 2).evaluate((input) => input.setSelectionRange(1, 4));
+
+  const before = await page.evaluate(() => ({
+    evidence: localStorage.getItem('soroban-dojo:mastery-evidence-v1'),
+    sessions: localStorage.getItem('soroban-dojo:worksheet-sessions'),
+    status: document.querySelector('#worksheet-save-status')?.textContent,
+    score: document.querySelector('#worksheet-score-copy')?.textContent,
+  }));
+  await page.clock.fastForward(2_000);
+  await page.locator('#worksheet-orientation').evaluate((select) => {
+    select.value = 'ledger';
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+
+  expect(await inputs.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-question-id')))).toEqual(questionIds);
+  await expect(inputAt(page, 0)).toHaveValue(answers[0]);
+  await expect(rowFor(inputAt(page, 0)).locator('.worksheet-feedback')).toHaveText('Correct on first check');
+  await expect(rowFor(inputAt(page, 0))).toHaveClass(/row-ok/);
+  await expect(inputAt(page, 1)).toHaveValue(String(Number(answers[1]) + 1));
+  await expect(rowFor(inputAt(page, 1)).locator('.worksheet-feedback')).toHaveText('Not correct yet');
+  await expect(rowFor(inputAt(page, 1))).toHaveClass(/row-needs-work/);
+  await expect(inputAt(page, 2)).toHaveValue('12345');
+  await expect(inputAt(page, 2)).toBeFocused();
+  expect(await inputAt(page, 2).evaluate((input) => [input.selectionStart, input.selectionEnd])).toEqual([1, 4]);
+  await expect(rowFor(inputAt(page, 3)).locator('.worksheet-feedback')).toHaveText(`Answer revealed: ${answers[3]}`);
+  await expect(rowFor(inputAt(page, 3))).toHaveClass(/row-revealed/);
+  await expect(page.locator('#worksheet-save-status')).toHaveText(before.status || '');
+  await expect(page.locator('#worksheet-score-copy')).toHaveText(before.score || '');
+  await expect(page.locator('#worksheet-time')).toHaveText('6s');
+  expect(await page.evaluate(() => ({
+    evidence: localStorage.getItem('soroban-dojo:mastery-evidence-v1'),
+    sessions: localStorage.getItem('soroban-dojo:worksheet-sessions'),
+  }))).toEqual({ evidence: before.evidence, sessions: before.sessions });
+
+  await page.clock.fastForward(2_000);
+  await page.locator('#worksheet-style').evaluate((select) => {
+    select.value = 'speed';
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  await expect(inputAt(page, 2)).toBeFocused();
+  await expect(inputAt(page, 2)).toHaveValue('12345');
+  await expect(page.locator('#worksheet-save-status')).toHaveText(before.status || '');
+  await expect(page.locator('#worksheet-score-copy')).toHaveText(before.score || '');
+  await expect(page.locator('#worksheet-time')).toHaveText('8s');
+  expect(await page.evaluate(() => ({
+    evidence: localStorage.getItem('soroban-dojo:mastery-evidence-v1'),
+    sessions: localStorage.getItem('soroban-dojo:worksheet-sessions'),
+  }))).toEqual({ evidence: before.evidence, sessions: before.sessions });
+
+  const thirdCheck = rowFor(inputAt(page, 2)).getByRole('button', { name: 'Check worksheet question 3', exact: true });
+  await thirdCheck.focus();
+  await page.clock.fastForward(2_000);
+  await page.locator('#worksheet-orientation').evaluate((select) => {
+    select.value = 'vertical';
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  await expect(rowFor(inputAt(page, 2)).getByRole('button', { name: 'Check worksheet question 3', exact: true })).toBeFocused();
+  await expect(page.locator('#worksheet-time')).toHaveText('10s');
+  await expect(page.locator('#worksheet-save-status')).toHaveText(before.status || '');
+  expect(await page.evaluate(() => ({
+    evidence: localStorage.getItem('soroban-dojo:mastery-evidence-v1'),
+    sessions: localStorage.getItem('soroban-dojo:worksheet-sessions'),
+  }))).toEqual({ evidence: before.evidence, sessions: before.sessions });
+});
+
+test('answer-key entry preserves same-sheet inputs and passive rerenders do not repeat its side effects', async ({ page }) => {
+  await page.clock.install({ time: new Date('2026-07-30T00:00:00Z') });
+  await page.goto('worksheets?preset=complements');
+  await page.getByText('Advanced options').click();
+  await page.getByText('After you generate').click();
+  await page.selectOption('#worksheet-timer-mode', 'on');
+  await page.getByRole('button', { name: 'Start timer' }).click();
+  await page.clock.fastForward(3_000);
+
+  const firstSheetIds = await page.locator('.worksheet-input').evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-question-id')));
+  const firstAnswer = (await inputAt(page, 0).getAttribute('data-answer')) || '';
+  await inputAt(page, 0).fill(firstAnswer);
+  await rowFor(inputAt(page, 0)).getByRole('button', { name: 'Check worksheet question 1', exact: true }).click();
+  await inputAt(page, 1).fill('9876');
+  await page.selectOption('#worksheet-print-mode', 'answer-key');
+
+  await expect(inputAt(page, 0)).toHaveValue(firstAnswer);
+  await expect(inputAt(page, 1)).toHaveValue('9876');
+  await expect(page.locator('.worksheet-feedback')).toHaveCount(40);
+  expect(await page.locator('.worksheet-feedback').evaluateAll((nodes) => (
+    nodes.every((node) => node.textContent?.startsWith('Answer revealed:'))
+  ))).toBe(true);
+  await expect(page.locator('#worksheet-save-status')).toContainText('Teacher answer key opened for 40 rows');
+  await expect(page.locator('#worksheet-time')).toHaveText('3s');
+  const afterAnswerKey = await page.evaluate(() => ({
+    evidence: localStorage.getItem('soroban-dojo:mastery-evidence-v1'),
+    sessions: localStorage.getItem('soroban-dojo:worksheet-sessions'),
+    status: document.querySelector('#worksheet-save-status')?.textContent,
+    score: document.querySelector('#worksheet-score-copy')?.textContent,
+  }));
+
+  await page.clock.fastForward(2_000);
+  await page.selectOption('#worksheet-orientation', 'vertical');
+  await expect(inputAt(page, 0)).toHaveValue(firstAnswer);
+  await expect(inputAt(page, 1)).toHaveValue('9876');
+  await expect(page.locator('#worksheet-save-status')).toHaveText(afterAnswerKey.status || '');
+  await expect(page.locator('#worksheet-score-copy')).toHaveText(afterAnswerKey.score || '');
+  await expect(page.locator('#worksheet-time')).toHaveText('5s');
+  expect(await page.evaluate(() => ({
+    evidence: localStorage.getItem('soroban-dojo:mastery-evidence-v1'),
+    sessions: localStorage.getItem('soroban-dojo:worksheet-sessions'),
+  }))).toEqual({ evidence: afterAnswerKey.evidence, sessions: afterAnswerKey.sessions });
+
+  await page.getByRole('button', { name: 'Refresh questions' }).click();
+  const nextSheetIds = await page.locator('.worksheet-input').evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-question-id')));
+  expect(nextSheetIds).not.toEqual(firstSheetIds);
+  expect(await page.locator('.worksheet-feedback').evaluateAll((nodes) => (
+    nodes.every((node) => node.textContent?.startsWith('Answer revealed:'))
+  ))).toBe(true);
+  await expect(page.locator('#worksheet-save-status')).toContainText('Teacher answer key opened for 40 rows');
+  await expect(page.locator('#worksheet-time')).toHaveText('0s');
+  const evidenceAfterRefresh = await page.evaluate(() => JSON.parse(localStorage.getItem('soroban-dojo:mastery-evidence-v1') || '[]'));
+  expect(evidenceAfterRefresh).toHaveLength(80);
+  expect(nextSheetIds.every((questionId) => evidenceAfterRefresh.some((attempt) => (
+    attempt.itemId === questionId && attempt.events.some((event) => event.kind === 'reveal-final')
+  )))).toBe(true);
+});
+
+test('fresh worksheet identity clears transient work and resets running or paused time', async ({ page }) => {
+  await page.clock.install({ time: new Date('2026-07-30T00:00:00Z') });
+  await page.goto('worksheets?preset=sequence-mix');
+  await page.getByText('Advanced options').click();
+  await page.getByText('After you generate').click();
+  await page.selectOption('#worksheet-timer-mode', 'on');
+  await page.getByRole('button', { name: 'Start timer' }).click();
+  await page.clock.fastForward(4_000);
+
+  const initialIds = await page.locator('.worksheet-input').evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-question-id')));
+  const answer = (await inputAt(page, 0).getAttribute('data-answer')) || '';
+  await inputAt(page, 0).fill(answer);
+  await rowFor(inputAt(page, 0)).getByRole('button', { name: 'Check worksheet question 1', exact: true }).click();
+  await inputAt(page, 1).fill('321');
+  await page.getByRole('button', { name: 'Refresh questions' }).click();
+
+  expect(await page.locator('.worksheet-input').evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-question-id')))).not.toEqual(initialIds);
+  await expect(inputAt(page, 0)).toHaveValue('');
+  await expect(inputAt(page, 1)).toHaveValue('');
+  await expect(rowFor(inputAt(page, 0)).locator('.worksheet-feedback')).toBeEmpty();
+  await expect(page.locator('#worksheet-save-status')).toBeEmpty();
+  await expect(page.locator('#worksheet-time')).toHaveText('0s');
+  await expect(page.getByRole('button', { name: 'Start timer' })).toBeVisible();
+  await page.clock.fastForward(2_000);
+  await expect(page.locator('#worksheet-time')).toHaveText('0s');
+
+  await page.getByRole('button', { name: 'Start timer' }).click();
+  await page.clock.fastForward(3_000);
+  await page.getByRole('button', { name: 'Pause timer' }).click();
+  await expect(page.locator('#worksheet-time')).toHaveText('3s');
+  await page.getByRole('button', { name: 'Refresh questions' }).click();
+  await expect(page.locator('#worksheet-time')).toHaveText('0s');
+  await expect(page.getByRole('button', { name: 'Start timer' })).toBeVisible();
 });
 
 test('divergent worksheet submit and reveal histories fail closed', async ({ page }) => {

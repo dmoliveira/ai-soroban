@@ -65,6 +65,8 @@ Family-v1 bounds and behavior:
 - counts are bounded from 1 through 100 questions
 - `balanced` keeps one band across the sheet; `ramp` certifies the band for each row stage
 - the active seed remains stable across presentation-only rerenders and rotates only when questions are refreshed
+- presentation-only rerenders preserve same-sheet input values, checked or revealed row presentation, status copy, focused row control, and active elapsed time without rewriting the saved worksheet summary
+- a fresh seed clears transient row state and resets the worksheet timer; entering teacher or answer-key mode, or explicitly generating a fresh sheet while that mode remains active, reveals the displayed answers as assisted activity
 - adaptive mode selects a supported family/submode from local weak-area evidence without weakening certification
 
 Prompts, score checks, worked examples, and teacher keys are formatted from structured operands. They are never parsed back from mutable display text to establish correctness.
