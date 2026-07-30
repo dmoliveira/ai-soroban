@@ -223,6 +223,23 @@ export const summarizeAttemptEvidence = (attempt) => {
   };
 };
 
+export const selectQualifiedFirstCheckEvidence = ({ evidenceLedger, seenIndex } = {}) => {
+  if (!isCanonicalMasterySeenIndex(seenIndex)) return [];
+  const canonicalLedger = normalizeEvidenceLedger(evidenceLedger).filter(isCanonicalAttemptEvidence);
+  const attemptsById = new Map();
+  const duplicateAttemptIds = new Set();
+  canonicalLedger.forEach((attempt) => {
+    if (attemptsById.has(attempt.attemptId)) duplicateAttemptIds.add(attempt.attemptId);
+    attemptsById.set(attempt.attemptId, attempt);
+  });
+  return seenIndex.claims.flatMap((claim, claimIndex) => {
+    const attempt = attemptsById.get(claim.attemptId);
+    if (!attempt || duplicateAttemptIds.has(claim.attemptId) || attempt.itemId !== claim.itemId) return [];
+    const summary = summarizeAttemptEvidence(attempt);
+    return summary.qualified ? [{ attempt, summary, claimIndex }] : [];
+  });
+};
+
 export const reviewBucketForSignal = ({ skill, level, sessionId } = {}) => {
   const normalizedSkill = typeof skill === 'string' ? skill.trim().toLowerCase() : '';
   const normalizedLevel = typeof level === 'string' ? level.trim().toUpperCase() : '';

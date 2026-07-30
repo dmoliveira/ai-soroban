@@ -12,6 +12,7 @@ import {
   normalizeEvidenceLedger,
   normalizeMasterySeenIndex,
   reviewBucketForSignal,
+  selectQualifiedFirstCheckEvidence,
   summarizeAttemptEvidence,
   upsertAttemptEvidence,
 } from '../src/lib/mastery.js';
@@ -220,6 +221,53 @@ test('review profile keeps a corrected first-check miss unresolved', () => {
   assert.equal(profile.basis, 'first-check');
   assert.equal(profile.focus.key, 'division');
   assert.deepEqual(profile.buckets.division.unresolvedItemIds, ['division-a']);
+});
+
+test('qualified first checks follow canonical claim order rather than ledger order', () => {
+  const first = reviewAttempt({ attemptId: 'owned-first', itemId: 'division-a', correct: false });
+  const second = reviewAttempt({ attemptId: 'owned-second', itemId: 'multiply-a', skill: 'multiplication', correct: true });
+  const orphan = reviewAttempt({ attemptId: 'orphan-first', itemId: 'division-a', correct: true });
+  const seenIndex = {
+    version: 1,
+    claims: [
+      { itemId: first.itemId, attemptId: first.attemptId, firstSeenAt: '2026-07-30T00:00:00.000Z' },
+      { itemId: second.itemId, attemptId: second.attemptId, firstSeenAt: '2026-07-30T00:00:01.000Z' },
+    ],
+  };
+
+  const selected = selectQualifiedFirstCheckEvidence({ evidenceLedger: [orphan, second, first], seenIndex });
+
+  assert.deepEqual(selected.map(({ attempt, claimIndex }) => [attempt.attemptId, claimIndex]), [
+    ['owned-first', 0],
+    ['owned-second', 1],
+  ]);
+  assert.equal(selected[0].summary.firstCheckCorrect, false);
+  assert.equal(selected[1].summary.firstCheckCorrect, true);
+});
+
+test('qualified first-check selection fails closed for invalid ownership and duplicate attempts', () => {
+  const attempt = reviewAttempt({ attemptId: 'duplicate', itemId: 'division-a', correct: false });
+  const duplicate = reviewAttempt({ attemptId: 'duplicate', itemId: 'division-b', correct: true });
+  const canonicalSeen = {
+    version: 1,
+    claims: [{ itemId: attempt.itemId, attemptId: attempt.attemptId, firstSeenAt: '2026-07-30T00:00:00.000Z' }],
+  };
+  const duplicateItems = {
+    version: 1,
+    claims: [
+      canonicalSeen.claims[0],
+      { itemId: attempt.itemId, attemptId: 'other', firstSeenAt: '2026-07-30T00:00:01.000Z' },
+    ],
+  };
+
+  assert.deepEqual(selectQualifiedFirstCheckEvidence({ evidenceLedger: [attempt], seenIndex: null }), []);
+  assert.deepEqual(selectQualifiedFirstCheckEvidence({ evidenceLedger: [attempt], seenIndex: { ...canonicalSeen, version: 99 } }), []);
+  assert.deepEqual(selectQualifiedFirstCheckEvidence({ evidenceLedger: [attempt], seenIndex: duplicateItems }), []);
+  assert.deepEqual(selectQualifiedFirstCheckEvidence({ evidenceLedger: [attempt, duplicate], seenIndex: canonicalSeen }), []);
+  assert.deepEqual(selectQualifiedFirstCheckEvidence({
+    evidenceLedger: [attempt],
+    seenIndex: { version: 1, claims: [{ ...canonicalSeen.claims[0], itemId: 'different-item' }] },
+  }), []);
 });
 
 test('a later distinct same-skill first check resolves one prior miss FIFO', () => {

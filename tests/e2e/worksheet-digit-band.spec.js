@@ -107,7 +107,7 @@ test('worksheet seed stays stable for presentation rerenders and rotates on refr
 
   await inputs.first().fill(initialAnswers[0] || '');
   await page.getByText('After you generate').click();
-  await page.getByRole('button', { name: 'Check answered' }).click();
+  await page.getByRole('button', { name: 'Check filled rows' }).click();
   await expect(inputs.first().locator('xpath=ancestor::article[1]').locator('.worksheet-feedback')).toHaveClass(/vertical-feedback.*ok/);
 
   await inputs.nth(1).fill(initialAnswers[1] || '');
@@ -133,17 +133,21 @@ test('worksheet scoring and teacher key use certified structured answers', async
   await firstInput.evaluate((input) => input.setAttribute('data-prompt', '1 + 1'));
   await firstInput.fill(certifiedAnswer || '');
   await firstInput.press('Enter');
-  await expect(firstInput.locator('xpath=ancestor::*[contains(@class,"worksheet-row") or contains(@class,"vertical-drill-row")]').locator('.worksheet-feedback')).toHaveText('✓');
+  await expect(firstInput.locator('xpath=ancestor::*[contains(@class,"worksheet-row") or contains(@class,"vertical-drill-row")]').locator('.worksheet-feedback')).toHaveText('Correct on first check');
 
   await page.getByText('After you generate').click();
-  await page.getByRole('button', { name: 'Teacher key' }).click();
-  await expect(page.locator('#worksheet-score-copy')).toContainText('Certified answer key');
+  await page.getByRole('button', { name: 'Open teacher answer key' }).click();
+  await expect(page.locator('#worksheet-score-copy')).toContainText('Teacher answer key opened');
   const revealed = await page.locator('.worksheet-input').evaluateAll((inputs) => inputs.map((input) => ({
     answer: input.getAttribute('data-answer'),
     feedback: input.closest('.ledger-row, .vertical-drill-row')?.querySelector('.worksheet-feedback')?.textContent,
     family: input.getAttribute('data-family'),
   })));
-  expect(revealed.every(({ answer, feedback, family }) => answer === feedback?.trim() && family === 'complement')).toBe(true);
+  expect(revealed.every(({ answer, feedback, family }) => `Answer revealed: ${answer}` === feedback?.trim() && family === 'complement')).toBe(true);
+  const evidence = await page.evaluate(() => JSON.parse(localStorage.getItem('soroban-dojo:mastery-evidence-v1') || '[]'));
+  expect(evidence).toHaveLength(revealed.length);
+  expect(evidence.every((attempt) => attempt.source === 'worksheet' && attempt.events.some((event) => event.kind === 'reveal-final'))).toBe(true);
+  await expect(page.locator('#worksheet-first-check-copy')).toContainText('1/1 unassisted first checks correct');
 });
 
 test('adaptive complement weakness emits certified complement rows', async ({ page }) => {
