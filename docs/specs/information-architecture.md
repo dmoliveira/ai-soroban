@@ -22,6 +22,9 @@ Secondary routes live in the **Explore more** disclosure. Support, About, Privac
 7. Privacy and progress controls are always reachable from persistent navigation or the footer.
 8. Home, Start Here, Practice, and Progress show one shared local next action instead of stacking competing recommendation cards. Practice URL intent (`resume`, then `level`/`skill`) outranks passive saved context.
 9. Weekly plans may be promoted outside Study Plan only when their saved continuity key still matches the current review, placement, or route inputs.
+10. Practice's primary hero action mirrors the strongest saved next move. Only a learner with no resume, review, plan, placement, route, or recent-practice context defaults directly to a Foundations session.
+11. A learner-path first-lesson URL carries the requested route to its destination. The lesson retains that context when it opens, reports whether the route was saved, retained, or unavailable, and still opens when storage is unavailable.
+12. Progress presents its contextual next action before generic Practice, worksheet, and study-plan links; those broad links remain available in the secondary disclosure.
 
 ## Route families
 

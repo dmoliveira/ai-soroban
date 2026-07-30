@@ -84,6 +84,104 @@ test('learner route controls report blocked writes and clears without changing s
   expect(await page.evaluate(() => localStorage.getItem('soroban-dojo:path'))).toBe('children');
 });
 
+for (const path of ['children', 'adults']) {
+  test(`${path} route start saves context and opens the first lesson`, async ({ page }) => {
+    await page.goto(`paths/${path}`);
+    const start = page.getByRole('link', { name: `Use ${path} route and start lesson 1` }).first();
+    await start.focus();
+    await page.keyboard.press('Enter');
+
+    await expect(page).toHaveURL(/lessons\/l0\/parts-of-the-soroban\/?$/);
+    await expect(page.locator('[data-learner-path-transition-notice]')).toHaveText(
+      `${path === 'children' ? 'Children' : 'Adults'} route saved in this browser. The first lesson is open.`,
+    );
+    expect(await page.evaluate(() => localStorage.getItem('soroban-dojo:path'))).toBe(path);
+  });
+}
+
+test('path start reports an already active route as retained without rewriting it', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('soroban-dojo:path', 'children'));
+  await page.goto('paths/children');
+
+  await page.getByRole('link', { name: 'Use children route and start lesson 1' }).first().click();
+
+  await expect(page).toHaveURL(/lessons\/l0\/parts-of-the-soroban\/?$/);
+  await expect(page.locator('[data-learner-path-transition-notice]')).toHaveText(
+    'Children route remains active in this browser. The first lesson is open.',
+  );
+  expect(await page.evaluate(() => localStorage.getItem('soroban-dojo:path'))).toBe('children');
+});
+
+test('static route context survives native new-context navigation', async ({ page }) => {
+  await page.goto('paths/children');
+  const start = page.getByRole('link', { name: 'Use children route and start lesson 1' }).first();
+  await start.evaluate((anchor) => { anchor.target = '_blank'; });
+  const popupPromise = page.waitForEvent('popup');
+  await start.click();
+  const lessonPage = await popupPromise;
+  await lessonPage.waitForLoadState('domcontentloaded');
+
+  await expect(lessonPage).toHaveURL(/lessons\/l0\/parts-of-the-soroban\/?$/);
+  await expect(lessonPage.locator('[data-learner-path-transition-notice]')).toHaveText(
+    'Children route saved in this browser. The first lesson is open.',
+  );
+  expect(await lessonPage.evaluate(() => localStorage.getItem('soroban-dojo:path'))).toBe('children');
+});
+
+test('a static path lesson URL retains context without a source-page activation event', async ({ page }) => {
+  await page.goto('paths/adults');
+  const start = page.getByRole('link', { name: 'Use adults route and start lesson 1' }).first();
+  await expect(start).toHaveAttribute('href', /parts-of-the-soroban\?pathContext=adults$/);
+  const destination = await start.getAttribute('href');
+
+  await page.goto(destination);
+
+  await expect(page).toHaveURL(/lessons\/l0\/parts-of-the-soroban\/?$/);
+  await expect(page.locator('[data-learner-path-transition-notice]')).toHaveText(
+    'Adults route saved in this browser. The first lesson is open.',
+  );
+  expect(await page.evaluate(() => localStorage.getItem('soroban-dojo:path'))).toBe('adults');
+});
+
+test('path start still opens the lesson and focuses a truthful notice when storage fails', async ({ page }) => {
+  await page.addInitScript(() => {
+    const nativeSetItem = Storage.prototype.setItem;
+    Storage.prototype.setItem = function setItem(key, value) {
+      if (key === 'soroban-dojo:path') throw new DOMException('blocked', 'QuotaExceededError');
+      return nativeSetItem.call(this, key, value);
+    };
+  });
+  await page.goto('paths/children');
+
+  await page.getByRole('link', { name: 'Use children route and start lesson 1' }).first().click();
+
+  await expect(page).toHaveURL(/lessons\/l0\/parts-of-the-soroban\/?$/);
+  const notice = page.locator('[data-learner-path-transition-notice]');
+  await expect(notice).toHaveText('Children route could not be saved in this browser. The first lesson is still open.');
+  await expect(notice).toBeFocused();
+  expect(await page.evaluate(() => localStorage.getItem('soroban-dojo:path'))).toBeNull();
+});
+
+test('future route state stays byte-identical while a different path lesson still opens', async ({ page }) => {
+  const marker = '{"version":99,"future":"keep-byte-exact"}';
+  await page.addInitScript((futureMarker) => {
+    localStorage.setItem('soroban-dojo:state-schema', futureMarker);
+    localStorage.setItem('soroban-dojo:path', 'adults');
+  }, marker);
+  await page.goto('paths/children');
+
+  await page.getByRole('link', { name: 'Use children route and start lesson 1' }).first().click();
+
+  await expect(page).toHaveURL(/lessons\/l0\/parts-of-the-soroban\/?$/);
+  const notice = page.locator('[data-learner-path-transition-notice]');
+  await expect(notice).toContainText('Children route could not be saved. Adults route remains active');
+  await expect(notice).toBeFocused();
+  expect(await page.evaluate(() => ({
+    marker: localStorage.getItem('soroban-dojo:state-schema'),
+    path: localStorage.getItem('soroban-dojo:path'),
+  }))).toEqual({ marker, path: 'adults' });
+});
+
 test('placement answers and recommendation survive repeated reloads', async ({ page }) => {
   await page.goto('assessments');
 

@@ -404,7 +404,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 <script>
   // @ts-nocheck
   import { CHALLENGE_DEFINITIONS, buildChallengeQuestions, canonicalizeChallengeSession, certifyChallengeQuestions, evaluateChallengeOutcome, formatChallengeOutcome, isChallengeSessionOpaque } from '../lib/challenges.js';
-  import { formatReviewBasis, normalizeResumablePracticeSession, normalizeViewablePracticeSession, readReviewProfile, resolveReviewFocus, resolveReviewTargetForLevel, targetForSkill } from '../lib/learner-continuity.js';
+  import { buildContinuityRecommendation, formatReviewBasis, normalizeResumablePracticeSession, normalizeViewablePracticeSession, readContinuitySnapshot, readReviewProfile, resolveReviewFocus, resolveReviewTargetForLevel, targetForSkill, toBaseHref } from '../lib/learner-continuity.js';
   import { appendEvidenceEvent, claimMasteryItem, createAttemptEvidence, masteryClaimOwnedBy, normalizeAttemptEvidence, normalizeMasterySeenIndex, summarizeAttemptEvidence, upsertAttemptEvidence } from '../lib/mastery.js';
   import { buildCuratedPracticeQuestions, buildGeneratedPracticeQuestions, buildJourneyPracticeQuestions, practiceSlug, preparePracticeResponseForAdvance } from '../lib/practice.js';
   import { STORAGE_KEYS, normalizeStoredArray, normalizeStoredRecord, readStoredArray, readStoredJson, writeStoredJson } from '../lib/storage.js';
@@ -466,6 +466,17 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     };
     return canonicalizeChallengeSession(normalized);
   };
+  const renderPrimaryPracticeAction = () => {
+    const action = document.getElementById('practice-primary-action');
+    if (!(action instanceof HTMLAnchorElement)) return;
+    const recommendation = buildContinuityRecommendation(readContinuitySnapshot(localStorage));
+    const target = recommendation.kind === 'setup'
+      ? { href: 'practice?level=L0&skill=abacus-orientation&start=1', label: 'Start focused practice' }
+      : recommendation.primary;
+    action.href = toBaseHref(root?.dataset.base || '/soroban-dojo/', target.href);
+    action.textContent = target.label;
+    action.dataset.continuityKind = recommendation.kind;
+  };
   const readRawSessions = () => normalizeStoredArray(readStoredJson(localStorage, SESSION_KEY, []));
   const readSessions = () => {
     try {
@@ -474,7 +485,11 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         .filter(Boolean);
     } catch { return []; }
   };
-  const writeSessions = (sessions) => writeStoredJson(localStorage, SESSION_KEY, normalizeStoredArray(sessions));
+  const writeSessions = (sessions) => {
+    const saved = writeStoredJson(localStorage, SESSION_KEY, normalizeStoredArray(sessions));
+    if (saved) window.dispatchEvent(new CustomEvent('soroban:continuity-change'));
+    return saved;
+  };
   const appendTimer = (entry) => {
     try {
       const current = normalizeStoredArray(readStoredJson(localStorage, TIMER_KEY, []));
@@ -1726,6 +1741,13 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     });
   });
 
+  renderPrimaryPracticeAction();
+  window.addEventListener('soroban:storage-ready', renderPrimaryPracticeAction);
+  window.addEventListener('soroban:learner-context-change', renderPrimaryPracticeAction);
+  window.addEventListener('soroban:continuity-change', renderPrimaryPracticeAction);
+  window.addEventListener('storage', (event) => {
+    if (!event.key || event.key.startsWith('soroban-dojo:')) renderPrimaryPracticeAction();
+  });
   renderHistory();
   const query = new URLSearchParams(window.location.search);
   const requestedResumeId = query.get('resume');

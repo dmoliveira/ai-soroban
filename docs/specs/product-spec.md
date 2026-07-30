@@ -16,7 +16,7 @@ Provide a calm, practical Soroban dojo that helps children, adult self-learners,
 
 1. **Learning integrity:** an answer reveal supports reflection; it does not masquerade as mastery.
 2. **Task clarity:** Start, Learn, Train, and Progress remain the four primary jobs.
-3. **Context continuity:** lesson and exercise follow-ups preserve level and skill; an explicitly chosen route and placement starting point remain editable local context for later recommendations. Saved unfinished practice, review needs, a fresh matching weekly plan, placement, route, and recent practice resolve in that order before generic setup.
+3. **Context continuity:** lesson and exercise follow-ups preserve level and skill; an explicitly chosen route and placement starting point remain editable local context for later recommendations. Saved unfinished practice, review needs, a fresh matching weekly plan, placement, route, and recent practice resolve in that order before generic setup. Primary Practice and Progress actions follow that same order, while a path-to-first-lesson action truthfully reports whether its route context was retained.
 4. **Privacy by default:** no account, hidden analytics, or remote progress store is required.
 5. **Inclusive delivery:** keyboard, touch, reduced motion, mobile layout, print, and readable status feedback are release requirements.
 6. **Static reliability:** every public route must work from the GitHub Pages base path.

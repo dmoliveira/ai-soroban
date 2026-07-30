@@ -8,6 +8,35 @@ const placementState = (level, title, reason) => JSON.stringify({
 
 const continuityCard = (page) => page.locator('[data-continuity-next-action]').first();
 
+test('Practice hero has a usable HTML fallback and becomes a resume action after starting', async ({ page, baseURL }) => {
+  const response = await page.request.get('practice');
+  expect(response.ok()).toBe(true);
+  const primaryMarkup = (await response.text()).match(/<a\b[^>]*id="practice-primary-action"[^>]*>/)?.[0];
+  const fallbackPath = new URL('practice', baseURL).pathname;
+  expect(primaryMarkup).toContain(`href="${fallbackPath}?level=L0&amp;skill=abacus-orientation&amp;start=1"`);
+
+  await page.goto('practice');
+  const primary = page.locator('#practice-primary-action');
+  await expect(primary).toHaveAttribute('data-continuity-kind', 'setup');
+  await expect(primary).toHaveAttribute('href', /practice\?level=L0&skill=abacus-orientation&start=1$/);
+  await primary.click();
+
+  await expect(page.locator('#answer-input')).toBeFocused();
+  const sessions = await page.evaluate(() => JSON.parse(localStorage.getItem('soroban-dojo:practice-sessions') || '[]'));
+  expect(sessions).toHaveLength(1);
+  await expect(primary).toHaveAttribute('data-continuity-kind', 'resume');
+  await expect(primary).toHaveText('Resume saved session');
+  await expect(primary).toHaveAttribute('href', new RegExp(`practice\\?resume=${sessions[0].id}$`));
+  const card = continuityCard(page);
+  await expect(card).toHaveAttribute('data-continuity-kind', 'resume');
+  await expect(card).toBeHidden();
+  await expect(card.locator('[data-continuity-primary]')).toHaveText('Resume saved session');
+  await expect(card.locator('[data-continuity-primary]')).toHaveAttribute(
+    'href',
+    new RegExp(`practice\\?resume=${sessions[0].id}$`),
+  );
+});
+
 test('unfinished safe sessions outrank review, weekly-plan, and placement context', async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem('soroban-dojo:path', 'adults');
@@ -43,6 +72,33 @@ test('unfinished safe sessions outrank review, weekly-plan, and placement contex
   await expect(card.getByRole('link', { name: 'Resume saved session' })).toHaveAttribute('href', /practice\?resume=dojo-resume-exact$/);
   await expect(card).toContainText('Adults route');
   await expect(card).toContainText('L4 Advanced');
+});
+
+test('Practice hero mirrors the strongest saved resume action', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('soroban-dojo:practice-sessions', JSON.stringify([{
+      id: 'hero-resume-exact',
+      level: 'L2',
+      type: 'generated',
+      format: 'single',
+      completed: false,
+      currentIndex: 0,
+      questions: [{ id: 'q-hero', title: 'Complete ten', prompt: '7 + 3', answer: 10, steps: ['Complete ten.'] }],
+      responses: {},
+    }]));
+  });
+
+  await page.goto('practice');
+  const primary = page.locator('#practice-primary-action');
+  await expect(primary).toHaveAttribute('data-continuity-kind', 'resume');
+  await expect(primary).toHaveText('Resume saved session');
+  await expect(primary).toHaveAttribute('href', /practice\?resume=hero-resume-exact$/);
+  await primary.focus();
+  await page.keyboard.press('Enter');
+
+  await expect(page.locator('#session-id')).toHaveText('hero-resume-exact');
+  await expect(page.locator('#answer-input')).toBeFocused();
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('soroban-dojo:practice-sessions') || '[]'))).toHaveLength(1);
 });
 
 test('review targets are focused and stale weekly plans are not promoted', async ({ page }) => {

@@ -40,6 +40,21 @@ export const writeLearnerPath = (storage, path) => {
   }
 };
 
+export const retainLearnerPathForNavigation = (storage, path, { writable = true } = {}) => {
+  const requested = normalizeLearnerPath(path);
+  const previous = readLearnerPath(storage);
+  if (!requested) return { requested: null, previous, path: previous, outcome: 'failed' };
+  if (previous === requested) return { requested, previous, path: previous, outcome: 'retained' };
+  const saved = writable && writeLearnerPath(storage, requested);
+  const actual = readLearnerPath(storage);
+  return {
+    requested,
+    previous,
+    path: actual,
+    outcome: saved && actual === requested ? 'saved' : 'failed',
+  };
+};
+
 export const clearLearnerPath = (storage) => {
   if (!storageWritesAllowed(storage) || typeof storage?.removeItem !== 'function') return false;
   try {

@@ -8,6 +8,7 @@ import {
   normalizeStartingPoint,
   readLearnerContext,
   readLearnerPath,
+  retainLearnerPathForNavigation,
   writeLearnerPath,
 } from '../src/lib/learner-context.js';
 import { STORAGE_KEYS, setStorageCompatibility } from '../src/lib/storage.js';
@@ -84,6 +85,47 @@ test('invalid, blocked, and read-only path changes fail closed', () => {
   assert.equal(writeLearnerPath(readOnly, 'adults'), false);
   assert.equal(clearLearnerPath(readOnly), false);
   assert.equal(readOnly.getItem(STORAGE_KEYS.path), 'children');
+});
+
+test('path-to-lesson transitions distinguish saved, retained, and failed context', () => {
+  const fresh = new MemoryStorage();
+  assert.deepEqual(retainLearnerPathForNavigation(fresh, 'children'), {
+    requested: 'children',
+    previous: null,
+    path: 'children',
+    outcome: 'saved',
+  });
+
+  fresh.failSet = true;
+  assert.deepEqual(retainLearnerPathForNavigation(fresh, 'children'), {
+    requested: 'children',
+    previous: 'children',
+    path: 'children',
+    outcome: 'retained',
+  });
+
+  const blocked = new MemoryStorage({ [STORAGE_KEYS.path]: 'adults' });
+  blocked.failSet = true;
+  assert.deepEqual(retainLearnerPathForNavigation(blocked, 'children'), {
+    requested: 'children',
+    previous: 'adults',
+    path: 'adults',
+    outcome: 'failed',
+  });
+
+  const unavailable = new MemoryStorage();
+  assert.deepEqual(retainLearnerPathForNavigation(unavailable, 'adults', { writable: false }), {
+    requested: 'adults',
+    previous: null,
+    path: null,
+    outcome: 'failed',
+  });
+  assert.deepEqual(retainLearnerPathForNavigation(unavailable, 'teachers'), {
+    requested: null,
+    previous: null,
+    path: null,
+    outcome: 'failed',
+  });
 });
 
 test('learner context rejects malformed starting points and blocked reads', () => {

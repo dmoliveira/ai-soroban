@@ -5,12 +5,16 @@ interface Props {
   preferredPath?: 'children' | 'adults';
   heading?: string;
   compact?: boolean;
+  continueHref?: string;
+  continueLabel?: string;
 }
 
 const {
   preferredPath,
   heading = 'Save the route that fits this learner',
   compact = false,
+  continueHref,
+  continueLabel = 'Save this route and start the first lesson',
 } = Astro.props;
 const paths = Object.values(LEARNER_PATHS).sort((left, right) => (
   left.id === preferredPath ? -1 : right.id === preferredPath ? 1 : 0
@@ -24,9 +28,18 @@ const paths = Object.values(LEARNER_PATHS).sort((left, right) => (
     <p class="muted small" data-learner-path-current>No route is selected yet.</p>
   </div>
   <div class="button-row button-row-compact learner-path-actions">
+    {continueHref && preferredPath && (
+      <a
+        class="button"
+        href={continueHref}
+        data-learner-path-continue={preferredPath}
+      >
+        {continueLabel}
+      </a>
+    )}
     {paths.map((path) => (
       <button
-        class:list={['button', { 'button-secondary': path.id !== preferredPath }]}
+        class:list={['button', { 'button-secondary': Boolean(continueHref) || path.id !== preferredPath }]}
         type="button"
         data-learner-path-choice={path.id}
         aria-pressed="false"

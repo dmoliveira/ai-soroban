@@ -24,7 +24,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       { label: 'Optional next', value: 'Journeys, setup, or review' },
     ]}
     actions={[
-      { href: '#practice-client', label: 'Start focused practice' },
+      { href: `${base}practice?level=L0&skill=abacus-orientation&start=1`, label: 'Start focused practice', id: 'practice-primary-action' },
     ]}
   />
 

@@ -53,12 +53,16 @@ for (const viewport of viewports) {
   });
 }
 
-test('practice anchor and controls remain reachable on a small phone', async ({ page }) => {
+test('practice primary action starts one reachable Foundations session on a small phone', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 568 });
   await page.goto('practice');
 
   await page.getByRole('link', { name: 'Start focused practice' }).click();
-  await expect(page.locator('#practice-client')).toBeInViewport();
+  await expect(page).toHaveURL(/practice\?level=L0&skill=abacus-orientation&start=1/);
+  await expect(page.locator('#practice-session-context')).toBeVisible();
+  await expect(page.locator('#single-session-active')).toBeVisible();
+  await expect(page.locator('#answer-input')).toBeFocused();
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('soroban-dojo:practice-sessions') || '[]'))).toHaveLength(1);
 
   const targets = page.locator('#practice-client button:visible, #practice-client summary:visible');
   const count = Math.min(await targets.count(), 12);
@@ -192,6 +196,16 @@ test('touch actions retain focus and persist evidence-route state', async ({ bro
   });
   const page = await context.newPage();
   try {
+    await page.goto('practice');
+    await page.getByRole('link', { name: 'Start focused practice' }).tap();
+    await expect(page.locator('#answer-input')).toBeFocused();
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem('soroban-dojo:practice-sessions') || '[]'))).toHaveLength(1);
+
+    await page.goto('paths/children');
+    await page.getByRole('link', { name: 'Use children route and start lesson 1' }).first().tap();
+    await expect(page.locator('[data-learner-path-transition-notice]')).toContainText('Children route saved');
+    expect(await page.evaluate(() => localStorage.getItem('soroban-dojo:path'))).toBe('children');
+
     await page.goto('daily-drills');
     const dailyReveal = page.locator('.daily-reveal-answer').first();
     await dailyReveal.tap();
