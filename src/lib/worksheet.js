@@ -448,6 +448,24 @@ export const formatWorksheetFamilyQuestion = (question) => question.operands.map
   index === 0 ? String(operand.value) : `${operand.operator} ${operand.value}`
 )).join(' ');
 
+export const worksheetSkillForQuestion = (question) => {
+  if (!isRecord(question)) return null;
+  const skillByFamily = {
+    complement: 'complements',
+    multiplication: 'multiplication',
+    division: 'division',
+    anzan: 'anzan',
+  };
+  if (skillByFamily[question.family]) return skillByFamily[question.family];
+  const skillBySourceFamily = {
+    addition: 'addition',
+    subtraction: 'subtraction',
+    mixed: 'mixed-operations',
+    sequence: 'mixed-operations',
+  };
+  return skillBySourceFamily[question.sourceFamily] || null;
+};
+
 const worksheetQuestionIdentity = (question) => JSON.stringify([
   question.index,
   question.level,

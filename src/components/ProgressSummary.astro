@@ -91,7 +91,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
       <section class="panel ink-panel">
         <p class="eyebrow">Worksheet submodes</p>
-        <h3>Accuracy by worksheet focus</h3>
+        <h3>Checked worksheet activity by focus</h3>
+        <p class="muted small">These checked results can include later corrections. Unassisted first-check evidence stays separate in the Skill map above.</p>
         <div id="worksheet-focus-map" class="skill-map"></div>
       </section>
 
@@ -126,7 +127,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   import { isBossComplete, normalizeBossCompletionRecord } from '../lib/boss-provenance.js';
   import { canonicalizeChallengeSession, isChallengeSessionOpaque } from '../lib/challenges.js';
   import { buildFocusedPracticeHref, buildFocusedWorksheetHref, formatReviewBasis, readReviewProfile, resolveReviewFocus, resolveWorksheetTarget, toBaseHref } from '../lib/learner-continuity.js';
-  import { isCanonicalAttemptEvidence, isCanonicalMasterySeenIndex, masteryClaimOwnedBy, summarizeAttemptEvidence } from '../lib/mastery.js';
+  import { selectQualifiedFirstCheckEvidence } from '../lib/mastery.js';
   import { STORAGE_KEYS, clearProgressStorage, normalizeStoredRecord, readStoredArray, readStoredJson, readStoredRecord } from '../lib/storage.js';
   import { ensureStorageCompatibility } from '../lib/storage-migrations.js';
 
@@ -152,22 +153,9 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   const bossData = normalizeBossCompletionRecord(readStoredRecord(localStorage, STORAGE_KEYS.bossRounds));
   const evidenceData = readStoredArray(localStorage, STORAGE_KEYS.masteryEvidence);
   const rawSeenEvidenceItems = readStoredJson(localStorage, STORAGE_KEYS.masterySeenItems, null);
-  const seenEvidenceItems = isCanonicalMasterySeenIndex(rawSeenEvidenceItems)
-    ? rawSeenEvidenceItems
-    : { version: 1, claims: [] };
   const reviewProfile = readReviewProfile(localStorage, exerciseData);
   const reviewFocus = resolveReviewFocus(reviewProfile);
-  const exposedEvidenceItems = new Set();
-  const qualifiedEvidence = evidenceData
-    .filter(isCanonicalAttemptEvidence)
-    .map((attempt) => ({ attempt, summary: summarizeAttemptEvidence(attempt) }))
-    .filter(({ attempt, summary }) => {
-      const firstExposure = !exposedEvidenceItems.has(attempt.itemId);
-      if (attempt.events.length) exposedEvidenceItems.add(attempt.itemId);
-      return firstExposure
-        && summary.qualified
-        && masteryClaimOwnedBy(seenEvidenceItems, attempt.itemId, attempt.attemptId);
-    });
+  const qualifiedEvidence = selectQualifiedFirstCheckEvidence({ evidenceLedger: evidenceData, seenIndex: rawSeenEvidenceItems });
   const evidenceAccuracy = qualifiedEvidence.length
     ? Math.round((qualifiedEvidence.filter(({ summary }) => summary.firstCheckCorrect).length / qualifiedEvidence.length) * 100)
     : 0;
@@ -346,7 +334,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
      row.className = 'skill-row';
      const name = document.createElement('div');
      name.className = 'skill-label';
-     name.innerHTML = `<strong>${labelize(submode)}</strong><small>${sessions.length} worksheet(s) · ${completed} answered</small>`;
+     name.innerHTML = `<strong>${labelize(submode)}</strong><small>${completed} answered worksheet session${completed === 1 ? '' : 's'} · ${sessions.length} saved visit${sessions.length === 1 ? '' : 's'}</small>`;
      const meter = document.createElement('div');
      meter.className = 'skill-meter';
      const fill = document.createElement('div');
@@ -355,12 +343,12 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
      fill.style.width = `${hasTraining ? bestAccuracy : 0}%`;
      meter.setAttribute('role', 'img');
      meter.setAttribute('aria-label', hasTraining
-       ? `${labelize(submode)}: best ${bestAccuracy}% accuracy from ${completed} answered worksheet sessions`
+       ? `${labelize(submode)}: best ${bestAccuracy}% checked result from ${completed} answered worksheet sessions`
        : `${labelize(submode)}: not trained yet`);
      meter.appendChild(fill);
      const meta = document.createElement('span');
      meta.className = 'muted small';
-     meta.textContent = hasTraining ? `best ${bestAccuracy}% accuracy` : 'not trained yet';
+     meta.textContent = hasTraining ? `best checked result ${bestAccuracy}% · corrections included` : 'not trained yet';
      const actions = document.createElement('div');
      actions.className = 'skill-actions';
      const worksheetLink = document.createElement('a');

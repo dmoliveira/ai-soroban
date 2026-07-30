@@ -223,9 +223,9 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         <details class="worksheet-secondary-tools disclosure-block">
           <summary>After you generate</summary>
           <div class="button-row worksheet-action-row worksheet-action-row-secondary">
-            <button class="button button-secondary" id="check-worksheet">Check answered</button>
-            <button class="button button-secondary" id="reveal-worksheet">Reveal answers</button>
-            <button class="button button-secondary" id="teacher-key">Teacher key</button>
+            <button class="button button-secondary" id="check-worksheet">Check filled rows</button>
+            <button class="button button-secondary" id="reveal-worksheet">Reveal filled-row answers</button>
+            <button class="button button-secondary" id="teacher-key">Open teacher answer key</button>
             <button class="button button-secondary" id="worksheet-timer-toggle">Start timer</button>
             <button class="button button-secondary" id="print-worksheet">Print sheet</button>
             <a class="button button-secondary" href={`${base}practice`}>Return to practice</a>
@@ -265,9 +265,14 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
             </div>
           </div>
           <div class="worksheet-scorebar subtle-panel" id="worksheet-scorebar">
-            <strong>Score</strong>
-            <span id="worksheet-score-copy" class="muted">No answers checked yet.</span>
+            <strong>Checked activity</strong>
+            <span id="worksheet-score-copy" class="muted">No rows checked yet.</span>
           </div>
+          <div class="worksheet-scorebar subtle-panel">
+            <strong>First-check evidence</strong>
+            <span id="worksheet-first-check-copy" class="muted">No unassisted first checks saved for this sheet yet.</span>
+          </div>
+          <p id="worksheet-save-status" class="muted small" role="status" aria-live="polite" aria-atomic="true"></p>
           <div id="worksheet-celebration" class="worksheet-celebration" hidden>
             <strong>Congratulations</strong>
             <span>You completed the full sheet with perfect accuracy.</span>
@@ -276,8 +281,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
         <div class="worksheet-score-grid">
           <article class="stat-card stat-card-soft"><span id="worksheet-answered">0</span><small>Answered</small></article>
-          <article class="stat-card stat-card-soft"><span id="worksheet-correct">0</span><small>Correct</small></article>
-          <article class="stat-card stat-card-soft"><span id="worksheet-accuracy">0%</span><small>Accuracy</small></article>
+          <article class="stat-card stat-card-soft"><span id="worksheet-correct">0</span><small>Correct now</small></article>
+          <article class="stat-card stat-card-soft"><span id="worksheet-accuracy">0%</span><small>Checked result</small></article>
           <article class="stat-card stat-card-soft"><span id="worksheet-time">0s</span><small>Time</small></article>
         </div>
 
@@ -636,8 +641,14 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       buildWorksheetFamilyQuestions,
       createWorksheetFamilyConfig,
       formatWorksheetFamilyQuestion,
+      worksheetSkillForQuestion,
     } from '../lib/worksheet.js';
     import { formatReviewBasis, readReviewProfile, resolveReviewFocus, resolveWorksheetTarget } from '../lib/learner-continuity.js';
+    import { appendEvidenceEvent, claimMasteryItem, createAttemptEvidence, masteryClaimOwnedBy, normalizeEvidenceLedger, normalizeMasterySeenIndex, summarizeAttemptEvidence, upsertAttemptEvidence } from '../lib/mastery.js';
+    import { STORAGE_KEYS, readStoredArray, readStoredJson, storageWritesAllowed, writeStoredJson } from '../lib/storage.js';
+    import { ensureStorageCompatibility } from '../lib/storage-migrations.js';
+
+    const compatibility = ensureStorageCompatibility(localStorage);
 
     const levelBands = {
       L0: '1',
@@ -673,16 +684,30 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     const adaptiveNote = byId('adaptive-note');
     const adaptiveNoteCopy = byId('adaptive-note-copy');
     const currentSetupCopy = byId('worksheet-current-setup-copy');
-    const worksheetSessionKey = 'soroban-dojo:worksheet-sessions';
+    const worksheetSessionKey = STORAGE_KEYS.worksheetSessions;
     let worksheetTimerStartedAt = null;
     let worksheetTimerInterval = null;
     let celebrationTimeout = null;
     let resolvedWorksheetTarget = 'auto';
     let currentWorksheetSessionId = null;
     let currentAdaptiveReviewProfile = null;
+    let activeWorksheetStartedAt = new Date().toISOString();
+    let evidenceSessionId = null;
     let activeWorksheetSeed = '';
     let worksheetSeedCounter = 0;
     const worksheetQuestionCache = new Map();
+    const worksheetQuestionsById = new Map();
+    const worksheetEvidenceByItem = new Map();
+    const worksheetEvidenceSavedByItem = new Map();
+    const worksheetActivityByItem = new Map();
+    const resetWorksheetAttemptState = () => {
+      worksheetQuestionsById.clear();
+      worksheetEvidenceByItem.clear();
+      worksheetEvidenceSavedByItem.clear();
+      worksheetActivityByItem.clear();
+      evidenceSessionId = null;
+      activeWorksheetStartedAt = new Date().toISOString();
+    };
     const rotateWorksheetSeed = () => {
       worksheetSeedCounter += 1;
       const entropy = new Uint32Array(2);
@@ -694,6 +719,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         ...Array.from(entropy, (value) => value.toString(36)),
       ].join(':');
       worksheetQuestionCache.clear();
+      resetWorksheetAttemptState();
     };
     const audioWindow = typeof window !== 'undefined' ? /** @type {any} */ (window) : null;
     const AudioContextCtor = audioWindow
@@ -940,12 +966,12 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     };
 
     const writeWorksheetSessions = (sessions) => {
-      if (document.documentElement.dataset.storageWritable !== 'true') return false;
+      if (compatibility.writable !== true || !storageWritesAllowed(localStorage)) return false;
       try { localStorage.setItem(worksheetSessionKey, JSON.stringify(sessions.slice(0, 40))); return true; } catch { return false; }
     };
 
     const persistWorksheetSession = (metrics = {}) => {
-      if (!currentWorksheetSessionId) return;
+      if (!currentWorksheetSessionId) return false;
       const sessions = readWorksheetSessions();
       const entry = {
         id: currentWorksheetSessionId,
@@ -962,7 +988,101 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       const existingIndex = sessions.findIndex((session) => session.id === currentWorksheetSessionId);
       if (existingIndex >= 0) sessions.splice(existingIndex, 1);
       sessions.unshift(entry);
-      writeWorksheetSessions(sessions);
+      return writeWorksheetSessions(sessions);
+    };
+
+    const readSeenItems = () => normalizeMasterySeenIndex(readStoredJson(localStorage, STORAGE_KEYS.masterySeenItems, {}));
+    const hasPriorEvidenceExposure = (itemId) => readSeenItems().claims.some((claim) => claim.itemId === itemId)
+      || readStoredArray(localStorage, STORAGE_KEYS.masteryEvidence)
+        .some((attempt) => attempt?.itemId === itemId && Array.isArray(attempt.events) && attempt.events.length > 0);
+
+    const evidenceForQuestion = (question) => {
+      if (!question || !currentWorksheetSessionId) return null;
+      const existing = worksheetEvidenceByItem.get(question.id);
+      if (existing) return existing;
+      const skill = worksheetSkillForQuestion(question);
+      if (!skill) return null;
+      const evidence = createAttemptEvidence({
+        attemptId: `${currentWorksheetSessionId}:question:${question.id}`,
+        source: 'worksheet',
+        itemId: question.id,
+        skill,
+        level: question.level,
+        rule: question.rule,
+        seed: activeWorksheetSeed,
+        startedAt: activeWorksheetStartedAt,
+        eligibility: hasPriorEvidenceExposure(question.id) ? 'activity-only' : 'prospective',
+      });
+      worksheetEvidenceByItem.set(question.id, evidence);
+      worksheetEvidenceSavedByItem.set(question.id, false);
+      return evidence;
+    };
+
+    const coalesceWorksheetRevealEvents = (attempt, retainedRevealAt) => {
+      let retainedReveal = false;
+      const events = attempt.events.flatMap((event) => {
+        if (event.kind !== 'reveal-final') return [event];
+        if (retainedReveal) return [];
+        retainedReveal = true;
+        return [{ ...event, at: retainedRevealAt || event.at }];
+      }).map((event, index) => ({ ...event, seq: index + 1 }));
+      return { ...attempt, events };
+    };
+
+    const upsertWorksheetEvidence = (attempt) => {
+      const current = normalizeEvidenceLedger(readStoredArray(localStorage, STORAGE_KEYS.masteryEvidence));
+      const existing = current.find((entry) => entry.attemptId === attempt.attemptId);
+      const retainedRevealAt = [...(existing?.events || []), ...attempt.events]
+        .filter((event) => event.kind === 'reveal-final')
+        .map((event) => event.at)
+        .sort()[0] || null;
+      const reconciledCurrent = current.map((entry) => entry.attemptId === attempt.attemptId
+        ? coalesceWorksheetRevealEvents(entry, retainedRevealAt)
+        : entry);
+      return upsertAttemptEvidence(
+        reconciledCurrent,
+        coalesceWorksheetRevealEvents(attempt, retainedRevealAt),
+      );
+    };
+
+    const persistWorksheetEvidence = (attempt) => {
+      if (!attempt) return { attempt: null, claimSaved: false, evidenceSaved: false, saved: false };
+      let nextAttempt = attempt;
+      const claim = claimMasteryItem(readStoredJson(localStorage, STORAGE_KEYS.masterySeenItems, {}), {
+        itemId: nextAttempt.itemId,
+        attemptId: nextAttempt.attemptId,
+        firstSeenAt: nextAttempt.events[0]?.at || nextAttempt.startedAt,
+      });
+      const claimSaved = !claim.changed || writeStoredJson(localStorage, STORAGE_KEYS.masterySeenItems, claim.index);
+      const claimOwned = claim.eligible
+        && claimSaved
+        && masteryClaimOwnedBy(readStoredJson(localStorage, STORAGE_KEYS.masterySeenItems, {}), nextAttempt.itemId, nextAttempt.attemptId);
+      if (!claimOwned) nextAttempt = { ...nextAttempt, eligibility: 'activity-only' };
+
+      let ledger = upsertWorksheetEvidence(nextAttempt);
+      let persisted = ledger.find((entry) => entry.attemptId === nextAttempt.attemptId) || nextAttempt;
+      let evidenceSaved = writeStoredJson(localStorage, STORAGE_KEYS.masteryEvidence, ledger);
+      const ownershipStable = persisted.eligibility !== 'prospective'
+        || masteryClaimOwnedBy(readStoredJson(localStorage, STORAGE_KEYS.masterySeenItems, {}), persisted.itemId, persisted.attemptId);
+      if (evidenceSaved && !ownershipStable) {
+        persisted = { ...persisted, eligibility: 'activity-only' };
+        ledger = upsertWorksheetEvidence(persisted);
+        persisted = ledger.find((entry) => entry.attemptId === persisted.attemptId) || persisted;
+        evidenceSaved = writeStoredJson(localStorage, STORAGE_KEYS.masteryEvidence, ledger);
+      }
+      worksheetEvidenceByItem.set(persisted.itemId, persisted);
+      worksheetEvidenceSavedByItem.set(persisted.itemId, evidenceSaved);
+      return { attempt: persisted, claimSaved, evidenceSaved, saved: claimSaved && evidenceSaved };
+    };
+
+    const recordWorksheetEvidence = (question, event) => {
+      const current = evidenceForQuestion(question);
+      if (!current) return { attempt: null, summary: null, claimSaved: false, evidenceSaved: false, saved: false, unavailable: true };
+      const duplicateReveal = event.kind === 'reveal-final' && current.events.some((entry) => entry.kind === 'reveal-final');
+      const nextAttempt = duplicateReveal ? current : appendEvidenceEvent(current, event);
+      worksheetEvidenceByItem.set(question.id, nextAttempt);
+      const persisted = persistWorksheetEvidence(nextAttempt);
+      return { ...persisted, summary: summarizeAttemptEvidence(persisted.attempt), unavailable: false };
     };
 
     const buildQuestionConfig = () => {
@@ -1033,7 +1153,14 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
     const renderSheet = () => {
       const questions = buildQuestions();
-      currentWorksheetSessionId = `ws-${questions[0]?.id || activeWorksheetSeed}`;
+      const nextWorksheetSessionId = `ws-${questions[0]?.id || activeWorksheetSeed}`;
+      if (evidenceSessionId !== nextWorksheetSessionId) {
+        resetWorksheetAttemptState();
+        evidenceSessionId = nextWorksheetSessionId;
+      }
+      currentWorksheetSessionId = nextWorksheetSessionId;
+      worksheetQuestionsById.clear();
+      questions.forEach((question) => worksheetQuestionsById.set(question.id, question));
       const orientation = byId('worksheet-orientation').value;
       const ledgerHead = byId('worksheet-ledger-head');
       const teacherMode = byId('worksheet-style').value === 'teacher';
@@ -1143,16 +1270,15 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       if (workedTitle) workedTitle.textContent = workedExample.title;
       if (workedPrompt) workedPrompt.textContent = `Representative drill: ${workedExample.prompt}`;
       if (workedMethod) workedMethod.textContent = workedExample.method;
-      scoreCopy.textContent = teacherMode
-        ? 'Teacher key mode is active. Print or reveal for guided review.'
-        : adaptiveMode
-        ? 'Adaptive mode follows the retained review basis shown above. Blank answers are skipped.'
-        : 'No answers checked yet.';
-      setMetric('worksheet-answered', 0);
-      setMetric('worksheet-correct', 0);
-      setMetric('worksheet-accuracy', '0%');
-      setMetric('worksheet-completion', '0%');
-      persistWorksheetSession();
+      const initialActivity = syncWorksheetActivity({
+        copy: adaptiveMode && worksheetActivityByItem.size === 0
+          ? 'No rows checked yet. Adaptive focus follows the retained review basis shown above.'
+          : null,
+      });
+      renderFirstCheckEvidence();
+      if (!initialActivity.activitySaved && compatibility.writable === true) {
+        byId('worksheet-save-status').textContent = 'This worksheet remains in this tab, but its activity summary was not saved to Progress.';
+      }
       if (teacherMode || byId('worksheet-print-mode').value === 'answer-key') scoreSheet(true);
     };
 
@@ -1161,54 +1287,30 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       feedback.className = `worksheet-feedback ${variant}${state ? ` ${state}` : ''}`;
     };
 
-    const scoreSheet = (reveal = false) => {
-      const inputs = Array.from(document.querySelectorAll('.worksheet-input'));
-      const answerKeyMode = reveal && (byId('worksheet-style').value === 'teacher' || byId('worksheet-print-mode').value === 'answer-key');
-      let answered = 0;
-      let correct = 0;
-      inputs.forEach((input) => {
-        const row = input.closest('.ledger-row, .vertical-drill-row');
-        const expected = Number(input.dataset.answer);
-        const feedback = row?.querySelector('.worksheet-feedback');
-        const value = input.value.trim();
-        if (!value) {
-          feedback.textContent = answerKeyMode ? `${expected}` : '';
-          setFeedbackClass(feedback, answerKeyMode ? 'revealed' : '');
-          row?.classList.remove('row-ok', 'row-needs-work', 'row-revealed');
-          if (answerKeyMode) row?.classList.add('row-revealed');
-          return;
-        }
-        answered += 1;
-        const isCorrect = Number(value) === expected;
-        if (isCorrect) correct += 1;
-        playTone(reveal ? 'success' : isCorrect ? 'success' : 'error');
-        feedback.textContent = reveal ? `${expected}` : (isCorrect ? '✓' : '○');
-        setFeedbackClass(feedback, reveal ? 'revealed' : isCorrect ? 'ok' : 'needs-work');
-        row?.classList.remove('row-ok', 'row-needs-work', 'row-revealed');
-        row?.classList.add(reveal ? 'row-revealed' : isCorrect ? 'row-ok' : 'row-needs-work');
-      });
-      if (!answered) {
-        scoreCopy.textContent = answerKeyMode
-          ? 'Certified answer key is visible for every row.'
-          : reveal
-            ? 'Answers revealed for answered rows only. Blank rows were skipped.'
-            : 'No answered rows yet. Blank rows are skipped.';
-        setMetric('worksheet-answered', 0);
-        setMetric('worksheet-correct', 0);
-        setMetric('worksheet-accuracy', '0%');
-        setMetric('worksheet-completion', '0%');
-        celebration.hidden = true;
-        persistWorksheetSession();
-        return;
-      }
-      const percent = Math.round((correct / answered) * 100);
-      const completion = Math.round((answered / inputs.length) * 100);
-      scoreCopy.textContent = `${correct}/${answered} correct · ${percent}% answered score · ${completion}% completion`;
-      setMetric('worksheet-answered', answered);
-      setMetric('worksheet-correct', correct);
-      setMetric('worksheet-accuracy', `${percent}%`);
-      setMetric('worksheet-completion', `${completion}%`);
-      if (answered === inputs.length && correct === answered) {
+    const questionForInput = (input) => worksheetQuestionsById.get(input?.dataset.questionId) || null;
+    const checkedActivitySummary = () => {
+      const checked = [...worksheetActivityByItem.values()].filter((entry) => entry.checked === true);
+      const correct = checked.filter((entry) => entry.correct === true).length;
+      const answered = checked.length;
+      return {
+        answered,
+        correct,
+        accuracy: answered ? Math.round((correct / answered) * 100) : 0,
+        completion: worksheetQuestionsById.size ? Math.round((answered / worksheetQuestionsById.size) * 100) : 0,
+      };
+    };
+
+    const syncWorksheetActivity = ({ copy = null } = {}) => {
+      const metrics = checkedActivitySummary();
+      setMetric('worksheet-answered', metrics.answered);
+      setMetric('worksheet-correct', metrics.correct);
+      setMetric('worksheet-accuracy', `${metrics.accuracy}%`);
+      setMetric('worksheet-completion', `${metrics.completion}%`);
+      scoreCopy.textContent = copy || (metrics.answered
+        ? `${metrics.correct}/${metrics.answered} correct now · ${metrics.accuracy}% checked result · ${metrics.completion}% completion`
+        : 'No rows checked yet. Reveals stay outside the checked result.');
+      const perfect = metrics.answered === worksheetQuestionsById.size && metrics.correct === metrics.answered;
+      if (perfect) {
         celebration.hidden = false;
         celebration.classList.add('celebrate');
         if (celebrationTimeout) window.clearTimeout(celebrationTimeout);
@@ -1220,7 +1322,127 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         celebration.hidden = true;
         celebration.classList.remove('celebrate');
       }
-      persistWorksheetSession({ answered, correct, accuracy: percent });
+      return { metrics, activitySaved: persistWorksheetSession(metrics) };
+    };
+
+    const renderFirstCheckEvidence = () => {
+      const qualified = [...worksheetEvidenceByItem.entries()].flatMap(([itemId, attempt]) => {
+        if (worksheetEvidenceSavedByItem.get(itemId) !== true) return [];
+        const summary = summarizeAttemptEvidence(attempt);
+        return summary.qualified ? [{ attempt, summary }] : [];
+      });
+      const correct = qualified.filter(({ summary }) => summary.firstCheckCorrect).length;
+      const activityOnly = [...worksheetEvidenceByItem.values()].filter((attempt) => {
+        if (!attempt.events.length) return false;
+        return !summarizeAttemptEvidence(attempt).qualified;
+      }).length;
+      const activityCopy = activityOnly
+        ? ` ${activityOnly} assisted or repeated row${activityOnly === 1 ? '' : 's'} ${activityOnly === 1 ? 'remains' : 'remain'} activity only.`
+        : '';
+      byId('worksheet-first-check-copy').textContent = qualified.length
+        ? `${correct}/${qualified.length} unassisted first checks correct on this sheet.${activityCopy}`
+        : `No unassisted first checks saved for this sheet yet.${activityCopy}`;
+      return { qualified: qualified.length, correct, activityOnly };
+    };
+
+    const reportWorksheetPersistence = ({ evidenceResults = [], activitySaved, interacted = true } = {}) => {
+      const status = byId('worksheet-save-status');
+      const unavailable = evidenceResults.some((result) => result.unavailable);
+      const evidenceSaved = evidenceResults.every((result) => result.saved);
+      if (!interacted) return;
+      if (unavailable) {
+        status.textContent = activitySaved
+          ? 'Checked activity saved, but one row had no supported first-check evidence rule.'
+          : 'This activity remains in this tab, and one row had no supported first-check evidence rule.';
+      } else if (evidenceSaved && activitySaved) {
+        status.textContent = 'Worksheet activity and evidence history saved in this browser.';
+      } else if (!evidenceSaved && activitySaved) {
+        status.textContent = 'Checked activity saved, but first-check evidence could not be saved to Progress.';
+      } else if (evidenceSaved && !activitySaved) {
+        status.textContent = 'Evidence history saved, but the worksheet activity summary remains only in this tab.';
+      } else {
+        status.textContent = 'This worksheet activity and evidence remain only in this tab; Progress was not updated.';
+      }
+    };
+
+    const checkFeedbackText = (result, isCorrect) => {
+      if (!isCorrect) return 'Not correct yet';
+      return result.saved && result.summary?.qualified && result.summary.checks === 1 && result.summary.firstCheckCorrect
+        ? 'Correct on first check'
+        : 'Correct now';
+    };
+
+    const scoreSheet = (reveal = false) => {
+      const inputs = Array.from(document.querySelectorAll('.worksheet-input'));
+      const answerKeyMode = reveal && (byId('worksheet-style').value === 'teacher' || byId('worksheet-print-mode').value === 'answer-key');
+      const evidenceResults = [];
+      let checkedRows = 0;
+      let revealedRows = 0;
+      inputs.forEach((input) => {
+        const row = input.closest('.ledger-row, .vertical-drill-row');
+        const expected = Number(input.dataset.answer);
+        const feedback = row?.querySelector('.worksheet-feedback');
+        const question = questionForInput(input);
+        const value = input.value.trim();
+        if (!value) {
+          if (answerKeyMode) {
+            const result = recordWorksheetEvidence(question, { kind: 'reveal-final' });
+            evidenceResults.push(result);
+            revealedRows += 1;
+            worksheetActivityByItem.set(question?.id || input.dataset.questionId, {
+              ...(worksheetActivityByItem.get(question?.id || input.dataset.questionId) || {}),
+              revealed: true,
+            });
+            feedback.textContent = `Answer revealed: ${expected}`;
+          } else {
+            feedback.textContent = 'Blank row skipped';
+          }
+          setFeedbackClass(feedback, answerKeyMode ? 'revealed' : '');
+          row?.classList.remove('row-ok', 'row-needs-work', 'row-revealed');
+          if (answerKeyMode) row?.classList.add('row-revealed');
+          return;
+        }
+        const isCorrect = Number(value) === expected;
+        const result = recordWorksheetEvidence(question, reveal
+          ? { kind: 'reveal-final' }
+          : { kind: 'submit', value, correct: isCorrect });
+        evidenceResults.push(result);
+        if (reveal) {
+          revealedRows += 1;
+          worksheetActivityByItem.set(question?.id || input.dataset.questionId, {
+            ...(worksheetActivityByItem.get(question?.id || input.dataset.questionId) || {}),
+            revealed: true,
+          });
+        } else {
+          checkedRows += 1;
+          worksheetActivityByItem.set(question?.id || input.dataset.questionId, {
+            ...(worksheetActivityByItem.get(question?.id || input.dataset.questionId) || {}),
+            checked: true,
+            correct: isCorrect,
+          });
+        }
+        playTone(reveal ? 'success' : isCorrect ? 'success' : 'error');
+        feedback.textContent = reveal ? `Answer revealed: ${expected}` : checkFeedbackText(result, isCorrect);
+        setFeedbackClass(feedback, reveal ? 'revealed' : isCorrect ? 'ok' : 'needs-work');
+        row?.classList.remove('row-ok', 'row-needs-work', 'row-revealed');
+        row?.classList.add(reveal ? 'row-revealed' : isCorrect ? 'row-ok' : 'row-needs-work');
+      });
+      const revealCopy = answerKeyMode
+        ? `Teacher answer key opened for ${revealedRows} rows. Reveals are activity, not first-check evidence.`
+        : reveal
+          ? revealedRows
+            ? `Revealed ${revealedRows} filled-row answer${revealedRows === 1 ? '' : 's'}. Checked result is unchanged; blank rows were skipped.`
+            : 'No filled rows to reveal. Blank rows were skipped.'
+          : checkedRows
+            ? null
+            : 'No filled rows checked. Blank rows were skipped.';
+      const activity = syncWorksheetActivity({ copy: revealCopy });
+      renderFirstCheckEvidence();
+      reportWorksheetPersistence({
+        evidenceResults,
+        activitySaved: activity.activitySaved,
+        interacted: checkedRows > 0 || revealedRows > 0,
+      });
     };
 
     const applyWriteCellShortcut = (event) => {
@@ -1245,20 +1467,34 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       if (!input || !feedback) return false;
       const expected = Number(input.dataset.answer);
       const value = input.value.trim();
-      if (!value) {
-        feedback.textContent = reveal ? `${expected}` : 'Write first';
-        setFeedbackClass(feedback, reveal ? 'revealed' : 'needs-work');
+      const question = questionForInput(input);
+      if (!value && !reveal) {
+        feedback.textContent = 'Write first';
+        setFeedbackClass(feedback, 'needs-work');
         row.classList.remove('row-ok', 'row-needs-work', 'row-revealed');
-        row.classList.add(reveal ? 'row-revealed' : 'row-needs-work');
+        row.classList.add('row-needs-work');
         return false;
       }
       const isCorrect = Number(value) === expected;
+      const result = recordWorksheetEvidence(question, reveal
+        ? { kind: 'reveal-final' }
+        : { kind: 'submit', value, correct: isCorrect });
+      const itemId = question?.id || input.dataset.questionId;
+      worksheetActivityByItem.set(itemId, {
+        ...(worksheetActivityByItem.get(itemId) || {}),
+        ...(reveal ? { revealed: true } : { checked: true, correct: isCorrect }),
+      });
       playTone(reveal ? 'success' : isCorrect ? 'success' : 'error');
-      feedback.textContent = reveal ? `${expected}` : (isCorrect ? '✓' : '○');
+      feedback.textContent = reveal ? `Answer revealed: ${expected}` : checkFeedbackText(result, isCorrect);
       setFeedbackClass(feedback, reveal ? 'revealed' : isCorrect ? 'ok' : 'needs-work');
       row.classList.remove('row-ok', 'row-needs-work', 'row-revealed');
       row.classList.add(reveal ? 'row-revealed' : isCorrect ? 'row-ok' : 'row-needs-work');
-      return isCorrect;
+      const activity = syncWorksheetActivity({
+        copy: reveal ? 'One row answer was revealed. Checked result is unchanged.' : null,
+      });
+      renderFirstCheckEvidence();
+      reportWorksheetPersistence({ evidenceResults: [result], activitySaved: activity.activitySaved });
+      return !reveal && isCorrect;
     };
 
     const syncTimer = () => {
@@ -1294,6 +1530,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
     byId('worksheet-level')?.addEventListener('change', () => {
       applyLevelDefaults();
+      rotateWorksheetSeed();
       renderSheet();
     });
     byId('generate-worksheet')?.addEventListener('click', () => {
@@ -1320,6 +1557,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       node.addEventListener('change', () => {
         syncPresetSelection(null);
         autoAlignOrientation();
+        rotateWorksheetSeed();
         renderSheet();
       });
     });
@@ -1346,7 +1584,14 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       const nextInput = inputs[inputs.indexOf(input) + 1];
       if (nextInput instanceof HTMLInputElement) nextInput.focus();
     });
-    document.querySelectorAll('#worksheet-mode, #worksheet-band, #worksheet-style, #worksheet-orientation, #worksheet-count, #worksheet-flow-mode, #worksheet-submode, #worksheet-print-mode, #worksheet-op-min, #worksheet-op-max').forEach((node) => {
+    document.querySelectorAll('#worksheet-mode, #worksheet-band, #worksheet-count, #worksheet-flow-mode, #worksheet-submode').forEach((node) => {
+      node.addEventListener('change', () => {
+        syncPresetSelection(null);
+        rotateWorksheetSeed();
+        renderSheet();
+      });
+    });
+    document.querySelectorAll('#worksheet-style, #worksheet-orientation, #worksheet-print-mode').forEach((node) => {
       node.addEventListener('change', () => {
         syncPresetSelection(null);
         renderSheet();
@@ -1358,6 +1603,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         if (byId('worksheet-mode').value === 'fixed') {
           byId('worksheet-mode').value = 'dynamic';
         }
+        rotateWorksheetSeed();
         renderSheet();
       });
     });

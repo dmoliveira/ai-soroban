@@ -9,6 +9,7 @@ import {
   createWorksheetFamilyConfig,
   evaluateWorksheetFamilyOperands,
   formatWorksheetFamilyQuestion,
+  worksheetSkillForQuestion,
   worksheetFamilyBandForIndex,
 } from '../src/lib/worksheet.js';
 
@@ -46,6 +47,19 @@ test('worksheet family config normalizes bounds and rejects unsupported v1 input
   assert.throws(() => createWorksheetFamilyConfig(baseConfig({ digitBand: '0-7' })), /1-6 digits/);
   assert.throws(() => createWorksheetFamilyConfig(baseConfig({ maxOperations: 5 })), /within 1-4/);
   assert.throws(() => createWorksheetFamilyConfig(baseConfig({ ruleVersion: 2 })), /Unsupported worksheet family rule version/);
+});
+
+test('worksheet evidence skills use only canonical family and source mappings', () => {
+  assert.equal(worksheetSkillForQuestion({ family: 'complement', sourceFamily: 'addition' }), 'complements');
+  assert.equal(worksheetSkillForQuestion({ family: 'multiplication', sourceFamily: 'multiplication' }), 'multiplication');
+  assert.equal(worksheetSkillForQuestion({ family: 'division', sourceFamily: 'division' }), 'division');
+  assert.equal(worksheetSkillForQuestion({ family: 'anzan', sourceFamily: 'sequence' }), 'anzan');
+  assert.equal(worksheetSkillForQuestion({ family: 'arithmetic', sourceFamily: 'addition' }), 'addition');
+  assert.equal(worksheetSkillForQuestion({ family: 'arithmetic', sourceFamily: 'subtraction' }), 'subtraction');
+  assert.equal(worksheetSkillForQuestion({ family: 'arithmetic', sourceFamily: 'mixed' }), 'mixed-operations');
+  assert.equal(worksheetSkillForQuestion({ family: 'arithmetic', sourceFamily: 'sequence' }), 'mixed-operations');
+  assert.equal(worksheetSkillForQuestion({ family: 'unknown', sourceFamily: 'unknown' }), null);
+  assert.equal(worksheetSkillForQuestion(null), null);
 });
 
 test('worksheet family generation is deterministic per seed and fully certified', () => {
