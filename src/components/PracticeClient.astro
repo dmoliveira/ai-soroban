@@ -64,6 +64,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         <p class="eyebrow">Question</p>
         <h3 id="question-title">Choose a session to begin.</h3>
         <p id="question-prompt" class="muted">Curated lists follow the lessons; generated lists create replayable arithmetic practice.</p>
+        <p id="practice-question-status" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
         <div id="visual-mount" class="subtle-panel visual-stage" hidden></div>
         <div class="practice-empty-note" id="practice-empty-note">
           <strong>Recommended start</strong>
@@ -82,7 +83,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
             <button class="button button-secondary" id="reveal-steps">Reveal method</button>
             <button class="button button-secondary" id="next-question">Save and continue</button>
           </div>
-          <div id="feedback-panel" class="reveal-panel" hidden role="status" aria-live="polite" tabindex="-1"></div>
+          <div id="feedback-panel" class="reveal-panel" hidden role="status" aria-live="polite" aria-atomic="true" tabindex="-1"></div>
           <div id="session-complete-actions" class="button-row button-row-compact session-complete-actions" hidden>
             <button class="button button-secondary session-replay-current" id="session-replay-current">Replay this list</button>
             <button class="button session-start-fresh" id="session-start-fresh">Start fresh</button>
@@ -125,7 +126,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         </div>
       </div>
 
-      <div id="steps-panel" class="reveal-panel" hidden aria-live="polite"></div>
+      <div id="steps-panel" class="reveal-panel" hidden></div>
       <div id="recovery-panel" class="subtle-panel practice-recovery-panel" hidden>
         <p class="eyebrow">Recovery mode</p>
         <strong id="recovery-title">Repair the pattern calmly</strong>
@@ -1108,6 +1109,14 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     });
   };
 
+  const announceCurrentQuestion = (outcome = '') => {
+    const status = byId('practice-question-status');
+    if (!status || !currentSession || currentSession.completed || currentSession.format === 'sheet') return;
+    const question = currentSession.questions[currentSession.currentIndex];
+    const nextQuestion = `Question ${currentSession.currentIndex + 1} of ${currentSession.questions.length}: ${question.title}. ${question.prompt}`;
+    status.textContent = outcome ? `${outcome} Next: ${nextQuestion}` : nextQuestion;
+  };
+
   const applyWriteCellShortcut = (event) => {
     const input = event.currentTarget;
     if (!(input instanceof HTMLInputElement) || event.metaKey || event.ctrlKey || event.altKey) return false;
@@ -1278,7 +1287,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   const verificationFeedback = (response, question) => {
     if (currentSession?.challengeKey) {
       const evidence = summarizeAttemptEvidence(response.evidence);
-      const saveNote = response.persistenceFailed ? ' This result is available in this tab but was not saved to Progress.' : '';
+      const saveNote = response.persistenceFailed ? ' This result remains available in this tab, but some progress data could not be saved.' : '';
       if (response.correct && evidence.qualified && evidence.firstCheckCorrect) {
         const reviewNote = response.revealedSteps || response.revealedFinal ? ' Review opened after the scored first check.' : '';
         return `Correct on the first check. This counts toward the challenge target.${reviewNote}${saveNote}`;
@@ -1289,14 +1298,48 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       if (evidence.qualified && evidence.checks === 1) return `First check missed. A correction can build skill, but it will not count toward the first-check target.${saveNote}`;
       return `Not correct yet. Keep repairing the answer; first-check credit is no longer available for this question.${saveNote}`;
     }
-    const saveNote = response.persistenceFailed ? ' This result is available in this tab but was not saved to Progress.' : '';
-    if (response.correct && !response.revealedFinal && !response.revealedSteps) return `Correct. Keep your hands calm and move to the next question when ready.${saveNote}`;
-    if (response.revealedSteps) return `Final number: ${question.answer}. The full step method is open below.${saveNote}`;
-    if (response.revealedFinal) return `Final number: ${question.answer}. Use this when you only want a quick result check.${saveNote}`;
-    return `Not correct yet. You can try again, reveal the final number, or open the steps.${saveNote}`;
+    const evidence = summarizeAttemptEvidence(response.evidence);
+    const saveNote = response.persistenceFailed ? ' This result remains available in this tab, but some progress data could not be saved.' : '';
+    const reviewNote = response.reviewedStepsAfterCheck
+      ? ` Answer: ${question.answer}. The full step method is open below.`
+      : response.reviewedFinalAfterCheck
+        ? ` Answer: ${question.answer}.`
+        : '';
+    const withOutcomeNotes = (copy) => `${copy}${reviewNote}${saveNote}`;
+    const assistanceUsed = evidence.assisted || response.revealedFinal || response.revealedSteps || response.recoveryUsed;
+    const activityOnly = response.evidence?.eligibility === 'activity-only';
+    if (response.correct && evidence.qualified && evidence.firstCheckCorrect) {
+      const laterReviewNote = assistanceUsed ? ' Later review did not remove that first-check evidence.' : '';
+      return withOutcomeNotes(`Correct on first check. This counts as unassisted first-check evidence.${laterReviewNote}`);
+    }
+    if (response.correct && evidence.checks === 1 && evidence.firstCheckCorrect && !assistanceUsed && response.persistenceFailed) {
+      return withOutcomeNotes('Correct on first check in this tab. Retained first-check evidence could not be confirmed.');
+    }
+    if (response.correct && assistanceUsed) {
+      const missNote = evidence.checks && !evidence.firstCheckCorrect ? ' The original first check remains a miss.' : '';
+      return withOutcomeNotes(`Correct now after assistance.${missNote} This correction remains activity, not first-check evidence.`);
+    }
+    if (response.correct && evidence.checks > 1 && !evidence.firstCheckCorrect) {
+      return withOutcomeNotes('Correct now, but the first check was missed. This correction remains activity and does not replace the first result.');
+    }
+    if (response.correct && activityOnly) {
+      return withOutcomeNotes('Correct now. This repeated item remains activity and does not add first-check evidence.');
+    }
+    if (response.correct) {
+      return withOutcomeNotes('Correct now. This result remains activity rather than retained first-check evidence.');
+    }
+    if (response.revealedSteps) return withOutcomeNotes(`Method revealed. The answer is ${question.answer}; this remains assisted activity, not first-check evidence.`);
+    if (response.revealedFinal) return withOutcomeNotes(`Answer revealed: ${question.answer}. This remains assisted activity, not first-check evidence.`);
+    if (evidence.checks === 1 && !evidence.firstCheckCorrect && !assistanceUsed) {
+      const evidenceNote = evidence.qualified
+        ? 'A correction can build skill, but it will not replace this first-check result.'
+        : 'This repeated or unsaved check remains activity rather than retained first-check evidence.';
+      return withOutcomeNotes(`First check missed. ${evidenceNote}`);
+    }
+    return withOutcomeNotes('Not correct yet. Keep repairing the answer; this retry remains activity.');
   };
 
-  const verifyCurrentAnswer = () => {
+  const verifyCurrentAnswer = ({ renderResult = true } = {}) => {
     if (!currentSession || currentSession.completed) return false;
     const question = currentSession.questions[currentSession.currentIndex];
     const currentResponse = responseForCurrent();
@@ -1335,12 +1378,11 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
     if (correct && (currentSession.checkMode === 'final' || currentSession.checkMode === 'steps')) {
       updateCurrentResponse({ reviewedFinalAfterCheck: true });
-      feedback.textContent += ` Answer: ${question.answer}.`;
     }
     if (correct && currentSession.checkMode === 'steps') {
       updateCurrentResponse({ reviewedStepsAfterCheck: true });
     }
-    renderSession();
+    if (renderResult || !correct) renderSession();
     return correct;
   };
 
@@ -1480,6 +1522,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     const sheetCompleteActions = byId('sheet-session-complete-actions');
     const questionTitle = byId('question-title');
     const questionPrompt = byId('question-prompt');
+    const questionStatus = byId('practice-question-status');
     const questionLedger = byId('question-ledger');
     const answerInput = byId('answer-input');
     const singleFeedback = byId('feedback-panel');
@@ -1524,6 +1567,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       if (challengeCopy) challengeCopy.textContent = '—';
       questionTitle.textContent = 'Choose a session to begin.';
       questionPrompt.textContent = 'Curated lists follow the lessons; generated lists create replayable arithmetic practice.';
+      questionStatus.textContent = '';
       questionLedger.hidden = true;
       questionLedger.textContent = '';
       answerInput.value = '';
@@ -1579,6 +1623,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       : response.recoveryMode && response.recoveryPrompt
         ? response.recoveryPrompt
         : question.prompt;
+    if (currentSession.completed) questionStatus.textContent = '';
     questionLedger.hidden = !question.promptLines?.length || currentSession.completed;
     questionLedger.textContent = question.promptLines?.join('\n') || '';
     answerInput.value = response.input || '';
@@ -1718,6 +1763,29 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     });
   };
 
+  const advanceCurrentQuestion = ({ announcementPrefix = '' } = {}) => {
+    if (!currentSession || currentSession.completed) return false;
+    stopTimer();
+    const currentResponse = responseForCurrent();
+    const input = byId('answer-input').value.trim();
+    updateCurrentResponse({
+      input,
+      verified: currentResponse.verified || input !== '',
+      correct: currentResponse.correct || false,
+    });
+    if (currentSession.currentIndex < currentSession.questions.length - 1) {
+      syncExerciseProgress();
+      currentSession.currentIndex += 1;
+      renderSession();
+      focusCurrentQuestion();
+      announceCurrentQuestion(announcementPrefix);
+      return true;
+    }
+    syncExerciseProgress();
+    completeCurrentSession({ message: 'Session complete.' });
+    return false;
+  };
+
   byId('start-session')?.addEventListener('click', () => {
     stopTimer();
     try {
@@ -1809,7 +1877,10 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     if (applyWriteCellShortcut(event)) return;
     if (event.key !== 'Enter') return;
     event.preventDefault();
-    if (verifyCurrentAnswer()) byId('next-question')?.click();
+    const question = currentSession?.questions?.[currentSession.currentIndex];
+    if (verifyCurrentAnswer({ renderResult: false }) && question) {
+      advanceCurrentQuestion({ announcementPrefix: verificationFeedback(responseForCurrent(), question) });
+    }
   });
 
   byId('reveal-final')?.addEventListener('click', () => {
@@ -1856,25 +1927,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     byId('reveal-steps')?.click();
   });
 
-  byId('next-question')?.addEventListener('click', () => {
-    if (!currentSession || currentSession.completed) return;
-    stopTimer();
-    const currentResponse = responseForCurrent();
-    const input = byId('answer-input').value.trim();
-    updateCurrentResponse({
-      input,
-      verified: currentResponse.verified || input !== '',
-      correct: currentResponse.correct || false,
-    });
-    if (currentSession.currentIndex < currentSession.questions.length - 1) {
-      syncExerciseProgress();
-      currentSession.currentIndex += 1;
-      renderSession();
-      return;
-    }
-    syncExerciseProgress();
-    completeCurrentSession({ message: 'Session complete.' });
-  });
+  byId('next-question')?.addEventListener('click', () => advanceCurrentQuestion());
   document.querySelectorAll('.session-replay-current').forEach((button) => button.addEventListener('click', () => {
     if (!currentSession) return;
     replaySession(currentSession);

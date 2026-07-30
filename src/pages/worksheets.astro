@@ -751,7 +751,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     const selectedFamilies = () => Array.from(document.querySelectorAll('input[name="worksheet-family"]:checked')).map((node) => node.value);
     const setMetric = (id, value) => { byId(id).textContent = String(value); };
 
-    const renderVerticalPrompt = (prompt) => {
+    const renderVerticalPrompt = (prompt, promptId) => {
       const tokens = prompt.split(' ');
       const rows = [];
       for (let i = 0; i < tokens.length; i += 2) {
@@ -760,7 +760,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         rows.push(`<div class="v-arith-row"><span class="v-arith-op">${operator}</span><span class="v-arith-value">${value}</span></div>`);
       }
       rows.push('<div class="v-arith-line"></div>');
-      return `<div class="v-arith-block">${rows.join('')}</div>`;
+      return `<div class="v-arith-block" id="${promptId}">${rows.join('')}</div>`;
     };
 
     const readOperationRange = () => {
@@ -1153,6 +1153,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
     const renderSheet = () => {
       const questions = buildQuestions();
+      byId('worksheet-save-status').textContent = '';
       const nextWorksheetSessionId = `ws-${questions[0]?.id || activeWorksheetSeed}`;
       if (evidenceSessionId !== nextWorksheetSessionId) {
         resetWorksheetAttemptState();
@@ -1182,13 +1183,14 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
           questions.slice(c * perColumn, (c + 1) * perColumn).forEach((question, index) => {
             const absoluteIndex = c * perColumn + index;
             const prompt = formatWorksheetFamilyQuestion(question);
+            const promptId = `worksheet-prompt-${absoluteIndex + 1}`;
             const row = document.createElement('article');
             row.className = 'vertical-drill-row';
             row.innerHTML = `
               <span class="ledger-no">${absoluteIndex + 1}</span>
-              ${renderVerticalPrompt(prompt)}
-              <div class="worksheet-answer-block"><span class="worksheet-answer-label">Answer</span><input class="input worksheet-input vertical-input" data-prompt="${prompt}" data-answer="${question.answer}" data-question-id="${question.id}" data-family="${question.family}" type="text" inputmode="numeric" placeholder="Write" /></div>
-              <small id="worksheet-feedback-${absoluteIndex + 1}" class="worksheet-feedback vertical-feedback" aria-live="polite"></small>
+              ${renderVerticalPrompt(prompt, promptId)}
+              <div class="worksheet-answer-block"><span class="worksheet-answer-label">Answer</span><input class="input worksheet-input vertical-input" data-prompt="${prompt}" data-answer="${question.answer}" data-question-id="${question.id}" data-family="${question.family}" type="text" inputmode="numeric" placeholder="Write" aria-describedby="${promptId}" /></div>
+              <small id="worksheet-feedback-${absoluteIndex + 1}" class="worksheet-feedback vertical-feedback"></small>
               <div class="worksheet-row-actions"><button type="button" class="mini-action" data-row-action="check" aria-label="Check worksheet question ${absoluteIndex + 1}" aria-controls="worksheet-feedback-${absoluteIndex + 1}">Check</button><button type="button" class="mini-action" data-row-action="reveal" aria-label="Reveal answer for worksheet question ${absoluteIndex + 1}" aria-controls="worksheet-feedback-${absoluteIndex + 1}">Reveal</button></div>
             `;
             row.querySelector('.worksheet-input')?.setAttribute('aria-label', `Answer for worksheet question ${absoluteIndex + 1}`);
@@ -1199,13 +1201,14 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       } else {
         questions.forEach((question, index) => {
           const prompt = formatWorksheetFamilyQuestion(question);
+          const promptId = `worksheet-prompt-${index + 1}`;
           const row = document.createElement('article');
           row.className = 'ledger-row worksheet-row';
           row.innerHTML = `
             <span class="ledger-no">${index + 1}</span>
-            <span class="worksheet-prompt ledger-prompt">${prompt}</span>
-            <div class="worksheet-answer-block"><span class="worksheet-answer-label">Answer</span><input class="input worksheet-input ledger-input" data-prompt="${prompt}" data-answer="${question.answer}" data-question-id="${question.id}" data-family="${question.family}" type="text" inputmode="numeric" placeholder="Write" /></div>
-            <small id="worksheet-feedback-${index + 1}" class="worksheet-feedback ledger-feedback" aria-live="polite"></small>
+            <span class="worksheet-prompt ledger-prompt" id="${promptId}">${prompt}</span>
+            <div class="worksheet-answer-block"><span class="worksheet-answer-label">Answer</span><input class="input worksheet-input ledger-input" data-prompt="${prompt}" data-answer="${question.answer}" data-question-id="${question.id}" data-family="${question.family}" type="text" inputmode="numeric" placeholder="Write" aria-describedby="${promptId}" /></div>
+            <small id="worksheet-feedback-${index + 1}" class="worksheet-feedback ledger-feedback"></small>
             <div class="worksheet-row-actions"><button type="button" class="mini-action" data-row-action="check" aria-label="Check worksheet question ${index + 1}" aria-controls="worksheet-feedback-${index + 1}">Check</button><button type="button" class="mini-action" data-row-action="reveal" aria-label="Reveal answer for worksheet question ${index + 1}" aria-controls="worksheet-feedback-${index + 1}">Reveal</button></div>
           `;
           row.querySelector('.worksheet-input')?.setAttribute('aria-label', `Answer for worksheet question ${index + 1}`);
@@ -1345,24 +1348,37 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       return { qualified: qualified.length, correct, activityOnly };
     };
 
-    const reportWorksheetPersistence = ({ evidenceResults = [], activitySaved, interacted = true } = {}) => {
+    const firstCheckStatusCopy = ({ qualified, correct, activityOnly }) => {
+      const evidenceCopy = qualified
+        ? `First-check evidence: ${correct} of ${qualified} unassisted first checks correct.`
+        : 'First-check evidence: no unassisted first checks saved for this sheet.';
+      if (!activityOnly) return evidenceCopy;
+      return `${evidenceCopy} ${activityOnly} assisted or repeated row${activityOnly === 1 ? '' : 's'} ${activityOnly === 1 ? 'remains' : 'remain'} activity only.`;
+    };
+
+    const reportWorksheetPersistence = ({ evidenceResults = [], activitySaved, interacted = true, actionCopy = '' } = {}) => {
       const status = byId('worksheet-save-status');
       const unavailable = evidenceResults.some((result) => result.unavailable);
       const evidenceSaved = evidenceResults.every((result) => result.saved);
-      if (!interacted) return;
+      if (!interacted) {
+        status.textContent = actionCopy;
+        return;
+      }
+      let persistenceCopy;
       if (unavailable) {
-        status.textContent = activitySaved
+        persistenceCopy = activitySaved
           ? 'Checked activity saved, but one row had no supported first-check evidence rule.'
           : 'This activity remains in this tab, and one row had no supported first-check evidence rule.';
       } else if (evidenceSaved && activitySaved) {
-        status.textContent = 'Worksheet activity and evidence history saved in this browser.';
+        persistenceCopy = 'Worksheet activity and evidence history saved in this browser.';
       } else if (!evidenceSaved && activitySaved) {
-        status.textContent = 'Checked activity saved, but first-check evidence could not be saved to Progress.';
+        persistenceCopy = 'Checked activity saved, but first-check evidence could not be saved to Progress.';
       } else if (evidenceSaved && !activitySaved) {
-        status.textContent = 'Evidence history saved, but the worksheet activity summary remains only in this tab.';
+        persistenceCopy = 'Evidence history saved, but the worksheet activity summary remains only in this tab.';
       } else {
-        status.textContent = 'This worksheet activity and evidence remain only in this tab; Progress was not updated.';
+        persistenceCopy = 'This worksheet activity and evidence remain only in this tab; Progress was not updated.';
       }
+      status.textContent = [actionCopy, persistenceCopy].filter(Boolean).join(' ');
     };
 
     const checkFeedbackText = (result, isCorrect) => {
@@ -1437,11 +1453,19 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
             ? null
             : 'No filled rows checked. Blank rows were skipped.';
       const activity = syncWorksheetActivity({ copy: revealCopy });
-      renderFirstCheckEvidence();
+      const firstCheck = renderFirstCheckEvidence();
+      const actionCopy = answerKeyMode
+        ? `Teacher answer key opened for ${revealedRows} rows. Reveals remain activity. ${firstCheckStatusCopy(firstCheck)}`
+        : reveal
+          ? `${revealCopy} ${firstCheckStatusCopy(firstCheck)}`
+          : checkedRows
+            ? `Checked ${checkedRows} filled row${checkedRows === 1 ? '' : 's'}. Current checked result: ${activity.metrics.correct} of ${activity.metrics.answered} correct now. ${firstCheckStatusCopy(firstCheck)}`
+            : `${revealCopy} ${firstCheckStatusCopy(firstCheck)}`;
       reportWorksheetPersistence({
         evidenceResults,
         activitySaved: activity.activitySaved,
         interacted: checkedRows > 0 || revealedRows > 0,
+        actionCopy,
       });
     };
 
@@ -1468,11 +1492,13 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       const expected = Number(input.dataset.answer);
       const value = input.value.trim();
       const question = questionForInput(input);
+      const questionNumber = Array.from(document.querySelectorAll('.worksheet-input')).indexOf(input) + 1;
       if (!value && !reveal) {
         feedback.textContent = 'Write first';
         setFeedbackClass(feedback, 'needs-work');
         row.classList.remove('row-ok', 'row-needs-work', 'row-revealed');
         row.classList.add('row-needs-work');
+        byId('worksheet-save-status').textContent = `Question ${questionNumber}: write your answer first. No worksheet evidence was recorded.`;
         return false;
       }
       const isCorrect = Number(value) === expected;
@@ -1492,8 +1518,12 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       const activity = syncWorksheetActivity({
         copy: reveal ? 'One row answer was revealed. Checked result is unchanged.' : null,
       });
-      renderFirstCheckEvidence();
-      reportWorksheetPersistence({ evidenceResults: [result], activitySaved: activity.activitySaved });
+      const firstCheck = renderFirstCheckEvidence();
+      reportWorksheetPersistence({
+        evidenceResults: [result],
+        activitySaved: activity.activitySaved,
+        actionCopy: `Question ${questionNumber}: ${feedback.textContent}. ${firstCheckStatusCopy(firstCheck)}`,
+      });
       return !reveal && isCorrect;
     };
 

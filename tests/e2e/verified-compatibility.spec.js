@@ -66,8 +66,9 @@ test('equivalent exercise wording passes while assistance remains outside master
 test('practice reveals preserve correction accuracy but cannot create first-check evidence', async ({ page }) => {
   await page.goto('practice?level=L0&skill=abacus-orientation&start=1');
   await page.locator('#reveal-final').click();
+  await expect(page.locator('#feedback-panel')).toContainText('assisted activity, not first-check evidence');
   const feedback = await page.locator('#feedback-panel').textContent();
-  const answer = feedback.match(/Final number:\s*(-?\d+)/)?.[1];
+  const answer = feedback.match(/Answer revealed:\s*(-?\d+)/)?.[1];
   expect(answer).toBeTruthy();
   await page.locator('#answer-input').fill(answer);
   await page.locator('#verify-answer').click();

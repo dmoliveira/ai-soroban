@@ -450,13 +450,21 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     byId('reveal-daily-answers').disabled = !hasRows;
   };
 
+  const markDailyAnswerRevealed = (button) => {
+    button.setAttribute('aria-expanded', 'true');
+    button.setAttribute('aria-label', button.getAttribute('aria-label')?.replace(/^Reveal answer/, 'Answer revealed') || 'Answer revealed');
+    button.textContent = 'Answer revealed';
+  };
+
   const revealAnswers = () => {
-    document.querySelectorAll('.daily-answer').forEach((node) => {
+    const answers = Array.from(document.querySelectorAll('.daily-answer'));
+    answers.forEach((node) => {
       node.hidden = false;
     });
     document.querySelectorAll('.daily-reveal-answer').forEach((button) => {
-      button.hidden = true;
+      markDailyAnswerRevealed(button);
     });
+    byId('daily-generate-status').textContent = `All ${answers.length} answers revealed.`;
   };
 
   const initialLevel = dailyDefault.level;
@@ -512,6 +520,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       reveal.type = 'button';
       reveal.textContent = 'Reveal answer';
       reveal.setAttribute('aria-label', `Reveal answer for drill ${index + 1}: ${item.prompt}`);
+      reveal.setAttribute('aria-expanded', 'false');
       const answer = document.createElement('div');
       answer.className = 'muted small daily-answer';
       answer.id = `daily-answer-${index + 1}`;
@@ -520,7 +529,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       reveal.setAttribute('aria-controls', answer.id);
       reveal.addEventListener('click', () => {
         answer.hidden = false;
-        reveal.hidden = true;
+        markDailyAnswerRevealed(reveal);
+        byId('daily-generate-status').textContent = `Drill ${index + 1} answer revealed: ${item.answer}.`;
       });
       li.append(strong, reveal, answer);
       list.appendChild(li);

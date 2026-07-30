@@ -50,6 +50,18 @@ test('practice Enter verifies and advances on correct answer', async ({ page }) 
   await page.locator('#answer-input').press('Enter');
 
   await expect(page.locator('#session-progress')).toContainText('Question 2 / 5');
+  await expect(page.locator('#answer-input')).toBeFocused();
+  await expect(page.locator('#practice-question-status')).toContainText('Correct on first check');
+  await expect(page.locator('#practice-question-status')).toContainText('Next: Question 2 of 5');
+  await expect(page.locator('#feedback-panel')).toBeHidden();
+  await expect(page.locator('#steps-panel')).not.toHaveAttribute('aria-live', /.+/);
+
+  const secondPrompt = await page.locator('#question-prompt').textContent();
+  await page.locator('#answer-input').fill(String(solvePracticePrompt(secondPrompt ?? '') + 1));
+  await page.locator('#answer-input').press('Enter');
+  await expect(page.locator('#session-progress')).toContainText('Question 2 / 5');
+  await expect(page.locator('#answer-input')).toBeFocused();
+  await expect(page.locator('#feedback-panel')).toContainText('First check missed');
 });
 
 test('explicit foundations intent launches a focused session immediately', async ({ page }) => {
