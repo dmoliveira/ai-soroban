@@ -700,6 +700,93 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     const worksheetEvidenceByItem = new Map();
     const worksheetEvidenceSavedByItem = new Map();
     const worksheetActivityByItem = new Map();
+    const worksheetRowStates = ['row-ok', 'row-needs-work', 'row-revealed'];
+    const worksheetFeedbackStates = ['ok', 'needs-work', 'revealed'];
+    const worksheetRowForInput = (input) => input?.closest('.ledger-row, .vertical-drill-row') || null;
+    const captureWorksheetLiveState = () => {
+      const activeElement = document.activeElement;
+      let focus = null;
+      if (activeElement instanceof HTMLElement && table.contains(activeElement)) {
+        const row = activeElement.closest('.ledger-row, .vertical-drill-row');
+        const input = row?.querySelector('.worksheet-input');
+        const questionId = input?.dataset.questionId || null;
+        if (questionId && activeElement instanceof HTMLInputElement && activeElement.classList.contains('worksheet-input')) {
+          focus = {
+            questionId,
+            kind: 'input',
+            selectionStart: activeElement.selectionStart,
+            selectionEnd: activeElement.selectionEnd,
+          };
+        } else if (questionId && activeElement.matches('[data-row-action]')) {
+          focus = {
+            questionId,
+            kind: 'action',
+            action: activeElement.dataset.rowAction || null,
+          };
+        }
+      }
+      return {
+        sessionId: currentWorksheetSessionId,
+        statusCopy: byId('worksheet-save-status')?.textContent || '',
+        scoreCopy: scoreCopy?.textContent || '',
+        focus,
+        rows: Array.from(table.querySelectorAll('.worksheet-input')).map((input) => {
+          const row = worksheetRowForInput(input);
+          const feedback = row?.querySelector('.worksheet-feedback');
+          return {
+            questionId: input.dataset.questionId || null,
+            value: input.value,
+            feedbackCopy: feedback?.textContent || '',
+            feedbackState: worksheetFeedbackStates.find((state) => feedback?.classList.contains(state)) || '',
+            rowState: worksheetRowStates.find((state) => row?.classList.contains(state)) || '',
+          };
+        }).filter((entry) => entry.questionId),
+      };
+    };
+    const restoreWorksheetLiveState = (snapshot) => {
+      if (!snapshot) return;
+      const inputs = Array.from(table.querySelectorAll('.worksheet-input'));
+      const inputsByQuestion = new Map(inputs.map((input) => [input.dataset.questionId, input]));
+      snapshot.rows.forEach((entry) => {
+        const input = inputsByQuestion.get(entry.questionId);
+        if (!(input instanceof HTMLInputElement)) return;
+        const row = worksheetRowForInput(input);
+        const feedback = row?.querySelector('.worksheet-feedback');
+        input.value = entry.value;
+        if (feedback) {
+          feedback.textContent = entry.feedbackCopy;
+          setFeedbackClass(feedback, entry.feedbackState);
+        }
+        if (row) {
+          row.classList.remove(...worksheetRowStates);
+          if (entry.rowState) row.classList.add(entry.rowState);
+        }
+      });
+      byId('worksheet-save-status').textContent = snapshot.statusCopy;
+      scoreCopy.textContent = snapshot.scoreCopy;
+      const focus = snapshot.focus;
+      if (!focus) return;
+      const input = inputsByQuestion.get(focus.questionId);
+      if (!(input instanceof HTMLInputElement)) return;
+      const row = worksheetRowForInput(input);
+      const target = focus.kind === 'input'
+        ? input
+        : row?.querySelector(`[data-row-action="${focus.action}"]`);
+      if (!(target instanceof HTMLElement)) return;
+      target.focus({ preventScroll: true });
+      if (focus.kind === 'input' && Number.isInteger(focus.selectionStart) && Number.isInteger(focus.selectionEnd)) {
+        input.setSelectionRange(focus.selectionStart, focus.selectionEnd);
+      }
+    };
+    const resetWorksheetTimer = () => {
+      window.clearInterval(worksheetTimerInterval);
+      worksheetTimerInterval = null;
+      worksheetTimerStartedAt = null;
+      const toggle = byId('worksheet-timer-toggle');
+      if (toggle) toggle.textContent = 'Start timer';
+      const metric = byId('worksheet-time');
+      if (metric) metric.textContent = '0s';
+    };
     const resetWorksheetAttemptState = () => {
       worksheetQuestionsById.clear();
       worksheetEvidenceByItem.clear();
@@ -720,6 +807,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       ].join(':');
       worksheetQuestionCache.clear();
       resetWorksheetAttemptState();
+      resetWorksheetTimer();
     };
     const audioWindow = typeof window !== 'undefined' ? /** @type {any} */ (window) : null;
     const AudioContextCtor = audioWindow
@@ -1151,10 +1239,12 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       return questions;
     };
 
-    const renderSheet = () => {
+    const renderSheet = ({ revealAnswerKey = false } = {}) => {
+      const liveState = captureWorksheetLiveState();
       const questions = buildQuestions();
-      byId('worksheet-save-status').textContent = '';
       const nextWorksheetSessionId = `ws-${questions[0]?.id || activeWorksheetSeed}`;
+      const sameWorksheetSession = Boolean(liveState.sessionId && liveState.sessionId === nextWorksheetSessionId);
+      if (!sameWorksheetSession) byId('worksheet-save-status').textContent = '';
       if (evidenceSessionId !== nextWorksheetSessionId) {
         resetWorksheetAttemptState();
         evidenceSessionId = nextWorksheetSessionId;
@@ -1277,12 +1367,15 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         copy: adaptiveMode && worksheetActivityByItem.size === 0
           ? 'No rows checked yet. Adaptive focus follows the retained review basis shown above.'
           : null,
+        persist: !sameWorksheetSession,
       });
       renderFirstCheckEvidence();
-      if (!initialActivity.activitySaved && compatibility.writable === true) {
+      if (!sameWorksheetSession && !initialActivity.activitySaved && compatibility.writable === true) {
         byId('worksheet-save-status').textContent = 'This worksheet remains in this tab, but its activity summary was not saved to Progress.';
       }
-      if (teacherMode || byId('worksheet-print-mode').value === 'answer-key') scoreSheet(true);
+      if (sameWorksheetSession) restoreWorksheetLiveState(liveState);
+      const answerKeyMode = teacherMode || byId('worksheet-print-mode').value === 'answer-key';
+      if (revealAnswerKey || (!sameWorksheetSession && answerKeyMode)) scoreSheet(true);
     };
 
     const setFeedbackClass = (feedback, state = '') => {
@@ -1303,7 +1396,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       };
     };
 
-    const syncWorksheetActivity = ({ copy = null } = {}) => {
+    const syncWorksheetActivity = ({ copy = null, persist = true } = {}) => {
       const metrics = checkedActivitySummary();
       setMetric('worksheet-answered', metrics.answered);
       setMetric('worksheet-correct', metrics.correct);
@@ -1325,7 +1418,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         celebration.hidden = true;
         celebration.classList.remove('celebrate');
       }
-      return { metrics, activitySaved: persistWorksheetSession(metrics) };
+      return { metrics, activitySaved: persist ? persistWorksheetSession(metrics) : true };
     };
 
     const renderFirstCheckEvidence = () => {
@@ -1573,13 +1666,13 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       byId('worksheet-style').value = 'teacher';
       byId('worksheet-print-mode').value = 'answer-key';
       setPrintMode();
-      renderSheet();
+      renderSheet({ revealAnswerKey: true });
     });
     byId('print-worksheet')?.addEventListener('click', () => {
       setPrintMode();
       if (byId('worksheet-print-mode').value === 'answer-key') {
         byId('worksheet-style').value = 'teacher';
-        renderSheet();
+        renderSheet({ revealAnswerKey: true });
       }
       window.print();
     });
@@ -1624,7 +1717,9 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     document.querySelectorAll('#worksheet-style, #worksheet-orientation, #worksheet-print-mode').forEach((node) => {
       node.addEventListener('change', () => {
         syncPresetSelection(null);
-        renderSheet();
+        const revealAnswerKey = (node.id === 'worksheet-style' && node.value === 'teacher')
+          || (node.id === 'worksheet-print-mode' && node.value === 'answer-key');
+        renderSheet({ revealAnswerKey });
       });
     });
     ['worksheet-op-min', 'worksheet-op-max'].forEach((id) => {
