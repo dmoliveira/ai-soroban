@@ -97,7 +97,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
             <strong>Quick path</strong>
             <div class="button-row button-row-compact">
               <button class="button button-secondary practice-preset" data-preset="practice">Focused practice preset</button>
-              <button class="button button-secondary practice-preset" data-preset="review">Review weak areas</button>
+              <button class="button button-secondary practice-preset" data-preset="review">Review current focus</button>
               <a class="button button-secondary" href={`${base}worksheets`}>Open worksheet</a>
             </div>
           </div>
@@ -311,7 +311,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
               <option value="visual-read">Visual bead read</option>
               <option value="visual-five">Clean five read</option>
               <option value="mental">Mental prompt</option>
-              <option value="adaptive">Adaptive weak-area</option>
+              <option value="adaptive">Adaptive review focus</option>
             </select>
           </label>
           <label class="stack-sm">
@@ -403,7 +403,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 <script>
   // @ts-nocheck
   import { CHALLENGE_DEFINITIONS, buildChallengeQuestions, canonicalizeChallengeSession, certifyChallengeQuestions, evaluateChallengeOutcome, formatChallengeOutcome, isChallengeSessionOpaque } from '../lib/challenges.js';
-  import { normalizeResumablePracticeSession } from '../lib/learner-continuity.js';
+  import { formatReviewBasis, normalizeResumablePracticeSession, normalizeViewablePracticeSession, readReviewProfile, resolveReviewFocus, resolveReviewTargetForLevel, targetForSkill } from '../lib/learner-continuity.js';
   import { appendEvidenceEvent, claimMasteryItem, createAttemptEvidence, masteryClaimOwnedBy, normalizeAttemptEvidence, normalizeMasterySeenIndex, summarizeAttemptEvidence, upsertAttemptEvidence } from '../lib/mastery.js';
   import { STORAGE_KEYS, normalizeStoredArray, normalizeStoredRecord, readStoredArray, readStoredJson, writeStoredJson } from '../lib/storage.js';
   import { ensureStorageCompatibility } from '../lib/storage-migrations.js';
@@ -499,21 +499,14 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     try { return normalizeStoredRecord(readStoredJson(localStorage, EXERCISE_STATE_KEY, {})); } catch { return {}; }
   };
   const writeExerciseStates = (state) => writeStoredJson(localStorage, EXERCISE_STATE_KEY, normalizeStoredRecord(state));
-  const readWeakAreas = () => {
-    const states = readExerciseStates();
-    return Object.values(states).reduce((acc, entry) => {
-      if (entry?.status !== 'needs-review') return acc;
-      const skill = entry.skill || '';
-      const level = entry.level || '';
-      const sessionId = entry.sessionId || '';
-      if (skill === 'anzan' || skill === 'mastery' || level === 'L5' || sessionId.includes('L5')) acc.mental += 1;
-      else if (skill === 'division') acc.division += 1;
-      else if (skill === 'multiplication' || level === 'L4' || sessionId.includes('L4')) acc.multiplication += 1;
-      else if (skill === 'complements' || level === 'L2' || sessionId.includes('L2')) acc.complements += 1;
-      else acc.arithmetic += 1;
-      return acc;
-    }, { arithmetic: 0, complements: 0, multiplication: 0, division: 0, mental: 0 });
-  };
+  const readAdaptiveReviewProfile = () => readReviewProfile(localStorage, readExerciseStates());
+  const snapshotReviewProfile = (profile) => ({
+    basis: profile?.basis || 'none',
+    focus: profile?.focus ? { ...profile.focus } : null,
+    total: Number(profile?.total || 0),
+    historyIncomplete: profile?.historyIncomplete === true,
+    missingClaimDetails: Number(profile?.missingClaimDetails || 0),
+  });
 
   const applyPracticeLevelDefaults = (level) => {
     const format = byId('session-format');
@@ -561,24 +554,26 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     }
   };
 
-  const describeAdaptivePractice = (level) => {
-    const weak = readWeakAreas();
-    if (level === 'L5' || weak.mental > Math.max(0, weak.arithmetic)) return 'Adaptive focus: mental / anzan recovery';
-    if ((weak.multiplication > weak.arithmetic || weak.division > weak.arithmetic) && level === 'L4') return 'Adaptive focus: multiplication / division repair';
-    if (weak.complements > weak.arithmetic && level === 'L2') return 'Adaptive focus: complements and balancing';
-    return 'Adaptive focus: arithmetic rhythm and accuracy';
+  const describeAdaptivePractice = (session) => {
+    const reviewProfile = session?.adaptiveReviewProfile || snapshotReviewProfile(readAdaptiveReviewProfile());
+    const selectedTarget = targetForSkill(session?.skill, session?.level)
+      || resolveReviewTargetForLevel(reviewProfile, session?.level)?.target;
+    const selectedCopy = selectedTarget
+      ? `${selectedTarget.skillLabel} at ${selectedTarget.level}.`
+      : `Level ${session?.level || 'unknown'} default.`;
+    return `${selectedCopy} ${formatReviewBasis(reviewProfile)}`;
   };
 
   const makeId = () => `dojo-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
   const simpleSlug = (value) => value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
   const pick = (rng, items) => items[Math.floor(rng() * items.length)];
 
-  const resolveAdaptiveStyle = (level, questionStyle) => {
+  const resolveAdaptiveStyle = (level, questionStyle, reviewProfile) => {
       if (questionStyle !== 'adaptive') return questionStyle;
-      const weak = readWeakAreas();
-      if (level === 'L5' || weak.mental > Math.max(0, weak.arithmetic)) return 'mental';
-      if (weak.multiplication > weak.arithmetic && level === 'L4') return 'mixed';
-      if (weak.complements > weak.arithmetic && level === 'L2') return 'mixed';
+      const reviewTarget = resolveReviewTargetForLevel(reviewProfile, level);
+      if (level === 'L5' || reviewTarget?.key === 'mental') return 'mental';
+      if (level === 'L4' || reviewTarget?.key === 'multiplication' || reviewTarget?.key === 'division') return 'mixed';
+      if (reviewTarget?.key === 'complements') return 'mixed';
       return 'visual';
     };
 
@@ -610,8 +605,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     return { ops, total };
   };
 
-  const buildGeneratedQuestion = (level, index, rng, questionStyle = 'mixed', termCount = 'auto', skill = null) => {
-    const effectiveStyle = resolveAdaptiveStyle(level, questionStyle);
+  const buildGeneratedQuestion = (level, index, rng, questionStyle = 'mixed', termCount = 'auto', skill = null, reviewProfile = null) => {
+    const effectiveStyle = resolveAdaptiveStyle(level, questionStyle, reviewProfile);
     const terms = resolveTermCount(level, termCount);
     if (level === 'L0') {
       if (effectiveStyle === 'visual-read') {
@@ -774,9 +769,9 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     });
   };
 
-  const buildGeneratedQuestions = (level, length, sessionId, questionStyle, termCount, skill = null) => {
+  const buildGeneratedQuestions = (level, length, sessionId, questionStyle, termCount, skill = null, reviewProfile = null) => {
     const rng = createRng(sessionId);
-    return Array.from({ length }, (_, index) => buildGeneratedQuestion(level, index, rng, questionStyle, termCount, skill));
+    return Array.from({ length }, (_, index) => buildGeneratedQuestion(level, index, rng, questionStyle, termCount, skill, reviewProfile));
   };
 
   const buildJourneyQuestions = (journeyKey, length, sessionId) => {
@@ -923,6 +918,13 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     byId('timer-mode').value = preset.timerMode;
     byId('question-style').value = preset.questionStyle;
     byId('term-count').value = preset.termCount;
+    if (key === 'review') {
+      const reviewFocus = resolveReviewFocus(readAdaptiveReviewProfile());
+      if (reviewFocus) {
+        byId('session-level').value = reviewFocus.target.level;
+        selectedSkillKey = reviewFocus.target.skill;
+      }
+    }
     syncPracticeSetupCopy();
   };
 
@@ -993,6 +995,9 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
   const createSession = ({ type, level, length, checkMode, timerEnabled, format, questionStyle, termCount, journeyKey, skill, challengeKey }) => {
     const sessionId = makeId();
+    const adaptiveProfile = questionStyle === 'adaptive' ? readAdaptiveReviewProfile() : null;
+    const adaptiveTarget = adaptiveProfile ? resolveReviewTargetForLevel(adaptiveProfile, level)?.target : null;
+    const resolvedSkill = skill || adaptiveTarget?.skill || null;
     const worksheetProfile = createWorksheetProfile({
       digitRange: byId('worksheet-digit-range')?.value,
       operationRange: byId('worksheet-operation-range')?.value,
@@ -1010,7 +1015,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
             ...question,
             progressKey: `generated-${simpleSlug(`${question.answer}-${question.id}`)}`,
         }))
-          : buildGeneratedQuestions(level, length, sessionId, questionStyle, termCount, skill);
+          : buildGeneratedQuestions(level, length, sessionId, questionStyle, termCount, resolvedSkill, adaptiveProfile);
     if (challenge) {
       const certification = certifyChallengeQuestions(challengeKey, questions);
       if (!certification.valid) throw new Error(`Challenge certification failed: ${certification.errors.join('; ')}`);
@@ -1028,7 +1033,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       termCount,
       journeyKey: journeyKey || null,
       journeyTitle: journeyKey ? journeys[journeyKey]?.title || null : null,
-      skill: skill || null,
+      skill: resolvedSkill,
+      adaptiveReviewProfile: adaptiveProfile ? snapshotReviewProfile(adaptiveProfile) : null,
       challengeKey: challengeKey || null,
       challengeTitle: challenge?.title || null,
       challengeTarget: challenge?.target || null,
@@ -1421,25 +1427,37 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
             : 'Lesson-aligned profile';
       const actions = document.createElement('div');
       actions.className = 'button-row';
+      const viewable = normalizeViewablePracticeSession(session);
+      const resumable = normalizeResumablePracticeSession(session);
+      const completedView = viewable?.completed === true;
       const resume = document.createElement('button');
       resume.className = 'button button-secondary';
-      resume.textContent = 'Resume';
-      resume.addEventListener('click', () => {
-        stopTimer();
-        currentSession = session;
-        syncControlsFromSession(session);
-        renderSession();
-        focusCurrentQuestion();
-      });
+      resume.textContent = completedView ? 'Review result' : 'Resume';
+      resume.setAttribute('aria-label', `${completedView ? 'Review result for' : 'Resume'} ${title.textContent} session ${session.id}`);
+      if (resumable || completedView) {
+        resume.addEventListener('click', () => {
+          stopTimer();
+          currentSession = resumable || viewable;
+          syncControlsFromSession(currentSession);
+          renderSession();
+          focusCurrentQuestion();
+        });
+      } else {
+        resume.disabled = true;
+        resume.textContent = 'Resume unavailable';
+        resume.setAttribute('aria-label', `Resume unavailable for ${title.textContent} session ${session.id}`);
+      }
       const replay = document.createElement('button');
       replay.className = 'button button-secondary';
       replay.textContent = 'Replay list';
-      replay.addEventListener('click', () => replaySession(session));
-      if (session.challengeUnavailable) {
-        resume.disabled = true;
+      replay.setAttribute('aria-label', `Replay ${title.textContent} session ${session.id}`);
+      if (viewable) replay.addEventListener('click', () => replaySession(viewable));
+      else {
         replay.disabled = true;
-        resume.textContent = 'Resume unavailable';
         replay.textContent = 'Replay unavailable';
+        replay.setAttribute('aria-label', `Replay unavailable for ${title.textContent} session ${session.id}`);
+      }
+      if (session.challengeUnavailable) {
         profile.textContent = 'Saved rule version is unsupported; record preserved without re-scoring.';
       }
       actions.append(resume, replay);
@@ -1535,10 +1553,10 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       ? (currentSession.challengeOutcome ? formatChallengeOutcome(currentSession.challengeOutcome) : currentSession.challengeTarget)
       : currentSession.journeyTitle
         ? `${currentSession.journeyTitle} path`
-        : currentSession.skill
-          ? `Focused skill: ${currentSession.skill.replace(/-/g, ' ')}`
-          : currentSession.questionStyle === 'adaptive'
-            ? describeAdaptivePractice(currentSession.level)
+        : currentSession.questionStyle === 'adaptive'
+          ? describeAdaptivePractice(currentSession)
+          : currentSession.skill
+            ? `Focused skill: ${currentSession.skill.replace(/-/g, ' ')}`
             : 'Standard session';
     profile.textContent = currentSession.challengeTitle
       ? `Rule: ${currentSession.challengeRule}`
@@ -1731,12 +1749,17 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
   byId('resume-latest')?.addEventListener('click', () => {
     stopTimer();
-    const latest = readSessions()[0];
-    if (!latest) return;
-    if (latest.challengeUnavailable) {
+    const candidate = readSessions()[0];
+    if (!candidate) return;
+    const latest = normalizeResumablePracticeSession(candidate);
+    if (!latest) {
       const feedback = feedbackForCurrent();
       feedback.hidden = false;
-      feedback.textContent = 'The latest saved challenge uses an unsupported rule version. Its record remains in history, but it cannot be resumed.';
+      feedback.textContent = candidate.challengeUnavailable
+        ? 'The latest saved challenge uses an unsupported rule version. Its record remains in history, but it cannot be resumed.'
+        : candidate.completed === true
+          ? 'The latest saved session is complete. Use saved sessions to review its result or replay the list.'
+          : 'The latest saved session is incomplete or malformed and cannot be resumed safely.';
       return;
     }
     currentSession = latest;
@@ -1756,16 +1779,21 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     stopTimer();
     const requestedId = byId('session-id-input').value.trim();
     if (!requestedId) return;
-    const match = readSessions().find((entry) => entry.id === requestedId);
+    const candidate = readSessions().find((entry) => entry.id === requestedId);
+    const match = normalizeResumablePracticeSession(candidate);
     const feedback = feedbackForCurrent();
-    if (!match) {
+    if (!candidate) {
       feedback.hidden = false;
       feedback.textContent = 'No saved session matched that ID on this device.';
       return;
     }
-    if (match.challengeUnavailable) {
+    if (!match) {
       feedback.hidden = false;
-      feedback.textContent = 'That saved challenge uses an unsupported rule version. Its record remains in history, but it cannot be resumed.';
+      feedback.textContent = candidate.challengeUnavailable
+        ? 'That saved challenge uses an unsupported rule version. Its record remains in history, but it cannot be resumed.'
+        : candidate.completed === true
+          ? 'That saved session is complete. Use saved sessions to review its result or replay the list.'
+          : 'That saved session is incomplete or malformed and cannot be resumed safely.';
       return;
     }
     currentSession = match;
@@ -1939,6 +1967,10 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   document.querySelectorAll('#session-format, #session-type, #session-level, #session-length, #check-mode, #question-style, #term-count, #timer-mode, #worksheet-digit-range, #worksheet-operation-range, #worksheet-operator-mode').forEach((node) => {
     node.addEventListener('change', () => {
       selectedChallengeKey = null;
+      if (node.id === 'session-level' && selectedSkillKey) {
+        const selectedTarget = targetForSkill(selectedSkillKey);
+        if (selectedTarget?.level !== node.value) selectedSkillKey = null;
+      }
       syncPracticeSetupCopy();
     });
   });
@@ -1970,10 +2002,17 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     }
   } else if (hasRequestedLevel) {
     applyPreset('practice');
-    selectedSkillKey = supportedSkills.has(requestedSkill) ? requestedSkill : null;
-    byId('session-level').value = requestedLevel;
-    applyPracticeLevelDefaults(requestedLevel);
+    const requestedTarget = supportedSkills.has(requestedSkill) ? targetForSkill(requestedSkill, requestedLevel) : null;
+    const normalizedLevel = requestedTarget?.level || requestedLevel;
+    selectedSkillKey = requestedTarget?.skill || null;
+    byId('session-level').value = normalizedLevel;
+    applyPracticeLevelDefaults(normalizedLevel);
     byId('session-type').value = 'generated';
+    if (requestedTarget && (requestedLevel !== requestedTarget.level || requestedSkill !== requestedTarget.skill)) {
+      query.set('level', requestedTarget.level);
+      query.set('skill', requestedTarget.skill);
+      window.history.replaceState({}, '', `${window.location.pathname}?${query.toString()}`);
+    }
   } else {
     applyPracticeLevelDefaults(byId('session-level')?.value || 'L0');
   }

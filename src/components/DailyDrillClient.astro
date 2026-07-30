@@ -11,7 +11,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       <div>
         <p class="eyebrow">Daily drill pack · 日々の修練</p>
         <h1>Generate today’s focused set</h1>
-        <p id="daily-drill-copy" class="muted">This pack now adapts to weak areas and unfinished weekly-plan steps so today’s work stays practical.</p>
+        <p id="daily-drill-copy" class="muted">This pack uses retained first-check answers, saved review items, and a fresh weekly-plan step when one is available.</p>
       </div>
     </div>
     <div class="daily-drill-hero-stats">
@@ -48,6 +48,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         <button class="button button-secondary" id="print-daily-drill" disabled>Print pack</button>
         <button class="button button-secondary" id="reveal-daily-answers" disabled>Reveal answers</button>
       </div>
+      <p id="daily-generate-status" class="muted small" role="status" aria-live="polite" aria-atomic="true"></p>
     </div>
       <div class="subtle-panel daily-drill-summary-card">
         <strong>Session cue</strong>
@@ -155,7 +156,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
 <script>
   // @ts-nocheck
-  import { STORAGE_KEYS, firstIncompletePlanStep, readStoredJson } from '../lib/storage.js';
+  import { formatReviewBasis, readContinuitySnapshot, resolveFreshWeeklyPlan, resolveReviewBucket, resolveReviewFocus, resolveWeeklyPlanTarget } from '../lib/learner-continuity.js';
 
   const base = document.querySelector('.daily-drill-studio')?.dataset.base || '/';
 
@@ -176,26 +177,25 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     return copy;
   };
 
-  const planState = readStoredJson(localStorage, STORAGE_KEYS.weeklyStudyPlan, {});
-  const exerciseStates = readStoredJson(localStorage, STORAGE_KEYS.exerciseStates, {});
-  const weakness = Object.values(exerciseStates).reduce((acc, entry) => {
-    if (entry?.status !== 'needs-review') return acc;
-    const skill = entry.skill || '';
-    if (skill === 'division') acc.division += 1;
-    else if (skill === 'multiplication') acc.multiplication += 1;
-    else if (skill === 'complements') acc.complements += 1;
-    else if (skill === 'anzan' || skill === 'mastery') acc.mental += 1;
-    else acc.arithmetic += 1;
-    return acc;
-  }, { arithmetic: 0, complements: 0, multiplication: 0, division: 0, mental: 0 });
-  const weaknessTotal = Object.values(weakness).reduce((sum, count) => sum + count, 0);
-
-  const storedTarget = ['arithmetic', 'complements', 'multiplication', 'division', 'mental'].includes(planState.target)
-    ? planState.target
-    : null;
-  const defaultTarget = storedTarget || (weaknessTotal === 0
-    ? 'arithmetic'
-    : ['mental', 'division', 'multiplication', 'complements', 'arithmetic'].sort((a, b) => weakness[b] - weakness[a])[0]);
+  const continuity = readContinuitySnapshot(localStorage);
+  const reviewProfile = continuity.reviewProfile;
+  const reviewFocus = resolveReviewFocus(reviewProfile);
+  const freshWeeklyPlan = resolveFreshWeeklyPlan(continuity);
+  const planState = freshWeeklyPlan.plan;
+  const unfinishedStep = freshWeeklyPlan.step;
+  const hasFreshWeeklyPlan = Boolean(planState);
+  const dailyDefaultsByPlanTarget = {
+    foundations: { target: 'arithmetic', level: 'L0' },
+    beginner: { target: 'arithmetic', level: 'L1' },
+    arithmetic: { target: 'arithmetic', level: 'L3' },
+    complements: { target: 'complements', level: 'L2' },
+    multiplication: { target: 'multiplication', level: 'L4' },
+    division: { target: 'division', level: 'L4' },
+    mental: { target: 'mental', level: 'L5' },
+  };
+  const continuityTarget = planState?.planId || reviewFocus?.key || resolveWeeklyPlanTarget(continuity) || 'foundations';
+  const dailyDefault = dailyDefaultsByPlanTarget[continuityTarget] || dailyDefaultsByPlanTarget.foundations;
+  const defaultTarget = dailyDefault.target;
   const targetOptionsByLevel = {
     L0: ['arithmetic'],
     L1: ['arithmetic'],
@@ -404,7 +404,6 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   };
 
   const byId = (id) => document.getElementById(id);
-  const unfinishedStep = firstIncompletePlanStep(planState);
   const routeLabels = {
     lesson: 'lesson',
     exercise: 'exercise',
@@ -414,7 +413,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
   const resolveTargetForLevel = (level) => {
     const options = targetOptionsByLevel[level] || [defaultTarget];
-    return [...options].sort((a, b) => weakness[b] - weakness[a])[0] || options[0] || defaultTarget;
+    return resolveReviewBucket(reviewProfile, options) || options[0] || defaultTarget;
   };
 
   const resolvePack = () => {
@@ -460,7 +459,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     });
   };
 
-  const initialLevel = packs[defaultTarget]?.level || 'L3';
+  const initialLevel = dailyDefault.level;
   if (byId('daily-level')) {
     byId('daily-level').value = initialLevel;
   }
@@ -474,16 +473,22 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     byId('daily-pack-archetype').textContent = `Archetype: ${archetype.archetype}`;
     byId('daily-drill-focus').textContent = unfinishedStep
       ? `Adaptive focus: ${target} · First unfinished step: ${unfinishedStep}`
-      : `Adaptive focus: ${target} · Weekly plan complete`;
+      : hasFreshWeeklyPlan
+        ? `Adaptive focus: ${target} · Weekly plan complete`
+        : `Adaptive focus: ${target} · No fresh weekly plan`;
     byId('daily-guidance-title').textContent = archetype.title;
     byId('daily-guidance-copy').textContent = archetype.copy;
     byId('daily-guidance-primary-copy').textContent = unfinishedStep
       ? `Continue the unfinished ${routeLabels[unfinishedStep]} first, then use the alternates only if you still need more support.`
-      : 'Your weekly plan is complete. Use this drill as optional review, not as another required step.';
+      : hasFreshWeeklyPlan
+        ? 'Your weekly plan is complete. Use this drill as optional review, not as another required step.'
+        : 'No fresh weekly plan is linked. Start with the matched exercise, then use another route only if you need more support.';
     byId('daily-link-primary').href = primaryHref;
     byId('daily-link-primary').textContent = unfinishedStep
       ? `Continue unfinished ${routeLabels[unfinishedStep]}`
-      : 'Open optional exercise review';
+      : hasFreshWeeklyPlan
+        ? 'Open optional exercise review'
+        : 'Open matched exercise';
     byId('daily-link-lesson').href = content.lesson;
     byId('daily-link-exercise').href = content.exercise;
     byId('daily-link-worksheet').href = content.worksheet;
@@ -491,11 +496,14 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     byId('daily-link-exercise').textContent = unfinishedStep === 'exercise' ? 'Exercise route' : `Use the ${routeLabels.exercise} route`;
     byId('daily-link-worksheet').textContent = unfinishedStep === 'worksheet' ? 'Worksheet route' : `Use the ${routeLabels.worksheet} route`;
     byId('daily-drill-copy').textContent = unfinishedStep
-      ? `This pack is centered on ${target} work at ${selectedLevel} and starts by pointing you back to the unfinished ${unfinishedStep} step from your weekly plan. Try each prompt before revealing the answer.`
-      : `This optional ${target} pack at ${selectedLevel} keeps recent skills warm after a completed weekly plan. Try each prompt before revealing the answer.`;
+      ? `This pack is centered on ${target} work at ${selectedLevel} and starts with the unfinished ${unfinishedStep} step from your weekly plan. ${formatReviewBasis(reviewProfile)} Try each prompt before revealing the answer.`
+      : hasFreshWeeklyPlan
+        ? `This optional ${target} pack at ${selectedLevel} keeps current skills warm after a completed weekly plan. ${formatReviewBasis(reviewProfile)} Try each prompt before revealing the answer.`
+        : `This ${target} pack at ${selectedLevel} follows the current local review profile. ${formatReviewBasis(reviewProfile)} Try each prompt before revealing the answer.`;
     const list = byId('daily-drill-list');
     list.replaceChildren();
-    buildDailyItems(archetype, rng, selectedLevel).forEach((item, index) => {
+    const dailyItems = buildDailyItems(archetype, rng, selectedLevel);
+    dailyItems.forEach((item, index) => {
       const li = document.createElement('li');
       const strong = document.createElement('strong');
       strong.textContent = `${index + 1}. ${item.prompt}`;
@@ -503,10 +511,13 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       reveal.className = 'button button-secondary daily-reveal-answer';
       reveal.type = 'button';
       reveal.textContent = 'Reveal answer';
+      reveal.setAttribute('aria-label', `Reveal answer for drill ${index + 1}: ${item.prompt}`);
       const answer = document.createElement('div');
       answer.className = 'muted small daily-answer';
+      answer.id = `daily-answer-${index + 1}`;
       answer.textContent = `Answer: ${item.answer}`;
       answer.hidden = true;
+      reveal.setAttribute('aria-controls', answer.id);
       reveal.addEventListener('click', () => {
         answer.hidden = false;
         reveal.hidden = true;
@@ -514,6 +525,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       li.append(strong, reveal, answer);
       list.appendChild(li);
     });
+    byId('daily-generate-status').textContent = `Generated ${dailyItems.length} ${target} prompts for ${selectedLevel}.`;
     syncActionAvailability();
   };
 

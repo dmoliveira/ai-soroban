@@ -166,8 +166,7 @@ test('wrong-then-correct and revealed sheet answers do not satisfy challenge int
   await expect(inputs.first()).toBeDisabled();
 
   await page.reload();
-  await page.locator('.practice-setup-block > summary').click();
-  await page.locator('#resume-latest').click();
+  await page.locator('#history-list .session-card').first().getByRole('button', { name: /Review result for Challenge · Table ladder session/ }).click();
   await expect(page.locator('#session-title')).toContainText('Table ladder challenge');
   await expect(page.locator('#session-challenge-copy')).toContainText('Target not met yet');
 

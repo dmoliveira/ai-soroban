@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { installReviewState } from './review-state.js';
 
 const triggerShortcut = async (locator, key, code) => {
   await locator.dispatchEvent('keydown', { key, code, bubbles: true, cancelable: true });
@@ -74,10 +75,36 @@ test('history resume returns keyboard focus to the active question', async ({ pa
   await page.goto('practice?level=L0&skill=abacus-orientation&start=1');
   await page.reload();
 
-  await page.locator('#history-list .session-card').first().getByRole('button', { name: 'Resume', exact: true }).click();
+  const resume = page.locator('#history-list .session-card').first().getByRole('button', { name: /^Resume .* session dojo-/ });
+  await expect(resume).toHaveCount(1);
+  await resume.click();
 
   await expect(page.locator('#answer-input')).toBeFocused();
   await expect(page.locator('#practice-session-context')).toBeVisible();
+});
+
+test('history and latest-session controls reject malformed generic sessions', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('soroban-dojo:practice-sessions', JSON.stringify([{
+      id: 'malformed-generic-session',
+      type: 'generated',
+      level: 'L3',
+      completed: false,
+      currentIndex: 0,
+      questions: [{ id: 'missing-required-question-fields' }],
+      responses: {},
+    }]));
+  });
+
+  await page.goto('practice');
+
+  const card = page.locator('#history-list .session-card').first();
+  await expect(card.getByRole('button', { name: /Resume unavailable for/ })).toBeDisabled();
+  await expect(card.getByRole('button', { name: /Replay unavailable for/ })).toBeDisabled();
+  await page.getByText('Adjust session setup').click();
+  await page.locator('#resume-latest').click();
+  await expect(page.locator('#feedback-panel')).toContainText('incomplete or malformed and cannot be resumed safely');
+  await expect(page.locator('#session-id')).toHaveText('—');
 });
 
 test('lesson practice link preserves its level and starts immediately', async ({ page }) => {
@@ -140,6 +167,35 @@ test('practice adaptive next move updates from weakness history', async ({ page 
   await expect(recommendation).toHaveAttribute('data-continuity-kind', 'review');
   await expect(recommendation).toContainText('Repair quotient building next');
   await expect(recommendation.getByRole('link', { name: 'Open matching worksheet' })).toHaveAttribute('href', /submode=quotient-building/);
+});
+
+test('adaptive Practice captures retained first-check focus and incomplete-history basis', async ({ page }) => {
+  await installReviewState(page, {
+    firstCheckSkill: 'division',
+    activitySkills: ['complements', 'complements'],
+    incomplete: true,
+  });
+
+  await page.goto('practice');
+  await page.getByText('Adjust session setup').click();
+  await page.selectOption('#session-level', 'L4');
+  await page.selectOption('#question-style', 'adaptive');
+  await page.getByRole('button', { name: 'Start new session' }).click();
+
+  await expect(page.locator('#session-title')).toContainText('division · L4 session');
+  await expect(page.locator('#session-adaptive-note')).toContainText('quotient building at L4');
+  await expect(page.locator('#session-adaptive-note')).toContainText('answer from your first unassisted check');
+  await expect(page.locator('#session-adaptive-note')).toContainText('known misses stay in review');
+});
+
+test('focused Practice deep links normalize incompatible level and skill pairs', async ({ page }) => {
+  await page.goto('practice?level=L2&skill=division&start=1');
+  await expect(page).toHaveURL(/practice\?level=L4&skill=division&start=1$/);
+  await expect(page.locator('#session-title')).toHaveText('division · L4 session');
+
+  await page.goto('practice?level=L5&skill=complements&start=1');
+  await expect(page).toHaveURL(/practice\?level=L2&skill=complements&start=1$/);
+  await expect(page.locator('#session-title')).toHaveText('complements · L2 session');
 });
 
 test('worksheet shortcuts clear, backspace, and advance after correct Enter', async ({ page }) => {

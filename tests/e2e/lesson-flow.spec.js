@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { installReviewState } from './review-state.js';
 
 test('lesson mini-checks and completion reveal exact next moves', async ({ page }) => {
   await page.addInitScript(() => {
@@ -51,6 +52,69 @@ test('weekly study plan adapts to multiplication weakness', async ({ page }) => 
   await expect(page.getByRole('link', { name: 'Open worksheet' }).last()).toHaveAttribute('href', /submode=place-shifts/);
 });
 
+test('weekly study plan refreshes when retained first-check focus replaces stale activity', async ({ page }) => {
+  await installReviewState(page, {
+    firstCheckSkill: 'division',
+    activitySkills: ['multiplication', 'multiplication'],
+  });
+
+  await page.goto('study-plan');
+  await expect(page.locator('#weekly-plan-title')).toHaveText('Division quotient week');
+  await expect(page.locator('#weekly-plan-copy')).toContainText('answer from your first unassisted check');
+
+  await page.evaluate(() => {
+    const attempt = {
+      version: 1,
+      attemptId: 'review-complements',
+      source: 'exercise',
+      itemId: 'review-item-complements',
+      skill: 'complements',
+      level: 'L2',
+      rule: { id: 'review-item-complements', version: 1 },
+      eligibility: 'prospective',
+      seed: null,
+      startedAt: '2026-07-30T01:00:00.000Z',
+      events: [{ seq: 1, kind: 'submit', at: '2026-07-30T01:00:01.000Z', value: 'wrong', correct: false }],
+    };
+    localStorage.setItem('soroban-dojo:mastery-evidence-v1', JSON.stringify([attempt]));
+    localStorage.setItem('soroban-dojo:mastery-seen-items-v1', JSON.stringify({
+      version: 1,
+      claims: [{ itemId: attempt.itemId, attemptId: attempt.attemptId, firstSeenAt: attempt.events[0].at }],
+    }));
+    localStorage.setItem('soroban-dojo:weekly-study-plan', JSON.stringify({
+      continuityKey: 'review:first-check:complete:division',
+      planId: 'division',
+      lesson: { id: 'lesson-l4-006', done: false },
+      exercise: { id: 'exercise-l4-007', done: false },
+      worksheet: { href: '/soroban-dojo/worksheets?preset=division-focus&submode=quotient-building', done: false },
+    }));
+  });
+  await page.reload();
+
+  await expect(page.locator('#weekly-plan-title')).toHaveText('Complements repair week');
+  await expect(page.locator('#weekly-plan-copy')).toContainText('five and ten complements');
+  await expect(page.locator('#weekly-plan-copy')).toContainText('answer from your first unassisted check');
+});
+
+test('weekly study plan rejects malformed done flags even when the saved route matches', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('soroban-dojo:weekly-study-plan', JSON.stringify({
+      continuityKey: 'default:new',
+      planId: 'foundations',
+      target: 'foundations',
+      lesson: { id: 'lesson-l0-002', done: 'yes' },
+      exercise: { id: 'exercise-l0-003', done: 'yes' },
+      worksheet: { href: '/soroban-dojo/worksheets?preset=foundations-focus&submode=arithmetic-rhythm', done: 'yes' },
+    }));
+  });
+
+  await page.goto('study-plan');
+
+  await expect(page.locator('#weekly-plan-current')).toContainText('Current step');
+  await expect(page.locator('#weekly-plan-current')).toContainText(/reading a single digit/i);
+  await expect(page.getByRole('heading', { name: 'All planned steps are marked done' })).toHaveCount(0);
+});
+
 test('weekly study plan steps can be marked done', async ({ page }) => {
   await page.goto('study-plan');
 
@@ -72,7 +136,7 @@ test('weekly study plan keeps keyboard focus through all-complete and reopen sta
     await toggle.press('Space');
   }
 
-  await expect(page.getByRole('heading', { name: 'Every planned step is complete' })).toBeFocused();
+  await expect(page.getByRole('heading', { name: 'All planned steps are marked done' })).toBeFocused();
   await page.getByRole('button', { name: 'Mark lesson pending' }).click();
   await expect(page.locator('#weekly-plan-current .weekly-plan-toggle')).toBeFocused();
   await expect(page.locator('#weekly-plan-current')).toContainText('Reading a Single Digit');

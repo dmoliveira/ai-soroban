@@ -1,5 +1,6 @@
 import { canonicalizeChallengeSession } from './challenges.js';
 import { learnerPathLabel, normalizeLearnerPath, normalizeStartingPoint, readLearnerContext } from './learner-context.js';
+import { deriveReviewProfile, REVIEW_BUCKET_ORDER } from './mastery.js';
 import { STORAGE_KEYS, firstIncompletePlanStep, normalizeStoredArray, normalizeStoredRecord, readStoredJson } from './storage.js';
 
 export const CONTINUITY_PROFILES = Object.freeze({
@@ -24,6 +25,23 @@ export const SKILL_TARGETS = Object.freeze({
   division: Object.freeze({ ...CONTINUITY_PROFILES.L4, skill: 'division', skillLabel: 'quotient building', lesson: 'lessons/l4/building-quotients-in-division', worksheetPreset: 'division-focus', worksheetSubmode: 'quotient-building' }),
   anzan: CONTINUITY_PROFILES.L5,
   mastery: Object.freeze({ ...CONTINUITY_PROFILES.L5, skill: 'mastery', skillLabel: 'mental mastery' }),
+});
+
+const REVIEW_SKILL_BY_BUCKET = Object.freeze({
+  arithmetic: 'mixed-operations',
+  complements: 'complements',
+  multiplication: 'multiplication',
+  division: 'division',
+  mental: 'anzan',
+});
+
+const REVIEW_BUCKETS_BY_LEVEL = Object.freeze({
+  L0: Object.freeze(['arithmetic']),
+  L1: Object.freeze(['arithmetic']),
+  L2: Object.freeze(['complements']),
+  L3: Object.freeze(['arithmetic']),
+  L4: Object.freeze(['division', 'multiplication']),
+  L5: Object.freeze(['mental']),
 });
 
 export const WORKSHEET_SUBMODE_TARGETS = Object.freeze({
@@ -57,11 +75,11 @@ const validPracticeQuestion = (question) => question
   && Array.isArray(question.steps)
   && question.steps.every((step) => typeof step === 'string');
 
-export const normalizeResumablePracticeSession = (entry) => {
+const normalizeSafePracticeSession = (entry, { allowCompleted = false } = {}) => {
   if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return null;
   const canonical = canonicalizeChallengeSession({ ...entry, responses: normalizeStoredRecord(entry.responses) });
   const valid = canonical
-    && canonical.completed === false
+    && (canonical.completed === false || (allowCompleted && canonical.completed === true))
     && canonical.challengeUnavailable !== true
     && validSessionId(canonical.id)
     && validLevel(canonical.level)
@@ -74,7 +92,10 @@ export const normalizeResumablePracticeSession = (entry) => {
   return valid ? canonical : null;
 };
 
-const isUsableWeeklyPlan = (plan) => typeof plan?.planId === 'string'
+export const normalizeResumablePracticeSession = (entry) => normalizeSafePracticeSession(entry);
+export const normalizeViewablePracticeSession = (entry) => normalizeSafePracticeSession(entry, { allowCompleted: true });
+
+export const isUsableWeeklyPlan = (plan) => typeof plan?.planId === 'string'
   && typeof plan?.lesson?.id === 'string'
   && typeof plan?.lesson?.done === 'boolean'
   && typeof plan?.exercise?.id === 'string'
@@ -118,31 +139,116 @@ const safeRead = (reader, fallback) => {
   try { return reader(); } catch { return fallback; }
 };
 
-export const deriveReviewFocus = (exerciseStates) => {
-  const counts = { arithmetic: 0, complements: 0, multiplication: 0, division: 0, mental: 0 };
-  Object.values(normalizeStoredRecord(exerciseStates)).forEach((entry) => {
-    if (entry?.status !== 'needs-review') return;
-    const skill = entry.skill || '';
-    if (skill === 'division') counts.division += 1;
-    else if (skill === 'multiplication') counts.multiplication += 1;
-    else if (skill === 'complements') counts.complements += 1;
-    else if (skill === 'anzan' || skill === 'mastery') counts.mental += 1;
-    else counts.arithmetic += 1;
-  });
-  if (Object.values(counts).every((count) => count === 0)) return null;
-  const key = ['mental', 'division', 'multiplication', 'complements', 'arithmetic']
-    .sort((left, right) => counts[right] - counts[left])[0];
-  const skillByFocus = { mental: 'anzan', division: 'division', multiplication: 'multiplication', complements: 'complements', arithmetic: 'mixed-operations' };
-  return { key, count: counts[key], skill: skillByFocus[key], target: SKILL_TARGETS[skillByFocus[key]] };
+export const readReviewProfile = (storage, activityStates) => {
+  const resolvedActivityStates = activityStates === undefined
+    ? safeRead(() => normalizeStoredRecord(readStoredJson(storage, STORAGE_KEYS.exerciseStates, {})), {})
+    : normalizeStoredRecord(activityStates);
+  const evidenceLedger = safeRead(() => readStoredJson(storage, STORAGE_KEYS.masteryEvidence, []), []);
+  const seenIndex = safeRead(() => readStoredJson(storage, STORAGE_KEYS.masterySeenItems, null), null);
+  return deriveReviewProfile({ evidenceLedger, seenIndex, activityStates: resolvedActivityStates });
 };
 
-export const deriveContinuityKey = ({ context, exerciseStates }) => {
-  const review = deriveReviewFocus(exerciseStates);
-  if (review) return `review:${review.key}`;
+export const resolveReviewFocus = (profile) => {
+  const key = typeof profile?.focus?.key === 'string' ? profile.focus.key : '';
+  const skill = REVIEW_SKILL_BY_BUCKET[key];
+  const target = SKILL_TARGETS[skill];
+  if (!REVIEW_BUCKET_ORDER.includes(key) || !target) return null;
+  return { ...profile.focus, key, skill, target };
+};
+
+export const reviewSignalCount = (profile, key) => {
+  const field = profile?.basis === 'first-check'
+    ? 'evidenceCount'
+    : profile?.basis === 'activity'
+      ? 'activityCount'
+      : null;
+  const count = field && REVIEW_BUCKET_ORDER.includes(key) ? profile?.buckets?.[key]?.[field] : 0;
+  return Number.isFinite(count) && count > 0 ? count : 0;
+};
+
+export const resolveReviewBucket = (profile, allowedKeys = REVIEW_BUCKET_ORDER) => {
+  if (profile?.basis !== 'first-check' && profile?.basis !== 'activity') return null;
+  const allowed = allowedKeys.filter((key) => REVIEW_BUCKET_ORDER.includes(key));
+  if (!allowed.length) return null;
+  return allowed.reduce((selected, key) => (
+    reviewSignalCount(profile, key) > reviewSignalCount(profile, selected) ? key : selected
+  ), allowed[0]);
+};
+
+export const resolveReviewTargetForLevel = (profile, level) => {
+  const normalizedLevel = validLevel(level) ? level : null;
+  if (!normalizedLevel) return null;
+  const key = resolveReviewBucket(profile, REVIEW_BUCKETS_BY_LEVEL[normalizedLevel])
+    || REVIEW_BUCKETS_BY_LEVEL[normalizedLevel][0];
+  const target = key === 'arithmetic'
+    ? profileForLevel(normalizedLevel)
+    : SKILL_TARGETS[REVIEW_SKILL_BY_BUCKET[key]];
+  return target ? { key, target, count: reviewSignalCount(profile, key) } : null;
+};
+
+export const formatReviewBasis = (profile) => {
+  const focus = resolveReviewFocus(profile);
+  const count = Number.isFinite(focus?.count) && focus.count > 0 ? focus.count : 0;
+  const answerWord = count === 1 ? 'answer' : 'answers';
+  const checkWord = count === 1 ? 'check' : 'checks';
+  const pointVerb = count === 1 ? 'points' : 'point';
+  const itemWord = count === 1 ? 'item' : 'items';
+  const completenessCopy = profile?.historyIncomplete
+    ? ' Some older first-check details are missing, so known misses stay in review instead of being assumed resolved.'
+    : '';
+  if (profile?.basis === 'first-check' && focus) {
+    return `${count} ${answerWord} from your first unassisted ${checkWord} still ${pointVerb} to ${focus.target.skillLabel} for review.${completenessCopy}`;
+  }
+  if (profile?.basis === 'activity' && focus) {
+    return `${count} saved review ${itemWord} point to ${focus.target.skillLabel}. ${count === 1 ? 'It does' : 'They do'} not include an unassisted first answer.${completenessCopy}`;
+  }
+  return profile?.historyIncomplete
+    ? 'A review focus is not shown because some older first-check records are missing.'
+    : 'No first-check answers or saved review items currently point to a review focus.';
+};
+
+export const deriveReviewFocus = (exerciseStates) => resolveReviewFocus(deriveReviewProfile({ activityStates: normalizeStoredRecord(exerciseStates) }));
+
+const profileForSnapshot = (snapshot, activityStates) => snapshot?.reviewProfile || deriveReviewProfile({
+  evidenceLedger: snapshot?.evidenceLedger,
+  seenIndex: snapshot?.seenIndex,
+  activityStates,
+});
+
+const PLACEMENT_PLAN_TARGETS = Object.freeze({ L0: 'foundations', L1: 'beginner', L2: 'complements', L3: 'arithmetic', L4: 'multiplication', L5: 'mental' });
+const ROUTE_PLAN_TARGETS = Object.freeze({ children: 'foundations', adults: 'beginner' });
+
+export const hasContinuityProgress = ({ completedLessons, exerciseStates, reviewProfile } = {}) => (
+  normalizeStoredArray(completedLessons).some((entry) => typeof entry === 'string')
+  || Object.keys(normalizeStoredRecord(exerciseStates)).length > 0
+  || Number(reviewProfile?.retainedQualifiedCount || 0) > 0
+);
+
+export const resolveWeeklyPlanTarget = (snapshot = {}) => {
+  const exerciseStates = normalizeStoredRecord(snapshot.exerciseStates);
+  const reviewProfile = profileForSnapshot(snapshot, exerciseStates);
+  const review = resolveReviewFocus(reviewProfile);
+  if (review) return review.key;
+  const startingPoint = normalizeStartingPoint(snapshot.context?.startingPoint);
+  if (startingPoint) return PLACEMENT_PLAN_TARGETS[startingPoint.level] || 'foundations';
+  const path = normalizeLearnerPath(snapshot.context?.path);
+  if (path) return ROUTE_PLAN_TARGETS[path] || 'foundations';
+  return hasContinuityProgress({
+    completedLessons: snapshot.completedLessons,
+    exerciseStates,
+    reviewProfile,
+  }) ? 'arithmetic' : 'foundations';
+};
+
+export const deriveContinuityKey = ({ context, completedLessons, exerciseStates, evidenceLedger, seenIndex, reviewProfile }) => {
+  const profile = reviewProfile || deriveReviewProfile({ evidenceLedger, seenIndex, activityStates: normalizeStoredRecord(exerciseStates) });
+  const review = resolveReviewFocus(profile);
+  if (review) return `review:${profile.basis}:${profile.historyIncomplete ? 'incomplete' : 'complete'}:${review.key}`;
   const startingPoint = normalizeStartingPoint(context?.startingPoint);
   if (startingPoint) return `placement:${startingPoint.level}`;
   const path = normalizeLearnerPath(context?.path);
-  return path ? `path:${path}` : 'default';
+  if (path) return `path:${path}`;
+  return hasContinuityProgress({ completedLessons, exerciseStates, reviewProfile: profile }) ? 'default:progress' : 'default:new';
 };
 
 export const readContinuitySnapshot = (storage) => {
@@ -153,8 +259,24 @@ export const readContinuitySnapshot = (storage) => {
   const practiceSessions = safeRead(() => normalizeStoredArray(readStoredJson(storage, STORAGE_KEYS.practiceSessions, [])), [])
     .filter((entry) => entry && typeof entry === 'object' && !Array.isArray(entry));
   const weeklyPlan = safeRead(() => normalizeStoredRecord(readStoredJson(storage, STORAGE_KEYS.weeklyStudyPlan, {})), {});
-  const continuityKey = deriveContinuityKey({ context, exerciseStates });
-  return { context, completedLessons, exerciseStates, practiceSessions, weeklyPlan, continuityKey };
+  const reviewProfile = readReviewProfile(storage, exerciseStates);
+  const continuityKey = deriveContinuityKey({ context, completedLessons, exerciseStates, reviewProfile });
+  return { context, completedLessons, exerciseStates, practiceSessions, weeklyPlan, reviewProfile, continuityKey };
+};
+
+export const resolveFreshWeeklyPlan = (snapshot) => {
+  const plan = normalizeStoredRecord(snapshot?.weeklyPlan);
+  const continuityKey = snapshot?.continuityKey || deriveContinuityKey({
+    context: snapshot?.context,
+    completedLessons: snapshot?.completedLessons,
+    exerciseStates: snapshot?.exerciseStates,
+    evidenceLedger: snapshot?.evidenceLedger,
+    seenIndex: snapshot?.seenIndex,
+    reviewProfile: snapshot?.reviewProfile,
+  });
+  const expectedTarget = resolveWeeklyPlanTarget(snapshot);
+  if (plan.continuityKey !== continuityKey || plan.planId !== expectedTarget || !isUsableWeeklyPlan(plan)) return { plan: null, step: null };
+  return { plan, step: firstIncompletePlanStep(plan) };
 };
 
 const contextLabels = (context) => {
@@ -180,7 +302,8 @@ export const buildContinuityRecommendation = (snapshot) => {
   const completedLessons = normalizeStoredArray(snapshot?.completedLessons);
   const exerciseStates = normalizeStoredRecord(snapshot?.exerciseStates);
   const sessions = normalizeStoredArray(snapshot?.practiceSessions);
-  const continuityKey = snapshot?.continuityKey || deriveContinuityKey({ context, exerciseStates });
+  const reviewProfile = profileForSnapshot(snapshot, exerciseStates);
+  const continuityKey = snapshot?.continuityKey || deriveContinuityKey({ context, completedLessons, exerciseStates, reviewProfile });
   const resumable = sessions.map(normalizeResumablePracticeSession).find(Boolean);
   if (resumable) {
     return recommendation('resume', `Resume your saved ${resumable.level} session`, 'Continue the exact unfinished question list instead of opening a second practice thread.',
@@ -188,17 +311,14 @@ export const buildContinuityRecommendation = (snapshot) => {
       { href: 'practice', label: 'Open practice setup' }, context);
   }
 
-  const review = deriveReviewFocus(exerciseStates);
+  const review = resolveReviewFocus(reviewProfile);
   if (review) {
-    return recommendation('review', `Repair ${review.target.skillLabel} next`, `${review.count} saved review item${review.count === 1 ? '' : 's'} point to this focused practice area.`,
+    return recommendation('review', `Repair ${review.target.skillLabel} next`, formatReviewBasis(reviewProfile),
       { href: buildFocusedPracticeHref(review.target.level, review.target.skill), label: `Start ${review.target.skillLabel} practice` },
       { href: buildFocusedWorksheetHref(review.target.skill, review.target.level), label: 'Open matching worksheet' }, context);
   }
 
-  const weeklyPlan = normalizeStoredRecord(snapshot?.weeklyPlan);
-  const weeklyStep = weeklyPlan.continuityKey === continuityKey && isUsableWeeklyPlan(weeklyPlan)
-    ? firstIncompletePlanStep(weeklyPlan)
-    : null;
+  const { step: weeklyStep } = resolveFreshWeeklyPlan({ ...snapshot, context, exerciseStates, reviewProfile, continuityKey });
   if (weeklyStep) {
     return recommendation('weekly-plan', `Continue your weekly ${weeklyStep} step`, 'This saved step still matches the route, placement, and review context currently in this browser.',
       { href: 'study-plan', label: `Open ${weeklyStep} step` },

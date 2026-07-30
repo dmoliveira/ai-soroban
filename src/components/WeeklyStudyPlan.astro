@@ -28,13 +28,13 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     <div>
       <p class="eyebrow">Weekly plan</p>
       <h2>Your next 7 days</h2>
-      <p class="muted">A practical route through one lesson, one exercise, and one worksheet at a time, based on your saved route, placement, and recent weak areas.</p>
+      <p class="muted">A practical route through one lesson, one exercise, and one worksheet at a time, based on your saved route, placement, and retained review signals.</p>
     </div>
   </div>
 
   <div class="subtle-panel weekly-plan-summary">
     <strong id="weekly-plan-title">Calm weekly path</strong>
-    <p id="weekly-plan-copy" class="muted">The plan will adapt as you complete lessons and mark review items.</p>
+    <p id="weekly-plan-copy" class="muted">The plan will adapt as you complete lessons and add first-check answers or saved review items.</p>
   </div>
 
   <div id="weekly-plan-current" aria-live="polite"></div>
@@ -61,7 +61,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
 <script>
   // @ts-nocheck
-  import { deriveReviewFocus, readContinuitySnapshot } from '../lib/learner-continuity.js';
+  import { formatReviewBasis, isUsableWeeklyPlan, readContinuitySnapshot, resolveReviewFocus, resolveWeeklyPlanTarget } from '../lib/learner-continuity.js';
   import { STORAGE_KEYS, firstIncompletePlanStep, readStoredJson, writeStoredJson } from '../lib/storage.js';
 
   const root = document.querySelector('.weekly-plan-panel');
@@ -71,14 +71,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   const continuity = readContinuitySnapshot(localStorage);
   const completedLessons = continuity.completedLessons;
   const exerciseStates = continuity.exerciseStates;
-  const hasProgressHistory = completedLessons.length > 0 || Object.keys(exerciseStates).length > 0;
-  const reviewFocus = deriveReviewFocus(exerciseStates);
-  const placementTargets = { L0: 'foundations', L1: 'beginner', L2: 'complements', L3: 'arithmetic', L4: 'multiplication', L5: 'mental' };
-  const routeTargets = { children: 'foundations', adults: 'beginner' };
-  const target = reviewFocus?.key
-    || placementTargets[continuity.context.startingPoint?.level]
-    || routeTargets[continuity.context.path]
-    || (hasProgressHistory ? 'arithmetic' : 'foundations');
+  const reviewFocus = resolveReviewFocus(continuity.reviewProfile);
+  const target = resolveWeeklyPlanTarget(continuity);
 
   const planByTarget = {
     foundations: {
@@ -143,7 +137,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   const writePlanState = (state) => writeStoredJson(localStorage, STORAGE_KEYS.weeklyStudyPlan, state);
 
   const currentPlanState = readStoredJson(localStorage, STORAGE_KEYS.weeklyStudyPlan, {});
-  const matchesCurrentPlan = (state) => (state?.planId || state?.target) === planId
+  const matchesCurrentPlan = (state) => isUsableWeeklyPlan(state)
+    && (state?.planId || state?.target) === planId
     && state?.continuityKey === continuity.continuityKey
     && state?.lesson?.id === lesson?.id
     && state?.exercise?.id === exercise?.id
@@ -166,7 +161,9 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   };
 
   document.getElementById('weekly-plan-title').textContent = plan.title;
-  document.getElementById('weekly-plan-copy').textContent = plan.copy;
+  document.getElementById('weekly-plan-copy').textContent = reviewFocus || continuity.reviewProfile.historyIncomplete
+    ? `${plan.copy} ${formatReviewBasis(continuity.reviewProfile)}`
+    : plan.copy;
 
   const cards = [
     {
@@ -202,7 +199,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   const currentMount = document.getElementById('weekly-plan-current');
 
   const renderToggleText = (card, done) => done ? `Mark ${card.stepLabel} pending` : `Mark ${card.stepLabel} done`;
-  const renderStatusText = (done) => done ? 'Completed for this week.' : 'Still active in this week\'s plan.';
+  const renderStatusText = (done) => done ? 'Marked done for this week.' : 'Still active in this week\'s plan.';
 
   const appendText = (parent, tag, text, className = '') => {
     const node = document.createElement(tag);
@@ -222,10 +219,10 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     if (currentIndex === -1) {
       const complete = document.createElement('article');
       complete.className = 'panel route-card weekly-plan-card weekly-plan-current-card';
-      appendText(complete, 'p', 'Week complete', 'eyebrow');
-      const completeTitle = appendText(complete, 'h3', 'Every planned step is complete');
+      appendText(complete, 'p', 'All steps marked', 'eyebrow');
+      const completeTitle = appendText(complete, 'h3', 'All planned steps are marked done');
       completeTitle.tabIndex = -1;
-      appendText(complete, 'p', 'Keep the win calm. Use a daily drill for optional review, or mark any step pending below if you want to revisit it.', 'muted');
+      appendText(complete, 'p', 'Use a daily drill for optional review, or mark any step pending below if you want to revisit it. These checklist marks are not verified completion evidence.', 'muted');
       const actions = document.createElement('div');
       actions.className = 'button-row button-row-compact route-card-footer';
       const dailyLink = document.createElement('a');
