@@ -53,12 +53,16 @@ for (const viewport of viewports) {
   });
 }
 
-test('practice primary action starts one reachable Foundations session on a small phone', async ({ page }) => {
+test('practice primary action starts one reachable Foundations session on a small phone', async ({ page, baseURL }) => {
   await page.setViewportSize({ width: 320, height: 568 });
   await page.goto('practice');
 
   await page.getByRole('link', { name: 'Start focused practice' }).click();
-  await expect(page).toHaveURL(/practice\?level=L0&skill=abacus-orientation&start=1/);
+  const expectedPath = new URL('practice', baseURL).pathname.replace(/\/$/, '');
+  await expect(page).toHaveURL((url) => (
+    url.pathname.replace(/\/$/, '') === expectedPath
+    && url.search === '?level=L0&skill=abacus-orientation&start=1'
+  ));
   await expect(page.locator('#practice-session-context')).toBeVisible();
   await expect(page.locator('#single-session-active')).toBeVisible();
   await expect(page.locator('#answer-input')).toBeFocused();
