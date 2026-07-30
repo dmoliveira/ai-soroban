@@ -118,6 +118,139 @@ test('Practice reports a session-only write failure while retaining evidence', a
   expect(sessions[0].responses[0]?.correct).not.toBe(true);
 });
 
+test('Practice saves a skipped typed response without inventing verification or review activity', async ({ page }) => {
+  await startSinglePractice(page);
+  await page.locator('#answer-input').fill('999');
+  await page.locator('#next-question').click();
+
+  const stored = await page.evaluate(() => ({
+    session: JSON.parse(localStorage.getItem('soroban-dojo:practice-sessions') || '[]')[0],
+    activity: JSON.parse(localStorage.getItem('soroban-dojo:exercise-states') || '{}'),
+    evidence: JSON.parse(localStorage.getItem('soroban-dojo:mastery-evidence-v1') || '[]'),
+  }));
+  expect(stored.session.currentIndex).toBe(1);
+  expect(stored.session.responses[0]).toMatchObject({ input: '999', verified: false, correct: false });
+  expect(stored.activity[stored.session.questions[0].progressKey]).toBeUndefined();
+  expect(stored.evidence).toEqual([]);
+});
+
+test('Practice invalidates a changed answer until it is checked again', async ({ page }) => {
+  await startSinglePractice(page);
+  const answer = await currentAnswer(page);
+  await page.locator('#answer-input').fill(String(answer + 1));
+  await page.locator('#verify-answer').click();
+  await expect(page.locator('#feedback-panel')).toContainText('First check missed');
+  await page.locator('#answer-input').fill(String(answer));
+  await page.locator('#next-question').click();
+
+  const stored = await page.evaluate(() => ({
+    session: JSON.parse(localStorage.getItem('soroban-dojo:practice-sessions') || '[]')[0],
+    activity: JSON.parse(localStorage.getItem('soroban-dojo:exercise-states') || '{}'),
+    evidence: JSON.parse(localStorage.getItem('soroban-dojo:mastery-evidence-v1') || '[]'),
+  }));
+  expect(stored.session.responses[0]).toMatchObject({ input: String(answer), verified: false, correct: false });
+  expect(stored.activity[stored.session.questions[0].progressKey]).toBeUndefined();
+  expect(stored.evidence).toHaveLength(1);
+  expect(stored.evidence[0].events[0]).toMatchObject({ kind: 'submit', correct: false });
+});
+
+test('Practice keeps an unchanged checked miss eligible for saved review activity', async ({ page }) => {
+  await startSinglePractice(page);
+  const answer = await currentAnswer(page);
+  await page.locator('#answer-input').fill(String(answer + 1));
+  await page.locator('#verify-answer').click();
+  await page.locator('#next-question').click();
+
+  const stored = await page.evaluate(() => ({
+    session: JSON.parse(localStorage.getItem('soroban-dojo:practice-sessions') || '[]')[0],
+    activity: JSON.parse(localStorage.getItem('soroban-dojo:exercise-states') || '{}'),
+  }));
+  expect(stored.session.responses[0]).toMatchObject({ verified: true, correct: false });
+  expect(stored.activity[stored.session.questions[0].progressKey]).toMatchObject({ status: 'needs-review' });
+});
+
+test('Practice applies the same truthful transition on the final question', async ({ page }) => {
+  const startAtFinalQuestion = async () => {
+    await page.goto('practice');
+    await page.evaluate(() => localStorage.clear());
+    await startSinglePractice(page);
+    for (let index = 0; index < 4; index += 1) await page.locator('#next-question').click();
+  };
+  const storedOutcome = () => page.evaluate(() => ({
+    session: JSON.parse(localStorage.getItem('soroban-dojo:practice-sessions') || '[]')[0],
+    activity: JSON.parse(localStorage.getItem('soroban-dojo:exercise-states') || '{}'),
+    evidence: JSON.parse(localStorage.getItem('soroban-dojo:mastery-evidence-v1') || '[]'),
+  }));
+
+  await startAtFinalQuestion();
+  await page.locator('#answer-input').fill('999');
+  await page.locator('#next-question').click();
+  let stored = await storedOutcome();
+  expect(stored.session).toMatchObject({ completed: true, finalScore: 0 });
+  expect(stored.session.responses[4]).toMatchObject({ input: '999', verified: false, correct: false });
+  expect(stored.activity[stored.session.questions[4].progressKey]).toBeUndefined();
+  expect(stored.evidence).toEqual([]);
+
+  await startAtFinalQuestion();
+  let answer = await currentAnswer(page);
+  await page.locator('#answer-input').fill(String(answer + 1));
+  await page.locator('#verify-answer').click();
+  await page.locator('#answer-input').fill(String(answer));
+  await page.locator('#next-question').click();
+  stored = await storedOutcome();
+  expect(stored.session.responses[4]).toMatchObject({ input: String(answer), verified: false, correct: false });
+  expect(stored.activity[stored.session.questions[4].progressKey]).toBeUndefined();
+  expect(stored.evidence).toHaveLength(1);
+  expect(stored.evidence[0].events[0]).toMatchObject({ kind: 'submit', correct: false });
+
+  await startAtFinalQuestion();
+  answer = await currentAnswer(page);
+  await page.locator('#answer-input').fill(String(answer + 1));
+  await page.locator('#verify-answer').click();
+  await page.locator('#next-question').click();
+  stored = await storedOutcome();
+  expect(stored.session.responses[4]).toMatchObject({ verified: true, correct: false });
+  expect(stored.activity[stored.session.questions[4].progressKey]).toMatchObject({ status: 'needs-review' });
+  expect(stored.evidence).toHaveLength(1);
+});
+
+test('ordinary Practice sheets keep reveal-before-check results assisted', async ({ page }) => {
+  await page.goto('practice');
+  await page.getByText('Adjust session setup').click();
+  await page.selectOption('#session-type', 'generated');
+  await page.selectOption('#session-level', 'L1');
+  await page.selectOption('#session-format', 'sheet');
+  await page.selectOption('#session-length', '5');
+  await page.getByRole('button', { name: 'Start new session' }).click();
+
+  await page.locator('#reveal-sheet-answers').click();
+  const firstInput = page.locator('#sheet-list .input').first();
+  const firstAnswer = await page.evaluate(() => JSON.parse(localStorage.getItem('soroban-dojo:practice-sessions') || '[]')[0].questions[0].answer);
+  await firstInput.fill(String(firstAnswer));
+  await page.locator('#check-sheet').click();
+
+  await expect(page.locator('#sheet-feedback-panel')).toContainText('Qualified first-check samples: 0/5');
+  const evidence = await page.evaluate(() => JSON.parse(localStorage.getItem('soroban-dojo:mastery-evidence-v1') || '[]'));
+  expect(evidence).toHaveLength(5);
+  expect(evidence.every((attempt) => attempt.events[0]?.kind === 'reveal-final')).toBe(true);
+  expect(evidence.every((attempt) => attempt.events.some((event) => event.kind === 'submit'))).toBe(true);
+});
+
+test('curated L3 and L4 sessions never fall back to another level', async ({ page }) => {
+  await page.goto('practice');
+  await page.getByText('Adjust session setup').click();
+  await page.selectOption('#session-type', 'curated');
+
+  for (const level of ['L3', 'L4']) {
+    await page.selectOption('#session-level', level);
+    await page.selectOption('#session-length', '5');
+    await page.getByRole('button', { name: 'Start new session' }).click();
+    const questions = await page.evaluate(() => JSON.parse(localStorage.getItem('soroban-dojo:practice-sessions') || '[]')[0].questions);
+    expect(questions).toHaveLength(5);
+    expect(questions.every((question) => question.level === level)).toBe(true);
+  }
+});
+
 test('Progress milestones expose earned state without relying on color', async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem('soroban-dojo:completed-lessons', JSON.stringify(['lesson-l0-002']));
