@@ -1,0 +1,55 @@
+<p
+  class="subtle-panel learner-path-transition-notice"
+  data-learner-path-transition-notice
+  role="status"
+  aria-live="polite"
+  aria-atomic="true"
+  tabindex="-1"
+  hidden
+></p>
+
+<script>
+  import {
+    learnerPathLabel,
+    normalizeLearnerPath,
+    retainLearnerPathForNavigation,
+  } from '../lib/learner-context.js';
+  import { ensureStorageCompatibility } from '../lib/storage-migrations.js';
+
+  const notice = document.querySelector<HTMLElement>('[data-learner-path-transition-notice]');
+  const params = new URLSearchParams(window.location.search);
+  const requested = normalizeLearnerPath(params.get('pathContext'));
+  if (notice && requested) {
+    const compatibility = ensureStorageCompatibility(localStorage);
+    const transition = retainLearnerPathForNavigation(localStorage, requested, { writable: compatibility.writable });
+    const { previous, outcome } = transition;
+    const requestedLabel = learnerPathLabel(requested);
+    const previousLabel = learnerPathLabel(previous);
+    notice.textContent = outcome === 'saved'
+      ? `${requestedLabel} route saved in this browser. The first lesson is open.`
+      : outcome === 'retained'
+        ? `${requestedLabel} route remains active in this browser. The first lesson is open.`
+        : previousLabel
+          ? `${requestedLabel} route could not be saved. ${previousLabel} route remains active; the first lesson is still open.`
+          : `${requestedLabel} route could not be saved in this browser. The first lesson is still open.`;
+    notice.hidden = false;
+    if (outcome === 'failed') window.requestAnimationFrame(() => notice.focus({ preventScroll: true }));
+
+    params.delete('pathContext');
+    params.delete('pathStatus');
+    params.delete('pathPrevious');
+    const query = params.toString();
+    window.history.replaceState({}, '', `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`);
+  }
+</script>
+
+<style>
+  .learner-path-transition-notice {
+    margin: 0;
+    border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  }
+  .learner-path-transition-notice:focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 4px;
+  }
+</style>

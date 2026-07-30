@@ -8,7 +8,6 @@ import CertificateSummary from '../components/CertificateSummary.astro';
 
 const lessons = (await getCollection('lessons')).map((entry) => ({ id: entry.data.id, title: entry.data.title, slug: entry.id, skill: entry.data.skill, level: entry.data.level }));
 const exercises = (await getCollection('exercises')).map((entry) => ({ id: entry.data.id, title: entry.data.title, slug: entry.id, skill: entry.data.skill, level: entry.data.level }));
-const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
 ---
 
 <BaseLayout title="Progress | Soroban Dojo">
@@ -20,11 +19,6 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       { label: 'Best use', value: 'Choose the next action' },
       { label: 'Best follow-up', value: 'Continue this week' },
       { label: 'Signals', value: 'Review + milestones' },
-    ]}
-    actions={[
-      { href: `${base}practice`, label: 'Continue practice' },
-      { href: `${base}study-plan`, label: 'Open the study plan', secondary: true },
-      { href: `${base}worksheets`, label: 'Generate a worksheet', secondary: true },
     ]}
     mistVar="--progress-mist"
   />

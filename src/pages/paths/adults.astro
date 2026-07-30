@@ -2,6 +2,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import LearnerPathControls from '../../components/LearnerPathControls.astro';
 const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
+const firstLessonHref = `${base}lessons/l0/parts-of-the-soroban?pathContext=adults`;
 ---
 
 <BaseLayout title="Adult Path | Soroban Dojo" description="Follow a structured soroban self-study path for adults with practical first-week rhythm, confidence checks, and steady next steps.">
@@ -19,12 +20,17 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       <article class="subtle-panel path-studio-stat"><span>Session length</span><strong>10–20 minutes</strong></article>
       <article class="subtle-panel path-studio-stat"><span>Best next tool</span><strong>Study plan</strong></article>
     </div>
+    <LearnerPathControls
+      preferredPath="adults"
+      heading="Use the structured self-study route for this learner"
+      compact
+      continueHref={firstLessonHref}
+      continueLabel="Use adults route and start lesson 1"
+    />
     <div class="hero-actions">
-      <a class="button" href={`${base}lessons/l0/parts-of-the-soroban`}>Start the first lesson</a>
       <a class="button button-secondary" href={`${base}levels/l0`}>Open Foundations</a>
       <a class="button button-secondary" href={`${base}study-plan`}>Open study plan</a>
     </div>
-    <LearnerPathControls preferredPath="adults" heading="Use the structured self-study route for this learner" compact />
   </section>
 
   <section class="panel content-prose route-card compact-card">
@@ -61,7 +67,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       <h2>A clean confidence check</h2>
       <p>By the end of the first week, this path aims for one clean reading-and-calculation loop: understand place value, read a two-rod number, and complete one short one-rod problem without guessing.</p>
       <div class="hero-actions">
-        <a class="button" href={`${base}lessons/l0/parts-of-the-soroban`}>Start the week</a>
+        <a class="button" href={firstLessonHref} data-learner-path-continue="adults">Use adults route and start lesson 1</a>
         <a class="button button-secondary" href={`${base}lessons/l0/reading-two-rod-numbers`}>Read the first win</a>
         <a class="button button-secondary" href={`${base}exercises/l1/add-four-and-four`}>Solve the first win</a>
         <a class="button button-secondary" href={`${base}paths/children`}>Compare the children path</a>

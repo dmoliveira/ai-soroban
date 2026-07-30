@@ -8,6 +8,7 @@ interface ActionItem {
   href: string;
   label: string;
   secondary?: boolean;
+  id?: string;
 }
 
 interface Props {
@@ -35,7 +36,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       {actions.length > 0 && (
         <div class="hero-actions">
           {actions.map((action, index) => (
-            <a class={`button ${action.secondary || index > 0 ? 'button-secondary' : ''}`.trim()} href={action.href}>{action.label}</a>
+            <a id={action.id} class={`button ${action.secondary || index > 0 ? 'button-secondary' : ''}`.trim()} href={action.href}>{action.label}</a>
           ))}
         </div>
       )}

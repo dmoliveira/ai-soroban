@@ -2,6 +2,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import LearnerPathControls from '../../components/LearnerPathControls.astro';
 const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
+const firstLessonHref = `${base}lessons/l0/parts-of-the-soroban?pathContext=children`;
 ---
 
 <BaseLayout title="Children Path | Soroban Dojo" description="Follow a short, visual soroban path for children with gentle first-week practice, clear wins, and calm next steps.">
@@ -19,12 +20,17 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       <article class="subtle-panel path-studio-stat"><span>Session length</span><strong>5–10 minutes</strong></article>
       <article class="subtle-panel path-studio-stat"><span>First win</span><strong>Read and set 31</strong></article>
     </div>
+    <LearnerPathControls
+      preferredPath="children"
+      heading="Use the shorter, visual route for this learner"
+      compact
+      continueHref={firstLessonHref}
+      continueLabel="Use children route and start lesson 1"
+    />
     <div class="hero-actions">
-      <a class="button" href={`${base}lessons/l0/parts-of-the-soroban`}>Start the first lesson</a>
       <a class="button button-secondary" href={`${base}levels/l0`}>Open Foundations</a>
       <a class="button button-secondary" href={`${base}daily-drills`}>Use a short daily pack</a>
     </div>
-    <LearnerPathControls preferredPath="children" heading="Use the shorter, visual route for this learner" compact />
   </section>
 
   <section class="panel content-prose route-card compact-card">
@@ -61,7 +67,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       <h2>One simple success to aim for</h2>
       <p>By the end of the first week, a child on this path should be able to read and set a number like <strong>31</strong> calmly as a clear first win.</p>
       <div class="hero-actions">
-        <a class="button" href={`${base}lessons/l0/parts-of-the-soroban`}>Start first lesson</a>
+        <a class="button" href={firstLessonHref} data-learner-path-continue="children">Use children route and start lesson 1</a>
         <a class="button button-secondary" href={`${base}exercises/l0/set-thirty-one`}>Try the first win</a>
         <a class="button button-secondary" href={`${base}paths/adults`}>Compare the adult path</a>
       </div>

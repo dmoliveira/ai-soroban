@@ -137,6 +137,10 @@ test('progress prioritizes one next move before milestone rewards', async ({ pag
 
   await expect(page.getByRole('heading', { level: 1, name: /see the next move before everything else/i })).toBeVisible();
   await expect(page.locator('.weekly-plan-panel')).toHaveCount(0);
+  await expect(page.locator('.studio-hero .hero-actions')).toHaveCount(0);
+  const firstMainAction = page.locator('#main-content a.button, #main-content button.button').first();
+  await expect(firstMainAction).toHaveAttribute('data-continuity-primary');
+  await expect(firstMainAction).toHaveText('Choose a learner route');
   const recommendationTop = await page.locator('[data-continuity-next-action]').boundingBox();
   const statsTop = await page.locator('.progress-stats-grid').boundingBox();
   expect(recommendationTop).not.toBeNull();
