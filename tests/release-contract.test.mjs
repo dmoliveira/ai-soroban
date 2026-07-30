@@ -144,8 +144,31 @@ test('public privacy and worksheet docs match the shipped 0.4 boundaries', () =>
 test('CI and Pages use Node 24-compatible actions and enforce the release gate', () => {
   assert.equal(
     packageJson.scripts['test:e2e:release-smoke'],
-    'playwright test tests/e2e/release-smoke.spec.js --project=chromium --reporter=line --workers=1 --retries=0',
+    'playwright test tests/e2e/release-smoke.spec.js tests/e2e/accessibility-gates.spec.js --project=chromium --reporter=line --workers=1 --retries=0',
   );
+  assert.equal(
+    packageJson.scripts['test:e2e:accessibility'],
+    'playwright test tests/e2e/accessibility-gates.spec.js --project=chromium --reporter=line --workers=1 --retries=0',
+  );
+  assert.equal(packageJson.devDependencies['@axe-core/playwright'], '4.12.1');
+  assert.equal(packageLock.packages[''].devDependencies['@axe-core/playwright'], '4.12.1');
+  assert.equal(packageLock.packages['node_modules/@axe-core/playwright'].version, '4.12.1');
+  assert.equal(packageLock.packages['node_modules/axe-core'].version, '4.12.1');
+
+  const accessibilityHelper = read('tests/e2e/accessibility.js');
+  ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'].forEach((tag) => {
+    assert.ok(accessibilityHelper.includes(`'${tag}'`), `missing accessibility scan tag: ${tag}`);
+  });
+  assert.match(accessibilityHelper, /new AxeBuilder\(\{ page \}\)/);
+  assert.match(accessibilityHelper, /results\.violations/);
+  assert.match(accessibilityHelper, /unresolvedIncomplete/);
+  assert.match(accessibilityHelper, /testInfo\.attach/);
+  assert.doesNotMatch(accessibilityHelper, /\.(?:exclude|disableRules)\(/);
+
+  const accessibilityGates = read('tests/e2e/accessibility-gates.spec.js');
+  ['practice', 'worksheets', 'daily-drills', 'mini-games', 'progress'].forEach((route) => {
+    assert.ok(accessibilityGates.includes(`'${route}`), `missing dynamic accessibility route: ${route}`);
+  });
 
   const ci = read('.github/workflows/ci.yml');
   assert.equal(workflowValue(ci, 'contents', 2), 'read');
@@ -157,10 +180,12 @@ test('CI and Pages use Node 24-compatible actions and enforce the release gate',
   assert.equal(workflowValue(workflowStep(validate, 'Verify release contract'), 'run', 8), 'npm run test:release');
   assert.equal(workflowValue(workflowStep(validate, 'Verify built content routes'), 'run', 8), 'npm run test:content-build');
   assert.equal(
-    workflowValue(workflowStep(validate, 'Run local browser tests'), 'run', 8),
+    workflowValue(workflowStep(validate, 'Run browser and accessibility gates'), 'run', 8),
     'PLAYWRIGHT_SERVER_MODE=preview npm run test:e2e',
   );
-  assert.equal(workflowValue(workflowStep(validate, 'Upload browser diagnostics'), 'uses', 8), 'actions/upload-artifact@v7');
+  const ciDiagnostics = workflowStep(validate, 'Upload browser diagnostics');
+  assert.equal(workflowValue(ciDiagnostics, 'if', 8), 'failure()');
+  assert.equal(workflowValue(ciDiagnostics, 'uses', 8), 'actions/upload-artifact@v7');
 
   const pages = read('.github/workflows/deploy-pages.yml');
   assert.equal(workflowValue(pages, 'permissions', 0), '{}');
@@ -180,9 +205,13 @@ test('CI and Pages use Node 24-compatible actions and enforce the release gate',
   assert.equal(workflowValue(workflowStep(build, 'Audit dependency baseline'), 'run', 8), 'npm run audit:dependencies');
   assert.equal(workflowValue(workflowStep(build, 'Verify built content routes'), 'run', 8), 'npm run test:content-build');
   assert.equal(
-    workflowValue(workflowStep(build, 'Validate browser flows'), 'run', 8),
+    workflowValue(workflowStep(build, 'Validate browser and accessibility flows'), 'run', 8),
     'PLAYWRIGHT_SERVER_MODE=preview npm run test:e2e',
   );
+  const pagesDiagnostics = workflowStep(build, 'Upload browser diagnostics');
+  assert.equal(workflowValue(pagesDiagnostics, 'if', 8), 'failure()');
+  assert.equal(workflowValue(pagesDiagnostics, 'uses', 8), 'actions/upload-artifact@v7');
+  assert.equal(workflowValue(pagesDiagnostics, 'name', 10), 'pages-build-playwright-diagnostics');
   assert.equal(workflowValue(workflowStep(build, 'Upload Pages artifact'), 'uses', 8), 'actions/upload-pages-artifact@v5');
 
   const deploy = workflowBlock(pages, 'deploy', 2);
@@ -209,4 +238,8 @@ test('CI and Pages use Node 24-compatible actions and enforce the release gate',
   assert.equal(workflowValue(workflowStep(releaseSmoke, 'Setup Node'), 'uses', 8), 'actions/setup-node@v7');
   assert.equal(workflowValue(workflowStep(releaseSmoke, 'Setup Node'), 'node-version', 10), '22');
   assert.equal(workflowValue(workflowStep(releaseSmoke, 'Smoke deployed release'), 'run', 8), 'npm run test:e2e:release-smoke');
+  const releaseDiagnostics = workflowStep(releaseSmoke, 'Upload deployed-release diagnostics');
+  assert.equal(workflowValue(releaseDiagnostics, 'if', 8), 'failure()');
+  assert.equal(workflowValue(releaseDiagnostics, 'uses', 8), 'actions/upload-artifact@v7');
+  assert.equal(workflowValue(releaseDiagnostics, 'name', 10), 'deployed-release-playwright-diagnostics');
 });

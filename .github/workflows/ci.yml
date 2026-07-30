@@ -57,7 +57,7 @@ jobs:
       - name: Verify production theme first paint
         run: npm run test:e2e:theme-preview
 
-      - name: Run local browser tests
+      - name: Run browser and accessibility gates
         run: PLAYWRIGHT_SERVER_MODE=preview npm run test:e2e
 
       - name: Upload browser diagnostics

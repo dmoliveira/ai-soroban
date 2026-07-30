@@ -344,7 +344,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         <summary>Why this setup fits</summary>
         <div class="practice-guidance-content">
           <div class="subtle-panel practice-mode-guide">
-            <strong id="practice-guide-title">Recommended use</strong>
+            <strong id="practice-mode-guide-title">Recommended use</strong>
             <p id="practice-guide-copy" class="muted small">Use this setup for short focused repetition before moving to sheets or review.</p>
           </div>
           <div class="subtle-panel practice-purpose-strip">
@@ -586,7 +586,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
   const syncPracticeSetupCopy = () => {
     const target = byId('practice-current-setup-copy');
-    const guideTitle = byId('practice-guide-title');
+    const guideTitle = byId('practice-mode-guide-title');
     const guideCopy = byId('practice-guide-copy');
     const purposeCopy = byId('practice-purpose-copy');
     const journeyModeTitle = byId('journey-mode-title');
