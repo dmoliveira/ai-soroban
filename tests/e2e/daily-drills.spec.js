@@ -105,3 +105,31 @@ test('fresh beginner route plans keep daily drills at L1', async ({ page }) => {
   await expect(page.locator('#daily-drill-focus')).toContainText('arithmetic');
   await expect(page.locator('#daily-generate-status')).toContainText('for L1');
 });
+
+test('daily answer reveals retain focus and announce one synchronized state', async ({ page }) => {
+  await page.goto('daily-drills');
+
+  const firstReveal = page.locator('.daily-reveal-answer').first();
+  await expect(firstReveal).toHaveAttribute('aria-label', /Reveal answer for drill 1:/);
+  await expect(firstReveal).toHaveAttribute('aria-expanded', 'false');
+  await firstReveal.focus();
+  await firstReveal.press('Space');
+
+  await expect(firstReveal).toBeFocused();
+  await expect(firstReveal).toHaveAttribute('aria-expanded', 'true');
+  await expect(firstReveal).toHaveText('Answer revealed');
+  await expect(page.locator('#daily-answer-1')).toBeVisible();
+  await expect(page.locator('#daily-generate-status')).toHaveText(/Drill 1 answer revealed: \d+\./);
+
+  await firstReveal.press('Space');
+  await expect(firstReveal).toBeFocused();
+  await expect(page.locator('#daily-generate-status')).toHaveText(/Drill 1 answer revealed: \d+\./);
+
+  const revealAll = page.getByRole('button', { name: 'Reveal answers' });
+  await revealAll.focus();
+  await revealAll.press('Space');
+  await expect(revealAll).toBeFocused();
+  await expect(page.locator('.daily-answer:not([hidden])')).toHaveCount(8);
+  await expect(page.locator('.daily-reveal-answer[aria-expanded="true"]')).toHaveCount(8);
+  await expect(page.locator('#daily-generate-status')).toHaveText('All 8 answers revealed.');
+});

@@ -3,6 +3,60 @@ import { expect, test } from '@playwright/test';
 const inputAt = (page, index) => page.locator('.worksheet-input').nth(index);
 const rowFor = (input) => input.locator('xpath=ancestor::*[contains(@class,"worksheet-row") or contains(@class,"vertical-drill-row")]');
 
+test('worksheet prompts and row actions use one atomic status', async ({ page }) => {
+  await page.goto('worksheets?preset=complements');
+
+  const first = inputAt(page, 0);
+  const promptId = await first.getAttribute('aria-describedby');
+  expect(promptId).toBe('worksheet-prompt-1');
+  await expect(page.locator(`#${promptId}`)).toHaveText((await first.getAttribute('data-prompt')) || '');
+  await expect(page.locator('.worksheet-feedback[aria-live]')).toHaveCount(0);
+
+  await rowFor(first).getByRole('button', { name: 'Check worksheet question 1', exact: true }).click();
+  await expect(page.locator('#worksheet-save-status')).toHaveText('Question 1: write your answer first. No worksheet evidence was recorded.');
+
+  await rowFor(first).getByRole('button', { name: 'Reveal answer for worksheet question 1', exact: true }).click();
+  await expect(page.locator('#worksheet-save-status')).toContainText('Question 1: Answer revealed:');
+  await expect(page.locator('#worksheet-save-status')).toContainText('First-check evidence: no unassisted first checks saved');
+  await expect(page.locator('#worksheet-save-status')).toContainText('Worksheet activity and evidence history saved');
+
+  await page.getByText('Advanced options').click();
+  await page.selectOption('#worksheet-orientation', 'vertical');
+  const verticalPromptId = await inputAt(page, 0).getAttribute('aria-describedby');
+  expect(verticalPromptId).toBe('worksheet-prompt-1');
+  await expect(page.locator(`#${verticalPromptId}`)).toHaveClass(/v-arith-block/);
+  await expect(page.locator('.worksheet-feedback[aria-live]')).toHaveCount(0);
+  await expect(page.locator('#worksheet-save-status')).toBeEmpty();
+});
+
+test('worksheet bulk actions announce one mixed, blank, or maximum-size summary', async ({ page }) => {
+  await page.goto('worksheets?preset=complements');
+  await page.getByText('After you generate').click();
+
+  const first = inputAt(page, 0);
+  const second = inputAt(page, 1);
+  await first.fill((await first.getAttribute('data-answer')) || '');
+  await second.fill(String(Number(await second.getAttribute('data-answer')) + 1));
+  await page.getByRole('button', { name: 'Check filled rows' }).click();
+
+  await expect(page.locator('#worksheet-save-status')).toContainText('Checked 2 filled rows.');
+  await expect(page.locator('#worksheet-save-status')).toContainText('Current checked result: 1 of 2 correct now.');
+  await expect(page.locator('#worksheet-save-status')).toContainText('First-check evidence: 1 of 2 unassisted first checks correct.');
+  await expect(page.locator('#worksheet-save-status')).toContainText('Worksheet activity and evidence history saved');
+
+  await page.getByRole('button', { name: 'Refresh questions' }).click();
+  await page.getByRole('button', { name: 'Check filled rows' }).click();
+  await expect(page.locator('#worksheet-save-status')).toContainText('No filled rows checked. Blank rows were skipped.');
+  await expect(page.locator('#worksheet-save-status')).toContainText('First-check evidence: no unassisted first checks saved');
+
+  await page.getByText('Advanced options').click();
+  await page.selectOption('#worksheet-count', '100');
+  await expect(page.locator('.worksheet-input')).toHaveCount(100);
+  await page.getByRole('button', { name: 'Check filled rows' }).click();
+  await expect(page.locator('#worksheet-save-status')).toContainText('No filled rows checked. Blank rows were skipped.');
+  await expect(page.locator('.worksheet-feedback[aria-live]')).toHaveCount(0);
+});
+
 test('worksheet first checks remain separate from corrected checked activity', async ({ page }) => {
   await page.goto('worksheets?preset=complements');
 

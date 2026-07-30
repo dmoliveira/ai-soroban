@@ -142,6 +142,36 @@ test('weekly study plan keeps keyboard focus through all-complete and reopen sta
   await expect(page.locator('#weekly-plan-current')).toContainText('Reading a Single Digit');
 });
 
+test('weekly study plan preserves a future toggle and announces its saved state', async ({ page }) => {
+  await page.goto('study-plan');
+
+  const worksheetToggle = page.locator('.weekly-plan-toggle[data-step="worksheet"]');
+  await worksheetToggle.click();
+
+  await expect(page.locator('.weekly-plan-toggle[data-step="worksheet"]')).toBeFocused();
+  await expect(page.locator('#weekly-plan-update-status')).toHaveText('Worksheet marked done for this week.');
+  await expect(page.locator('#weekly-plan-current')).not.toHaveAttribute('aria-live', /.+/);
+  await expect(page.locator('.weekly-plan-panel [role="status"]')).toHaveCount(1);
+});
+
+test('weekly study plan rolls back and reports a blocked write', async ({ page }) => {
+  await page.goto('study-plan');
+  await page.evaluate(() => {
+    const original = Storage.prototype.setItem;
+    Storage.prototype.setItem = function setItem(key, value) {
+      if (key === 'soroban-dojo:weekly-study-plan') throw new DOMException('blocked', 'QuotaExceededError');
+      return original.call(this, key, value);
+    };
+  });
+
+  await page.locator('#weekly-plan-current .weekly-plan-toggle').click();
+
+  await expect(page.locator('#weekly-plan-current')).toContainText('Reading a Single Digit');
+  await expect(page.locator('.weekly-plan-toggle[data-step="lesson"]')).toBeFocused();
+  await expect(page.locator('#weekly-plan-update-status')).toHaveText('Lesson was not changed because this browser could not save it.');
+  expect(await page.evaluate(() => localStorage.getItem('soroban-dojo:weekly-study-plan'))).toBeNull();
+});
+
 test('boss certificate preview updates after boss completion', async ({ page }) => {
   await page.goto('boss-rounds');
 

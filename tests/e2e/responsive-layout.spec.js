@@ -12,7 +12,7 @@ for (const viewport of viewports) {
   test(`${viewport.name} keeps core routes inside the viewport`, async ({ page }) => {
     await page.setViewportSize(viewport);
 
-    for (const route of ['', 'practice', 'progress', 'worksheets', 'mini-games']) {
+    for (const route of ['', 'practice', 'progress', 'worksheets', 'mini-games', 'daily-drills', 'study-plan']) {
       await page.goto(route);
       const dimensions = await page.evaluate(() => ({
         clientWidth: document.documentElement.clientWidth,
@@ -87,6 +87,8 @@ test('core non-inline learning controls meet the 44px target', async ({ page }) 
     { path: 'lessons/l0/reading-a-single-digit', selector: '.detail-utility-row a, .lesson-nav-strip a, .button' },
     { path: 'exercises/l1/add-two-and-three', selector: '.detail-utility-row a, .button' },
     { path: 'mini-games', selector: '.mini-game-playfield button, .mini-game-setting select, .mini-tier-picker select, #mini-game-answer' },
+    { path: 'daily-drills', selector: '.daily-drill-studio .button, #daily-level' },
+    { path: 'study-plan', selector: '.weekly-plan-panel .button' },
   ];
 
   for (const route of routes) {
@@ -129,5 +131,92 @@ for (const width of [320, 390]) {
       expect(box.left).toBeGreaterThanOrEqual(0);
       expect(box.right).toBeLessThanOrEqual(width);
     });
+
+    const firstInput = page.locator('.worksheet-input').first();
+    const answer = Number(await firstInput.getAttribute('data-answer'));
+    const check = row.getByRole('button', { name: 'Check worksheet question 1', exact: true });
+    await firstInput.fill(String(answer + 1));
+    await check.click();
+    await firstInput.fill(String(answer));
+    await check.click();
+    await expect(page.locator('#worksheet-save-status')).toContainText('Correct now');
+    const worksheetDimensions = await page.evaluate(() => ({
+      clientWidth: document.documentElement.clientWidth,
+      scrollWidth: document.documentElement.scrollWidth,
+    }));
+    expect(worksheetDimensions.scrollWidth).toBeLessThanOrEqual(worksheetDimensions.clientWidth + 1);
+    const statusBox = await page.locator('#worksheet-save-status').boundingBox();
+    expect(statusBox).not.toBeNull();
+    expect(statusBox.x).toBeGreaterThanOrEqual(0);
+    expect(statusBox.x + statusBox.width).toBeLessThanOrEqual(width + 1);
+
+    await page.goto('progress');
+    await page.getByText('More progress, history, and rewards').click();
+    await expect(page.locator('#skill-map')).toBeVisible();
+    await expect(page.locator('#worksheet-focus-map')).toBeVisible();
+    const progressDimensions = await page.evaluate(() => ({
+      clientWidth: document.documentElement.clientWidth,
+      scrollWidth: document.documentElement.scrollWidth,
+    }));
+    expect(progressDimensions.scrollWidth).toBeLessThanOrEqual(progressDimensions.clientWidth + 1);
   });
 }
+
+test('worksheet celebration honors reduced motion', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('worksheets?preset=complements');
+  await page.locator('.worksheet-input').evaluateAll((inputs) => {
+    inputs.forEach((input) => { input.value = input.getAttribute('data-answer') || ''; });
+  });
+  await page.getByText('After you generate').click();
+  await page.getByRole('button', { name: 'Check filled rows' }).click();
+
+  const celebration = page.locator('#worksheet-celebration');
+  await expect(celebration).toBeVisible();
+  const motion = await celebration.evaluate((node) => {
+    const style = getComputedStyle(node);
+    return {
+      duration: Number.parseFloat(style.animationDuration),
+      iterations: Number.parseFloat(style.animationIterationCount),
+    };
+  });
+  expect(motion.duration).toBeLessThanOrEqual(0.001);
+  expect(motion.iterations).toBe(1);
+});
+
+test('touch actions retain focus and persist evidence-route state', async ({ browser, baseURL }) => {
+  const context = await browser.newContext({
+    baseURL,
+    hasTouch: true,
+    viewport: { width: 390, height: 844 },
+  });
+  const page = await context.newPage();
+  try {
+    await page.goto('daily-drills');
+    const dailyReveal = page.locator('.daily-reveal-answer').first();
+    await dailyReveal.tap();
+    await expect(dailyReveal).toBeFocused();
+    await expect(dailyReveal).toHaveAttribute('aria-expanded', 'true');
+    await expect(page.locator('#daily-generate-status')).toContainText('Drill 1 answer revealed');
+
+    await page.goto('study-plan');
+    const worksheetToggle = page.locator('.weekly-plan-toggle[data-step="worksheet"]');
+    await worksheetToggle.tap();
+    await expect(page.locator('.weekly-plan-toggle[data-step="worksheet"]')).toBeFocused();
+    await expect(page.locator('#weekly-plan-update-status')).toHaveText('Worksheet marked done for this week.');
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem('soroban-dojo:weekly-study-plan') || '{}').worksheet?.done)).toBe(true);
+
+    await page.goto('worksheets?preset=complements');
+    const first = page.locator('.worksheet-input').first();
+    await first.fill((await first.getAttribute('data-answer')) || '');
+    const worksheetCheck = page.getByRole('button', { name: 'Check worksheet question 1', exact: true });
+    await worksheetCheck.tap();
+    await expect(worksheetCheck).toBeFocused();
+    await expect(page.locator('#worksheet-save-status')).toContainText('Correct on first check');
+    const evidence = await page.evaluate(() => JSON.parse(localStorage.getItem('soroban-dojo:mastery-evidence-v1') || '[]'));
+    expect(evidence).toHaveLength(1);
+    expect(evidence[0]).toMatchObject({ source: 'worksheet', eligibility: 'prospective' });
+  } finally {
+    await context.close();
+  }
+});

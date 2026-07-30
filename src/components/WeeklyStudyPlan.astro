@@ -37,7 +37,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     <p id="weekly-plan-copy" class="muted">The plan will adapt as you complete lessons and add first-check answers or saved review items.</p>
   </div>
 
-  <div id="weekly-plan-current" aria-live="polite"></div>
+  <div id="weekly-plan-current"></div>
+  <p id="weekly-plan-update-status" class="muted small" role="status" aria-live="polite" aria-atomic="true"></p>
   <section class="panel weekly-plan-rest-panel">
     <div class="section-head">
       <div>
@@ -197,6 +198,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
   const grid = document.getElementById('weekly-plan-grid');
   const currentMount = document.getElementById('weekly-plan-current');
+  const updateStatus = document.getElementById('weekly-plan-update-status');
 
   const renderToggleText = (card, done) => done ? `Mark ${card.stepLabel} pending` : `Mark ${card.stepLabel} done`;
   const renderStatusText = (done) => done ? 'Marked done for this week.' : 'Still active in this week\'s plan.';
@@ -257,11 +259,24 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       toggle.dataset.step = card.key;
       toggle.textContent = renderToggleText(card, done);
       toggle.addEventListener('click', () => {
-        const latest = readPlanState();
-        latest[card.key] = { ...(latest[card.key] || {}), done: !latest[card.key]?.done };
-        writePlanState(latest);
+        const persisted = readPlanState();
+        const currentStep = firstIncompletePlanStep(persisted);
+        const nextDone = !persisted[card.key]?.done;
+        const latest = {
+          ...persisted,
+          [card.key]: { ...(persisted[card.key] || {}), done: nextDone },
+        };
+        const saved = writePlanState(latest);
+        const stepLabel = card.stepLabel.charAt(0).toUpperCase() + card.stepLabel.slice(1);
+        if (!saved) {
+          renderPlan({ focusStep: card.key });
+          updateStatus.textContent = `${stepLabel} was not changed because this browser could not save it.`;
+          return;
+        }
         const nextStep = firstIncompletePlanStep(latest);
-        renderPlan({ focusStep: nextStep, focusCompletion: nextStep === null });
+        const focusStep = currentStep === card.key ? nextStep : card.key;
+        renderPlan({ focusStep, focusCompletion: nextStep === null });
+        updateStatus.textContent = `${stepLabel} marked ${nextDone ? 'done' : 'pending'} for this week.`;
       });
       actions.append(link, toggle);
       article.appendChild(actions);

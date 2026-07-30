@@ -40,3 +40,48 @@ test('privacy page discloses prospective evidence and read-only compatibility', 
   await expect(page.getByText(/Other malformed local records use safe read-time fallbacks/i)).toBeVisible();
   await expect(page.getByText(/No account, hidden analytics, or remote progress service is required/i)).toBeVisible();
 });
+
+test('deployed worksheet evidence separates first checks from corrected activity', async ({ page }) => {
+  await page.goto('worksheets?preset=complements');
+
+  const inputs = page.locator('.worksheet-input');
+  const first = inputs.nth(0);
+  const second = inputs.nth(1);
+  const firstAnswer = Number(await first.getAttribute('data-answer'));
+  const secondAnswer = Number(await second.getAttribute('data-answer'));
+  const firstItemId = await first.getAttribute('data-question-id');
+  const secondItemId = await second.getAttribute('data-question-id');
+  const firstRow = first.locator('xpath=ancestor::*[contains(@class,"worksheet-row") or contains(@class,"vertical-drill-row")]');
+  const secondRow = second.locator('xpath=ancestor::*[contains(@class,"worksheet-row") or contains(@class,"vertical-drill-row")]');
+
+  await first.fill(String(firstAnswer));
+  await firstRow.getByRole('button', { name: 'Check worksheet question 1', exact: true }).click();
+  await second.fill(String(secondAnswer + 1));
+  await secondRow.getByRole('button', { name: 'Check worksheet question 2', exact: true }).click();
+  await second.fill(String(secondAnswer));
+  await secondRow.getByRole('button', { name: 'Check worksheet question 2', exact: true }).click();
+
+  await expect(page.locator('#worksheet-first-check-copy')).toContainText('1/2 unassisted first checks correct');
+  await expect(page.locator('#worksheet-score-copy')).toContainText('2/2 correct now');
+  const saved = await page.evaluate(() => ({
+    evidence: JSON.parse(localStorage.getItem('soroban-dojo:mastery-evidence-v1') || '[]'),
+    seen: JSON.parse(localStorage.getItem('soroban-dojo:mastery-seen-items-v1') || '{"version":1,"claims":[]}'),
+    worksheets: JSON.parse(localStorage.getItem('soroban-dojo:worksheet-sessions') || '[]'),
+  }));
+  expect(saved.evidence).toHaveLength(2);
+  expect(saved.seen.claims).toHaveLength(2);
+  expect(saved.evidence.every((attempt) => attempt.eligibility === 'prospective'
+    && saved.seen.claims.some((claim) => claim.itemId === attempt.itemId && claim.attemptId === attempt.attemptId))).toBe(true);
+  const firstCheck = saved.evidence.find((attempt) => attempt.itemId === firstItemId);
+  const corrected = saved.evidence.find((attempt) => attempt.itemId === secondItemId);
+  expect(firstCheck.events.map((event) => [event.kind, event.correct])).toEqual([['submit', true]]);
+  expect(corrected.events.map((event) => [event.kind, event.correct])).toEqual([['submit', false], ['submit', true]]);
+  expect(saved.seen.claims.filter((claim) => claim.itemId === firstItemId && claim.attemptId === firstCheck.attemptId)).toHaveLength(1);
+  expect(saved.seen.claims.filter((claim) => claim.itemId === secondItemId && claim.attemptId === corrected.attemptId)).toHaveLength(1);
+  expect(saved.worksheets[0]).toMatchObject({ answered: 2, correct: 2, accuracy: 100, submode: 'complement-balance' });
+
+  await page.goto('progress');
+  await page.getByText('More progress, history, and rewards').click();
+  await expect(page.locator('#skill-map .skill-row').filter({ hasText: 'complements' })).toContainText('2/5 samples · 1 first-check correct');
+  await expect(page.locator('#worksheet-focus-map .skill-row').filter({ hasText: 'complement balance' })).toContainText('best checked result 100% · corrections included');
+});

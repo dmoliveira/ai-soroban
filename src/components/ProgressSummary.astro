@@ -73,7 +73,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       <div class="progress-hero-grid">
         <section class="panel ink-panel">
           <p class="eyebrow">Milestones</p>
-          <div class="milestone-row" id="milestone-row"></div>
+          <div class="milestone-row" id="milestone-row" role="list" aria-label="Learning milestones"></div>
         </section>
 
         <section class="panel ink-panel">
@@ -227,8 +227,11 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   ];
   milestones.forEach((milestone) => {
     const card = document.createElement('div');
+    const state = milestone.active ? 'Earned' : 'Not earned';
     card.className = `milestone-chip ${milestone.active ? 'active' : ''}`;
-    card.textContent = milestone.label;
+    card.setAttribute('role', 'listitem');
+    card.setAttribute('aria-label', `${milestone.label}: ${state.toLowerCase()}`);
+    card.textContent = `${milestone.label} · ${state}`;
     milestoneRow.appendChild(card);
   });
 
