@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { installReviewState } from './review-state.js';
 
 const placementState = (level, title, reason) => JSON.stringify({
   choice: { level, title, reason },
@@ -68,6 +69,93 @@ test('review targets are focused and stale weekly plans are not promoted', async
   await expect(card.getByRole('link', { name: 'Start quotient building practice' })).toHaveAttribute('href', /practice\?level=L4&skill=division&start=1$/);
   await expect(card.getByRole('link', { name: 'Open matching worksheet' })).toHaveAttribute('href', /worksheets\?preset=division-focus&submode=quotient-building$/);
   await expect(page.locator('.weekly-plan-panel')).toHaveCount(0);
+});
+
+test('continuity and Progress use retained first-check focus before conflicting activity', async ({ page }) => {
+  await installReviewState(page, {
+    firstCheckSkill: 'division',
+    activitySkills: ['multiplication', 'multiplication', 'multiplication'],
+  });
+
+  await page.goto('progress');
+
+  const card = continuityCard(page);
+  await expect(card).toHaveAttribute('data-continuity-kind', 'review');
+  await expect(card).toContainText('Repair quotient building next');
+  await expect(card).toContainText('1 answer from your first unassisted check');
+  await expect(page.locator('#review-items')).toHaveText('1');
+  await page.getByText('More progress, history, and rewards').click();
+  await expect(page.locator('#reflection-title')).toHaveText('Review quotient building next');
+  await expect(page.locator('#reflection-copy')).toContainText('answer from your first unassisted check');
+});
+
+test('continuity and Progress disclose incomplete retained first-check history', async ({ page }) => {
+  await installReviewState(page, { firstCheckSkill: 'division', incomplete: true });
+
+  await page.goto('progress');
+
+  await expect(continuityCard(page)).toContainText('Some older first-check details are missing');
+  await expect(continuityCard(page)).toContainText('known misses stay in review');
+  await page.getByText('More progress, history, and rewards').click();
+  await expect(page.locator('#reflection-copy')).toContainText('Some older first-check details are missing');
+});
+
+test('Progress rejects malformed seen-index ownership while keeping cautious activity fallback', async ({ page }) => {
+  await page.addInitScript(() => {
+    const attempt = {
+      version: 1,
+      attemptId: 'future-owner',
+      source: 'exercise',
+      itemId: 'exercise-l0-006',
+      skill: 'place-value',
+      level: 'L0',
+      rule: { id: 'exercise-l0-006', version: 1 },
+      eligibility: 'prospective',
+      seed: null,
+      startedAt: '2026-07-30T00:00:00.000Z',
+      events: [{ seq: 1, kind: 'submit', at: '2026-07-30T00:00:01.000Z', value: '31', correct: true }],
+    };
+    localStorage.setItem('soroban-dojo:state-schema', JSON.stringify({ version: 1 }));
+    localStorage.setItem('soroban-dojo:mastery-evidence-v1', JSON.stringify([attempt]));
+    localStorage.setItem('soroban-dojo:mastery-seen-items-v1', JSON.stringify({
+      version: 99,
+      claims: [{ itemId: attempt.itemId, attemptId: attempt.attemptId, firstSeenAt: attempt.events[0].at }],
+    }));
+    localStorage.setItem('soroban-dojo:exercise-states', JSON.stringify({
+      legacy: { status: 'needs-review', skill: 'division', level: 'L4' },
+    }));
+  });
+
+  await page.goto('progress');
+
+  await expect(page.locator('#review-items')).toHaveText('1');
+  await expect(continuityCard(page)).toContainText('saved review item');
+  await expect(continuityCard(page)).toContainText('Some older first-check details are missing');
+  await page.getByText('More progress, history, and rewards').click();
+  await expect(page.locator('#reflection-chips')).toContainText('No first-check evidence yet');
+  await expect(page.locator('.skill-row').filter({ hasText: 'place value' })).toContainText('0/5 samples');
+});
+
+test('a default new-learner plan becomes stale after non-review progress appears', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('soroban-dojo:exercise-states', JSON.stringify({
+      complete: { status: 'got-it', skill: 'addition', level: 'L1' },
+    }));
+    localStorage.setItem('soroban-dojo:weekly-study-plan', JSON.stringify({
+      continuityKey: 'default:new',
+      planId: 'foundations',
+      target: 'foundations',
+      lesson: { id: 'lesson-l0-002', done: false },
+      exercise: { id: 'exercise-l0-003', done: false },
+      worksheet: { href: '/soroban-dojo/worksheets?preset=foundations-focus&submode=arithmetic-rhythm', done: false },
+    }));
+  });
+
+  await page.goto('');
+  await expect(continuityCard(page)).toHaveAttribute('data-continuity-kind', 'setup');
+
+  await page.goto('daily-drills');
+  await expect(page.locator('#daily-drill-focus')).toContainText('No fresh weekly plan');
 });
 
 test('placement-aware Practice action starts only after the learner activates it', async ({ page }) => {

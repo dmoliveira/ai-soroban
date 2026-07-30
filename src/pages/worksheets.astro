@@ -284,12 +284,12 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         <div class="worksheet-current-setup subtle-panel">
           <strong>Mode guide</strong>
           <div class="muted small"><strong>Fixed sheet</strong> is best for one clean printable run with stable constraints.</div>
-          <div class="muted small"><strong>Dynamic or adaptive ledger</strong> is better when you want the sheet to respond to live choices or recent weak areas.</div>
+          <div class="muted small"><strong>Dynamic or adaptive ledger</strong> is better when you want the sheet to respond to live choices or retained review signals.</div>
         </div>
 
         <div class="subtle-panel worksheet-focus-guide">
           <strong id="worksheet-focus-title">Focus guide</strong>
-          <p id="worksheet-focus-copy" class="muted small">This sheet can adapt its drill style to the selected family or your recent weak areas.</p>
+          <p id="worksheet-focus-copy" class="muted small">This sheet can adapt its drill style to the selected family or your retained first-check answers and saved review items.</p>
           <p id="worksheet-focus-example" class="muted small">Example focus: balanced variety across the current sheet.</p>
         </div>
 
@@ -302,7 +302,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
         <div class="worksheet-note-strip">
           <div id="adaptive-note" class="subtle-panel worksheet-note-panel no-print" hidden>
             <strong>Adaptive recommendation</strong>
-            <p id="adaptive-note-copy" class="muted">This sheet is tuned to your recent weak areas stored in local progress.</p>
+            <p id="adaptive-note-copy" class="muted">This sheet will explain which retained local review signal selected its focus.</p>
           </div>
           <div id="teacher-note" class="subtle-panel worksheet-note-panel no-print" hidden>
             <strong>Teacher view</strong>
@@ -637,7 +637,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       createWorksheetFamilyConfig,
       formatWorksheetFamilyQuestion,
     } from '../lib/worksheet.js';
-    import { resolveWorksheetTarget } from '../lib/learner-continuity.js';
+    import { formatReviewBasis, readReviewProfile, resolveReviewFocus, resolveWorksheetTarget } from '../lib/learner-continuity.js';
 
     const levelBands = {
       L0: '1',
@@ -673,13 +673,13 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     const adaptiveNote = byId('adaptive-note');
     const adaptiveNoteCopy = byId('adaptive-note-copy');
     const currentSetupCopy = byId('worksheet-current-setup-copy');
-    const exerciseStateKey = 'soroban-dojo:exercise-states';
     const worksheetSessionKey = 'soroban-dojo:worksheet-sessions';
     let worksheetTimerStartedAt = null;
     let worksheetTimerInterval = null;
     let celebrationTimeout = null;
     let resolvedWorksheetTarget = 'auto';
     let currentWorksheetSessionId = null;
+    let currentAdaptiveReviewProfile = null;
     let activeWorksheetSeed = '';
     let worksheetSeedCounter = 0;
     const worksheetQuestionCache = new Map();
@@ -828,56 +828,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       if (verticalPreferred) byId('worksheet-orientation').value = 'vertical';
     };
 
-    const readWeakAreas = () => {
-      try {
-        const states = JSON.parse(localStorage.getItem(exerciseStateKey) || '{}');
-        const entries = Object.values(states).filter((entry) => entry?.status === 'needs-review');
-        const counts = entries.reduce((acc, entry) => {
-          const skill = entry.skill || '';
-          const level = entry.level || '';
-          const sessionId = entry.sessionId || '';
-          if (skill === 'multiplication') acc.multiplication += 1;
-          else if (skill === 'division') acc.division += 1;
-          else if (skill === 'anzan' || skill === 'mastery') acc.mental += 1;
-          else if (skill === 'complements') acc.complements += 1;
-          else if (level === 'L4' || sessionId.includes('L4')) acc.multiplication += 1;
-          else if (level === 'L5' || sessionId.includes('L5')) acc.mental += 1;
-          else if (level === 'L2' || sessionId.includes('L2')) acc.complements += 1;
-          else acc.arithmetic += 1;
-          return acc;
-        }, { arithmetic: 0, complements: 0, multiplication: 0, division: 0, mental: 0 });
-        return counts;
-      } catch {
-        return { arithmetic: 0, complements: 0, multiplication: 0, division: 0, mental: 0 };
-      }
-    };
-
-    const describeWeakArea = (counts) => {
-      if (counts.mental > counts.arithmetic && counts.mental > counts.complements && counts.mental > counts.multiplication && counts.mental > counts.division) {
-        return 'Recent practice suggests more support is needed in mental recall, sign changes, and anzan stability.';
-      }
-      if (counts.division > counts.arithmetic && counts.division >= counts.multiplication && counts.division > counts.complements) {
-        return 'Recent practice suggests more support is needed in quotient building and division fact families.';
-      }
-      if (counts.multiplication > counts.arithmetic && counts.multiplication > counts.complements) {
-        return 'Recent practice suggests more support is needed in multiplication/division patterns.';
-      }
-      if (counts.complements > counts.arithmetic) {
-        return 'Recent practice suggests more support is needed in complement and mental-balance work.';
-      }
-      return 'Recent practice suggests strengthening arithmetic rhythm and accuracy first.';
-    };
-
-    const resolveAdaptiveTarget = (counts) => {
-      const ordered = [
-        ['mental', counts.mental],
-        ['division', counts.division],
-        ['multiplication', counts.multiplication],
-        ['complements', counts.complements],
-        ['arithmetic', counts.arithmetic],
-      ].sort((a, b) => b[1] - a[1]);
-      return ordered[0][0];
-    };
+    const readAdaptiveReviewProfile = () => readReviewProfile(localStorage);
+    const resolveAdaptiveTarget = (profile) => resolveReviewFocus(profile)?.key || 'arithmetic';
 
     const focusGuideCopy = {
       auto: {
@@ -1023,7 +975,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       let requestedSubmode = selectedSubmode;
 
       if (mode === 'adaptive') {
-        const target = resolveAdaptiveTarget(readWeakAreas());
+        currentAdaptiveReviewProfile = readAdaptiveReviewProfile();
+        const target = resolveAdaptiveTarget(currentAdaptiveReviewProfile);
         sourceFamilies = target === 'multiplication'
           ? ['multiplication']
           : target === 'division'
@@ -1086,13 +1039,12 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       const teacherMode = byId('worksheet-style').value === 'teacher';
       const adaptiveMode = byId('worksheet-mode').value === 'adaptive';
       const teacherNote = byId('teacher-note');
-      const weakAreas = readWeakAreas();
       table.replaceChildren();
       table.className = orientation === 'vertical' ? 'worksheet-table vertical-table' : 'worksheet-table ledger-table';
       table.closest('.ledger-panel')?.classList.toggle('teacher-mode', teacherMode);
       teacherNote.hidden = !teacherMode;
       adaptiveNote.hidden = !adaptiveMode;
-      adaptiveNoteCopy.textContent = describeWeakArea(weakAreas);
+      adaptiveNoteCopy.textContent = formatReviewBasis(currentAdaptiveReviewProfile || readAdaptiveReviewProfile());
       ledgerHead.hidden = orientation === 'vertical';
       if (orientation === 'vertical') {
         const columns = 5;
@@ -1109,8 +1061,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
               <span class="ledger-no">${absoluteIndex + 1}</span>
               ${renderVerticalPrompt(prompt)}
               <div class="worksheet-answer-block"><span class="worksheet-answer-label">Answer</span><input class="input worksheet-input vertical-input" data-prompt="${prompt}" data-answer="${question.answer}" data-question-id="${question.id}" data-family="${question.family}" type="text" inputmode="numeric" placeholder="Write" /></div>
-              <small class="worksheet-feedback vertical-feedback" aria-live="polite"></small>
-              <div class="worksheet-row-actions"><button type="button" class="mini-action" data-row-action="check">Check</button><button type="button" class="mini-action" data-row-action="reveal">Reveal</button></div>
+              <small id="worksheet-feedback-${absoluteIndex + 1}" class="worksheet-feedback vertical-feedback" aria-live="polite"></small>
+              <div class="worksheet-row-actions"><button type="button" class="mini-action" data-row-action="check" aria-label="Check worksheet question ${absoluteIndex + 1}" aria-controls="worksheet-feedback-${absoluteIndex + 1}">Check</button><button type="button" class="mini-action" data-row-action="reveal" aria-label="Reveal answer for worksheet question ${absoluteIndex + 1}" aria-controls="worksheet-feedback-${absoluteIndex + 1}">Reveal</button></div>
             `;
             row.querySelector('.worksheet-input')?.setAttribute('aria-label', `Answer for worksheet question ${absoluteIndex + 1}`);
             col.appendChild(row);
@@ -1126,8 +1078,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
             <span class="ledger-no">${index + 1}</span>
             <span class="worksheet-prompt ledger-prompt">${prompt}</span>
             <div class="worksheet-answer-block"><span class="worksheet-answer-label">Answer</span><input class="input worksheet-input ledger-input" data-prompt="${prompt}" data-answer="${question.answer}" data-question-id="${question.id}" data-family="${question.family}" type="text" inputmode="numeric" placeholder="Write" /></div>
-            <small class="worksheet-feedback ledger-feedback" aria-live="polite"></small>
-            <div class="worksheet-row-actions"><button type="button" class="mini-action" data-row-action="check">Check</button><button type="button" class="mini-action" data-row-action="reveal">Reveal</button></div>
+            <small id="worksheet-feedback-${index + 1}" class="worksheet-feedback ledger-feedback" aria-live="polite"></small>
+            <div class="worksheet-row-actions"><button type="button" class="mini-action" data-row-action="check" aria-label="Check worksheet question ${index + 1}" aria-controls="worksheet-feedback-${index + 1}">Check</button><button type="button" class="mini-action" data-row-action="reveal" aria-label="Reveal answer for worksheet question ${index + 1}" aria-controls="worksheet-feedback-${index + 1}">Reveal</button></div>
           `;
           row.querySelector('.worksheet-input')?.setAttribute('aria-label', `Answer for worksheet question ${index + 1}`);
           table.appendChild(row);
@@ -1194,7 +1146,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
       scoreCopy.textContent = teacherMode
         ? 'Teacher key mode is active. Print or reveal for guided review.'
         : adaptiveMode
-        ? 'Adaptive mode favors your recent weak areas. Blank answers are skipped.'
+        ? 'Adaptive mode follows the retained review basis shown above. Blank answers are skipped.'
         : 'No answers checked yet.';
       setMetric('worksheet-answered', 0);
       setMetric('worksheet-correct', 0);

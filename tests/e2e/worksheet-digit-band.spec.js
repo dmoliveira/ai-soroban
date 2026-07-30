@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { installReviewState } from './review-state.js';
 
 const promptStructureSignature = (prompt) => prompt
   .split(' ')
@@ -73,6 +74,26 @@ test('adaptive worksheet targets division weakness automatically', async ({ page
   const prompts = await page.locator('.worksheet-input').evaluateAll((inputs) => inputs.map((input) => input.getAttribute('data-prompt') || ''));
   expect(prompts.length).toBeGreaterThan(0);
   prompts.forEach((prompt) => expect(prompt).toContain('÷'));
+  await expect(page.locator('#adaptive-note-copy')).toContainText('saved review items');
+  await expect(page.locator('#adaptive-note-copy')).toContainText('do not include an unassisted first answer');
+});
+
+test('adaptive worksheet prefers retained first-check focus and explains incomplete history', async ({ page }) => {
+  await installReviewState(page, {
+    firstCheckSkill: 'division',
+    activitySkills: ['complements', 'complements', 'complements'],
+    incomplete: true,
+  });
+
+  await page.goto('worksheets');
+  await page.selectOption('#worksheet-mode', 'adaptive');
+  await page.getByRole('button', { name: 'Refresh questions' }).click();
+
+  await expect(page.locator('#worksheet-target-summary')).toContainText('Division quotient building');
+  await expect(page.locator('#adaptive-note-copy')).toContainText('answer from your first unassisted check');
+  await expect(page.locator('#adaptive-note-copy')).toContainText('Some older first-check details are missing');
+  await expect(page.getByRole('button', { name: 'Check worksheet question 1', exact: true })).toHaveAttribute('aria-controls', 'worksheet-feedback-1');
+  await expect(page.getByRole('button', { name: 'Reveal answer for worksheet question 1', exact: true })).toHaveAttribute('aria-controls', 'worksheet-feedback-1');
 });
 
 test('worksheet seed stays stable for presentation rerenders and rotates on refresh', async ({ page }) => {

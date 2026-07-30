@@ -407,11 +407,12 @@ test('progress reset warns when no cross-tab notification transport succeeds', a
 test('completed weekly plan is not reported as an unfinished lesson', async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem('soroban-dojo:weekly-study-plan', JSON.stringify({
-      planId: 'arithmetic',
-      target: 'arithmetic',
-      lesson: { done: true },
-      exercise: { done: true },
-      worksheet: { done: true },
+      continuityKey: 'default:new',
+      planId: 'foundations',
+      target: 'foundations',
+      lesson: { id: 'lesson', done: true },
+      exercise: { id: 'exercise', done: true },
+      worksheet: { href: '/soroban-dojo/worksheets', done: true },
     }));
   });
 

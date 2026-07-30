@@ -125,8 +125,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   // @ts-nocheck
   import { isBossComplete, normalizeBossCompletionRecord } from '../lib/boss-provenance.js';
   import { canonicalizeChallengeSession, isChallengeSessionOpaque } from '../lib/challenges.js';
-  import { buildFocusedPracticeHref, buildFocusedWorksheetHref, resolveWorksheetTarget, toBaseHref } from '../lib/learner-continuity.js';
-  import { isCanonicalAttemptEvidence, masteryClaimOwnedBy, normalizeMasterySeenIndex, summarizeAttemptEvidence } from '../lib/mastery.js';
+  import { buildFocusedPracticeHref, buildFocusedWorksheetHref, formatReviewBasis, readReviewProfile, resolveReviewFocus, resolveWorksheetTarget, toBaseHref } from '../lib/learner-continuity.js';
+  import { isCanonicalAttemptEvidence, isCanonicalMasterySeenIndex, masteryClaimOwnedBy, summarizeAttemptEvidence } from '../lib/mastery.js';
   import { STORAGE_KEYS, clearProgressStorage, normalizeStoredRecord, readStoredArray, readStoredJson, readStoredRecord } from '../lib/storage.js';
   import { ensureStorageCompatibility } from '../lib/storage-migrations.js';
 
@@ -151,7 +151,12 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   const worksheetData = readStoredArray(localStorage, STORAGE_KEYS.worksheetSessions);
   const bossData = normalizeBossCompletionRecord(readStoredRecord(localStorage, STORAGE_KEYS.bossRounds));
   const evidenceData = readStoredArray(localStorage, STORAGE_KEYS.masteryEvidence);
-  const seenEvidenceItems = normalizeMasterySeenIndex(readStoredJson(localStorage, STORAGE_KEYS.masterySeenItems, {}));
+  const rawSeenEvidenceItems = readStoredJson(localStorage, STORAGE_KEYS.masterySeenItems, null);
+  const seenEvidenceItems = isCanonicalMasterySeenIndex(rawSeenEvidenceItems)
+    ? rawSeenEvidenceItems
+    : { version: 1, claims: [] };
+  const reviewProfile = readReviewProfile(localStorage, exerciseData);
+  const reviewFocus = resolveReviewFocus(reviewProfile);
   const exposedEvidenceItems = new Set();
   const qualifiedEvidence = evidenceData
     .filter(isCanonicalAttemptEvidence)
@@ -168,7 +173,6 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     : 0;
 
   const attempted = Object.values(exerciseData).filter(Boolean);
-  const reviewItems = Object.values(exerciseData).filter((entry) => entry?.status === 'needs-review');
   const totalSeconds = timerData.reduce((sum, entry) => sum + (entry?.seconds || ((entry?.minutes || 0) * 60)), 0);
   const totalMinutes = Math.round(totalSeconds / 60);
   const finishedSessions = sessionData.filter((entry) => entry?.completed);
@@ -194,7 +198,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
   document.getElementById('completed-lessons').textContent = String(lessonData.length);
   document.getElementById('attempted-exercises').textContent = String(attempted.length);
-  document.getElementById('review-items').textContent = String(reviewItems.length);
+  document.getElementById('review-items').textContent = String(reviewProfile.total);
   document.getElementById('time-practiced').textContent = `${totalMinutes}m`;
   document.getElementById('finished-sessions').textContent = String(finishedSessions.length);
   document.getElementById('best-score').textContent = scoredSessions.length ? String(bestScore) : '—';
@@ -269,7 +273,9 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
   const reflectionItems = [
     lessonData.length ? `${lessonData.length} lesson stones` : 'Start one lesson',
-    reviewItems.length ? `${reviewItems.length} items ready for repair` : 'No urgent review items',
+    reviewProfile.total
+      ? `${reviewProfile.total} ${reviewProfile.basis === 'first-check' ? 'first-check answer' : 'saved review item'}${reviewProfile.total === 1 ? '' : 's'} ready for review`
+      : 'No current review signal',
     finishedSessions.length ? `${finishedSessions.length} finished sessions` : 'Finish your first session',
     qualifiedEvidence.length ? `${qualifiedEvidence.length} unassisted first-check sample(s)` : 'No first-check evidence yet',
   ];
@@ -280,10 +286,8 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     reflectionChips.appendChild(chip);
   });
 
-  const reflectionTitle = reviewItems.length ? 'Repair the weak spots next' : 'Keep the next step calm';
-  const reflectionCopy = reviewItems.length
-    ? 'A few places need repair. That is part of learning, not a setback.'
-    : 'Your progress stays in this browser unless you clear it.';
+  const reflectionTitle = reviewFocus ? `Review ${reviewFocus.target.skillLabel} next` : 'Keep the next step calm';
+  const reflectionCopy = formatReviewBasis(reviewProfile);
   document.getElementById('reflection-title').textContent = reflectionTitle;
   document.getElementById('reflection-copy').textContent = reflectionCopy;
 
