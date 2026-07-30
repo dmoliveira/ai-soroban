@@ -35,7 +35,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     <div id="mini-game-medal" class="muted small">Medal targets will appear here.</div>
     <div id="mini-game-rule" class="muted small">Rule details will appear here.</div>
 
-    <div class="mini-game-settings" aria-label="Mini-game session settings">
+    <div class="mini-game-settings" role="group" aria-label="Mini-game session settings">
       <label class="stack-sm mini-game-setting" data-setting="question-count">
         <span>Questions</span>
         <select id="mini-game-question-count" class="select">

@@ -58,8 +58,19 @@ jobs:
       - name: Verify production theme first paint
         run: npm run test:e2e:theme-preview
 
-      - name: Validate browser flows
+      - name: Validate browser and accessibility flows
         run: PLAYWRIGHT_SERVER_MODE=preview npm run test:e2e
+
+      - name: Upload browser diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: pages-build-playwright-diagnostics
+          path: |
+            playwright-report
+            test-results
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v5
@@ -111,3 +122,14 @@ jobs:
 
       - name: Smoke deployed release
         run: npm run test:e2e:release-smoke
+
+      - name: Upload deployed-release diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: deployed-release-playwright-diagnostics
+          path: |
+            playwright-report
+            test-results
+          if-no-files-found: ignore
+          retention-days: 7

@@ -50,14 +50,17 @@ test('every theme defines the identical deployed token schema', () => {
 
 test('semantic text, action, focus, and control pairs meet contrast targets', () => {
   THEMES.forEach(({ id, tokens }) => {
+    const textTokens = ['--ink', '--muted', '--accent', '--success', '--warning'];
+    const surfaceTokens = ['--bg', '--bg-end', '--panel', '--panel-raised', '--panel-soft', '--accent-soft', '--success-soft', '--warning-soft'];
     const pairs = [
-      ['--ink', '--panel', 4.5],
-      ['--muted', '--panel', 4.5],
-      ['--accent', '--panel', 4.5],
+      ...textTokens.flatMap((foreground) => surfaceTokens.map((background) => [foreground, background, 4.5])),
       ['--on-accent', '--accent', 4.5],
+      ['--on-accent', '--accent-strong', 4.5],
       ['--on-action', '--action', 4.5],
+      ['--on-action', '--action-strong', 4.5],
       ['--control-line', '--panel', 3],
       ['--focus', '--bg', 3],
+      ['--focus', '--bg-end', 3],
     ];
     pairs.forEach(([foreground, background, minimum]) => {
       assert.ok(contrast(tokens[foreground], tokens[background]) >= minimum, `${id}: ${foreground} on ${background}`);

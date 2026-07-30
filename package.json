@@ -20,7 +20,8 @@
     "test:content-build": "node --test tests/content-build-check.mjs",
     "test:theme-build": "node --test tests/theme-build-check.mjs",
     "test:e2e": "playwright test",
-    "test:e2e:release-smoke": "playwright test tests/e2e/release-smoke.spec.js --project=chromium --reporter=line --workers=1 --retries=0",
+    "test:e2e:accessibility": "playwright test tests/e2e/accessibility-gates.spec.js --project=chromium --reporter=line --workers=1 --retries=0",
+    "test:e2e:release-smoke": "playwright test tests/e2e/release-smoke.spec.js tests/e2e/accessibility-gates.spec.js --project=chromium --reporter=line --workers=1 --retries=0",
     "test:e2e:smoke": "playwright test tests/e2e/ui-redesign-smoke.spec.js",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:install": "playwright install chromium",
@@ -33,6 +34,7 @@
     "typescript": "^5.9.3"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.12.1",
     "@playwright/test": "^1.59.1"
   }
 }
